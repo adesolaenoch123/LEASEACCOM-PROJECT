@@ -367,12 +367,17 @@
         loader.setAttribute("aria-live", "polite");
         loader.innerHTML = `<div class="leasehub-loader-content"><img class="leasehub-loader-logo" src="IMAGES/Lease Hub logo.png" alt=""><div class="leasehub-loader-visual">${loaderVisual(purpose)}</div><div class="leasehub-loader-text">${loaderCopy(purpose)}</div><span class="sr-only">Loading page</span></div>`;
         document.body.prepend(loader);
+        document.documentElement.classList.remove("lh-preload-lock");
+        document.documentElement.classList.add("lh-loader-on");
 
-        const hide = () => loader.classList.add("is-hidden");
-        const delay = reduceMotion() ? 0 : 3000;
+        const hide = () => {
+            loader.classList.add("is-hidden");
+            document.documentElement.classList.remove("lh-loader-on");
+        };
+        const delay = reduceMotion() ? 0 : 900;
         document.addEventListener("DOMContentLoaded", () => setTimeout(hide, delay), { once: true });
         window.addEventListener("load", () => setTimeout(hide, delay), { once: true });
-        setTimeout(hide, 3300);
+        setTimeout(hide, 1200);
     }
 
     installPurposeLoader();

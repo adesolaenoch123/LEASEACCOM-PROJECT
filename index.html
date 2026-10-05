@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>try{document.documentElement.classList.add("lh-preload-lock")}catch(e){}</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>LeaseHub — Find Your Place</title>
 <meta name="description" content="LeaseHub connects tenants with property owners while helping people discover homes, shortlets, student housing, hotels and commercial spaces across Nigeria.">
 
     <link rel="stylesheet" href="CSS/style.css">
-    <link rel="stylesheet" href="CSS/notifications.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
@@ -40,21 +40,6 @@
             <a href="register.html" class="owner-btn">
                 List a Property
             </a>
-        </div>
-
-        <div class="leasehub-notification-panel leasehub-header-notifications" data-notifications-panel>
-            <button class="notification-toggle" type="button" data-notifications-toggle aria-label="Open notifications" aria-expanded="false">
-                <i class="bx bx-bell" aria-hidden="true"></i>
-                <span class="notification-badge" data-notifications-badge hidden>0</span>
-            </button>
-
-            <div class="leasehub-notification-panel__dropdown">
-                <div class="leasehub-notification-panel__header">
-                    <span>Notifications</span>
-                    <button type="button" class="notification-close" data-notifications-close aria-label="Close notifications">&times;</button>
-                </div>
-                <div class="leasehub-notification-list" data-notifications-list aria-live="polite"></div>
-            </div>
         </div>
 
         <button class="menu-btn" id="menuBtn" type="button" aria-label="Open navigation" aria-expanded="false"><i class="bx bx-menu" aria-hidden="true"></i></button>
@@ -695,10 +680,6 @@
 
     <script src="JS/data.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="JS/supabase-client.js"></script>
-    <script src="JS/api-client.js"></script>
-    <script src="JS/notifications-ui.js"></script>
     <script src="JS/app.js"></script>
 
     <script src="JS/cms-public.js"></script>

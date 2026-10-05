@@ -156,13 +156,8 @@
       alert("Store appearance saved on this device.");
     });
 
-    document.querySelectorAll("[data-owner-plan]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const notice = document.getElementById("ownerPlanNotice");
-        if (!notice) return;
-        notice.textContent = `${button.dataset.ownerPlan} checkout is not connected yet. Your current plan has not changed.`;
-        notice.hidden = false;
-      });
+    document.getElementById("ownerManagePlanBtn")?.addEventListener("click", () => {
+      alert("Plan management is demo-only for now. Free plan is active.");
     });
 
     document.getElementById("ownerRefreshBtn")?.addEventListener("click", () => {
@@ -183,11 +178,76 @@
     }
   }
 
+
+  function getOwnerVerificationStatus() {
+    try {
+      const raw = localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("leaseHubCurrentUser") || localStorage.getItem("currentUser");
+      const user = raw ? JSON.parse(raw) : null;
+      if (!user) return "unverified";
+      return String(user.verificationStatus || user.ownerVerificationStatus || "unverified").toLowerCase();
+    } catch (e) {
+      return "unverified";
+    }
+  }
+
+  function setupVerificationPrompt() {
+    const status = getOwnerVerificationStatus();
+    const existing = document.getElementById("ownerVerifyBanner");
+    if (status === "verified") {
+      if (existing) existing.remove();
+      document.body.classList.remove("owner-needs-verify");
+      return;
+    }
+
+    document.body.classList.add("owner-needs-verify");
+
+    let title = "Verify your owner account";
+    let text = "You must be verified by LeaseHub before your listings can go Live on the marketplace. Complete verification to build trust with tenants.";
+    let cta = "Get verified";
+    if (status === "pending") {
+      title = "Verification under review";
+      text = "We received your details. Your listings stay Pending until LeaseHub approves your account. You will be able to go Live after approval.";
+      cta = "View verification status";
+    }
+
+    const html = `
+      <div class="owner-verify-banner" id="ownerVerifyBanner" role="status">
+        <div class="owner-verify-banner-inner">
+          <div class="owner-verify-banner-icon"><i class="bx bx-badge-check"></i></div>
+          <div class="owner-verify-banner-copy">
+            <strong>${title}</strong>
+            <p>${text}</p>
+          </div>
+          <a href="owner-verification.html" class="primary-btn owner-verify-cta">${cta}</a>
+          <button type="button" class="owner-verify-dismiss" id="ownerVerifyDismiss" aria-label="Dismiss for now">×</button>
+        </div>
+      </div>`;
+
+    if (existing) {
+      existing.outerHTML = html;
+    } else {
+      const main = document.querySelector(".owner-content") || document.querySelector(".owner-main");
+      if (main) main.insertAdjacentHTML("afterbegin", html);
+      else document.body.insertAdjacentHTML("afterbegin", html);
+    }
+
+    document.getElementById("ownerVerifyDismiss")?.addEventListener("click", () => {
+      document.getElementById("ownerVerifyBanner")?.classList.add("is-dismissed");
+      try { sessionStorage.setItem("leasehub_verify_banner_dismissed", "1"); } catch (e) {}
+    });
+    try {
+      if (sessionStorage.getItem("leasehub_verify_banner_dismissed") === "1") {
+        document.getElementById("ownerVerifyBanner")?.classList.add("is-dismissed");
+      }
+    } catch (e) {}
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     if (!document.body.classList.contains("owner-lounge-body")) return;
     setupSidebar();
     setupTips();
     setupStore();
+    setupVerificationPrompt();
     // Wait a tick for app.js owner dashboard render
     window.setTimeout(syncCountsToStorefront, 200);
     window.setTimeout(syncCountsToStorefront, 800);

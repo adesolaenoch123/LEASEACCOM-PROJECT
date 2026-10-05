@@ -2,16 +2,12 @@
    LEASEHUB - PROPERTY DETAILS
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
 
     const detailsContainer =
         document.getElementById("propertyDetails");
 
     if (!detailsContainer) return;
-
-    if (window.loadLeaseHubPropertyCatalog) {
-        await window.loadLeaseHubPropertyCatalog();
-    }
 
 
     function isPublicProperty(listing) {
@@ -30,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         new URLSearchParams(window.location.search);
 
     const propertyId =
-        String(urlParams.get("id") || "");
+        Number(urlParams.get("id"));
 
 
     /* =====================================================
@@ -60,7 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const property =
         properties.find(
-            item => String(item.id) === propertyId
+            item => Number(item.id) === propertyId
         );
 
 
@@ -136,7 +132,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const isSaved =
         savedProperties
-            .map(String)
+            .map(Number)
             .includes(propertyId);
 
 
@@ -221,7 +217,7 @@ document.addEventListener("DOMContentLoaded", async () => {
        ===================================================== */
 
     function isSameProperty(item, compareTo) {
-        return String(item.id) === String(compareTo.id);
+        return Number(item.id) === Number(compareTo.id);
     }
 
     const similarProperties =
@@ -237,14 +233,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             )
             .slice(0, 3);
 
-    const similarIds = similarProperties.map(item => String(item.id));
+    const similarIds = similarProperties.map(item =>
+        Number(item.id)
+    );
 
     const recommendedProperties =
         properties
             .filter(item =>
                 isPublicProperty(item) &&
                 !isSameProperty(item, property) &&
-                !similarIds.includes(String(item.id)) &&
+                !similarIds.includes(Number(item.id)) &&
                 (
                     item.city === property.city ||
                     item.state === property.state
@@ -252,15 +250,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             )
             .slice(0, 3);
 
-    const recommendedIds = recommendedProperties.map(item => String(item.id));
+    const recommendedIds = recommendedProperties.map(item =>
+        Number(item.id)
+    );
 
     const recentProperties =
         typeof getRecentlyViewedProperties === "function"
             ? getRecentlyViewedProperties()
                 .filter(item =>
                     !isSameProperty(item, property) &&
-                    !similarIds.includes(String(item.id)) &&
-                    !recommendedIds.includes(String(item.id))
+                    !similarIds.includes(Number(item.id)) &&
+                    !recommendedIds.includes(Number(item.id))
                 )
                 .slice(0, 3)
             : [];
@@ -1291,10 +1291,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                         viewingTime,
 
                     status:
-                        "pending",
+                        "requested",
 
                     createdAt:
-                        new Date().toISOString()
+                        new Date().toISOString(),
+
+                    updatedAt:
+                        new Date().toISOString(),
+
+                    statusHistory: [{ status: "requested", at: new Date().toISOString(), by: "tenant" }]
 
                 };
 
@@ -1497,7 +1502,7 @@ LeaseHub will process your request.`
 
         rentalApplicationForm.addEventListener(
             "submit",
-            async event => {
+            event => {
 
                 event.preventDefault();
 
@@ -1597,8 +1602,8 @@ LeaseHub will process your request.`
                 const alreadyApplied =
                     applications.some(
                         application =>
-                            String(application.propertyId) ===
-                                String(property.id) &&
+                            Number(application.propertyId) ===
+                                Number(property.id) &&
                             String(application.applicantEmail || "")
                                 .toLowerCase() ===
                                 applicantEmail.toLowerCase() &&
@@ -1617,32 +1622,6 @@ LeaseHub will process your request.`
                     return;
                 }
 
-                const submitButton = rentalApplicationForm.querySelector('[type="submit"]');
-                if (submitButton) submitButton.disabled = true;
-
-                let backendApplication;
-                try {
-                    const response = await window.LeaseHubApi.request("/applications", {
-                        method: "POST",
-                        body: {
-                            property_id: String(property.id),
-                            applicant_name: applicantName,
-                            applicant_phone: applicantPhone,
-                            move_in_date: moveInDate,
-                            message: applicationMessage || null
-                        }
-                    });
-                    backendApplication = response.application;
-                } catch (error) {
-                    if (submitButton) submitButton.disabled = false;
-                    if (typeof leaseHubToast === "function") {
-                        leaseHubToast(error.message || "Unable to submit your application.");
-                    } else {
-                        alert(error.message || "Unable to submit your application.");
-                    }
-                    return;
-                }
-
 
                 /* =====================================
                    CREATE APPLICATION
@@ -1651,7 +1630,7 @@ LeaseHub will process your request.`
                 const rentalApplication = {
 
                     id:
-                        backendApplication.id,
+                        Date.now(),
 
                     propertyId:
                         property.id,
@@ -1674,12 +1653,6 @@ LeaseHub will process your request.`
                         property.period ||
                         "year",
 
-                    tenantId:
-                        currentUser.id,
-
-                    ownerId:
-                        backendApplication.owner_id,
-
                     ownerName:
                         property.ownerName ||
                         "Property Owner",
@@ -1700,10 +1673,10 @@ LeaseHub will process your request.`
                         applicationMessage,
 
                     status:
-                        backendApplication.status || "submitted",
+                        "requested",
 
                     createdAt:
-                        backendApplication.created_at || new Date().toISOString()
+                        new Date().toISOString()
 
                 };
 
@@ -1785,7 +1758,6 @@ LeaseHub will process your request.`
                 rentalApplicationForm.reset();
                 applicationModal.classList.remove("active");
                 document.body.classList.remove("modal-open");
-                if (submitButton) submitButton.disabled = false;
 
             }
         );

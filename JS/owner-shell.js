@@ -65,7 +65,7 @@
     ${item('add-property.html', 'add', 'bx-plus-circle', 'Add property')}
     ${item('owner-dashboard.html#ownerViewings', 'viewings', 'bx-calendar', 'Viewings')}
     ${item('owner-dashboard.html#ownerApplications', 'applications', 'bx-file', 'Applications')}
-    ${item('owner-messages.html', 'messages', 'bx-message-rounded', 'Messages')}
+    ${item('owner-messages.html', 'messages', 'bx-message-dots', 'Messages')}
     ${item('owner-dashboard.html#ownerStore', 'store', 'bx-store', 'My Store')}
     ${item('owner-storefront.html', 'storefront', 'bx-store-alt', 'Public storefront')}
     ${item('owner-payments.html', 'payments', 'bx-wallet', 'Payments')}
@@ -76,6 +76,7 @@
       <span class="owner-avatar">${initial}</span>
       <div><strong>${name}</strong><small>Property owner</small></div>
     </div>
+    <button type="button" class="owner-exit-link" id="ownerRefreshSidebar" onclick="location.reload()"><i class="bx bx-refresh"></i> Refresh</button>
     <a href="properties.html" class="owner-exit-link"><i class="bx bx-log-out"></i> Exit to Marketplace</a>
   </div>
 </aside>
@@ -87,7 +88,10 @@
     return `
 <header class="owner-topbar">
   <button type="button" class="owner-menu-toggle" id="ownerMenuToggle" aria-label="Open menu"><i class="bx bx-menu"></i></button>
-  <div class="owner-topbar-title">
+  <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseHub">
+    <span class="lh-lease">Lease</span><span class="lh-hub">Hub</span>
+  </a>
+  <div class="owner-topbar-title owner-topbar-title--desktop">
     <span class="owner-eyebrow">OWNER LOUNGE</span>
     <h1>${title}</h1>
   </div>
@@ -105,7 +109,8 @@
         <div id="ownerNotifList" class="owner-notif-list"></div>
       </div>
     </div>
-    <a href="properties.html" class="owner-ghost-btn">Exit to Marketplace</a>
+    <button type="button" class="owner-ghost-btn owner-desktop-only" id="ownerRefreshBtn"><i class="bx bx-refresh"></i> Refresh</button>
+    <a href="properties.html" class="owner-ghost-btn owner-desktop-only">Exit to Marketplace</a>
   </div>
 </header>`;
   }

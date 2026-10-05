@@ -184,13 +184,12 @@ function loadFeatured() {
                 button.addEventListener("click", () => {
 
                     const id =
-                        normalizeLeaseHubPropertyId(button.dataset.id);
+                        Number(button.dataset.id);
 
                     let saved =
                         JSON.parse(
                             localStorage.getItem("savedProperties")
                         ) || [];
-                    saved = saved.map(normalizeLeaseHubPropertyId);
 
                     if (saved.includes(id)) {
 
@@ -330,6 +329,45 @@ function loadFeatured() {
         assistantMessages.scrollTop = assistantMessages.scrollHeight;
     }
 
+
+    function leaseHubPlaybookReply(query) {
+        const q = String(query || "").toLowerCase();
+        const user = (() => { try { return JSON.parse(localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("leaseHubCurrentUser") || "null"); } catch { return null; } })();
+        const isOwner = user && String(user.accountType || "").toLowerCase() === "owner";
+        const vStatus = String(user?.verificationStatus || user?.ownerVerificationStatus || "unverified").toLowerCase();
+
+        if (/\b(scam|fraud|safe|safety|never pay)\b/.test(q)) {
+            return "Stay safe on LeaseHub:\n1) Prefer Verified owners and Live listings\n2) Use in-app chat and Request Viewing\n3) Never pay inspection fees or deposits to a random personal account\n4) Check Total cost on the property page (rent + service + caution)\n5) Report suspicious listings with Report this listing.";
+        }
+        if (/\b(verif|badge|kyc|nin|bvn)\b/.test(q)) {
+            if (isOwner) {
+                if (vStatus === "verified") return "Your owner account is Verified. You can publish listings (they still need Admin Approve → Live).";
+                if (vStatus === "pending") return "Your verification is Pending. You cannot publish until admin approves. Open Verification in the owner menu.";
+                return "Owners must verify before listing. Open Verification, submit your details, then wait for approval. Listing stays locked until status is Verified.";
+            }
+            return "Verified means LeaseHub reviewed the owner/listing path. On a property page open the Trust panel to see checks and total move-in cost. Prefer Verified + Live homes.";
+        }
+        if (/\b(viewing|inspect|schedule|visit)\b/.test(q)) {
+            return "How viewings work:\n1) Open a property → Request a Viewing\n2) Status starts as Requested\n3) Owner can Accept or Decline\n4) After the visit, owner can Mark completed\nYou and the owner see the same status timeline.";
+        }
+        if (/\b(apply|application|rent this)\b/.test(q)) {
+            return "How applications work:\n1) Open property → Apply to Rent\n2) Status: Submitted → Under review → Accepted/Rejected\n3) Track it on your tenant dashboard\nKeep chats in LeaseHub so there is a record.";
+        }
+        if (/\b(list|add property|publish|landlord)\b/.test(q) || (isOwner && /\b(how|help)\b/.test(q))) {
+            return "Owner listing path:\n1) Complete Verification (must be Verified)\n2) Add property with 8+ clear photos and a real description\n3) Submit → Pending review\n4) Admin Approve → Live on marketplace\nIncomplete or unverified listings stay off the public list.";
+        }
+        if (/\b(cost|caution|service charge|deposit|budget|how much)\b/.test(q)) {
+            return "Move-in cost on LeaseHub should include:\n• Rent for the period\n• Service charge (if any)\n• Caution / security deposit\n• Other listed fees\nOpen any property → Total cost to move in. Figures marked estimate should be confirmed before you pay.";
+        }
+        if (/\b(pay|payment|escrow|withdraw)\b/.test(q)) {
+            return "Payments: the Payments page is demo for now (Held → Released story). When live, tenants pay through LeaseHub protection and owners withdraw to a saved bank account. Never send rent to an unknown account outside the app.";
+        }
+        if (/\b(message|chat|contact)\b/.test(q)) {
+            return "Use LeaseHub Messages to contact owners/tenants. On mobile, open a chat then use Back to return to the conversation list. Keep first contact in-app.";
+        }
+        return null;
+    }
+
     function parseAssistantRequest(query) {
         const normalizedQuery = query.toLowerCase();
         const location = properties.find((property) =>
@@ -367,6 +405,11 @@ function loadFeatured() {
     }
 
     function findAssistantMatches(query) {
+        const playbook = leaseHubPlaybookReply(query);
+        if (playbook) {
+            addAssistantMessage(playbook, "ai");
+            return [];
+        }
         const request = parseAssistantRequest(query);
         const matches = properties.filter((property) => (
             isLeaseHubPropertyPublic(property) &&
@@ -614,25 +657,16 @@ function loadFeatured() {
 
     /* ================= INITIALIZE ================= */
 
-    if (window.loadLeaseHubPropertyCatalog) {
-        window.loadLeaseHubPropertyCatalog().then(loadFeatured);
-    } else {
-        loadFeatured();
-    }
+    loadFeatured();
 
 });
 
 function getComparedProperties() {
-    return (JSON.parse(localStorage.getItem("compareProperties")) || []).map(normalizeLeaseHubPropertyId);
-}
-
-function normalizeLeaseHubPropertyId(value) {
-    const id = String(value ?? "").trim();
-    return /^\d+$/.test(id) ? Number(id) : id;
+    return JSON.parse(localStorage.getItem("compareProperties")) || [];
 }
 
 function saveComparedProperties(ids) {
-    localStorage.setItem("compareProperties", JSON.stringify(ids.map(normalizeLeaseHubPropertyId).slice(0, 3)));
+    localStorage.setItem("compareProperties", JSON.stringify(ids.slice(0, 3)));
 }
 
 function updateCompareTray() {
@@ -644,7 +678,7 @@ function updateCompareTray() {
     if (!tray || !selectedContainer || !count || !compareButton) return;
 
     const selected = getComparedProperties()
-        .map(id => properties.find(property => normalizeLeaseHubPropertyId(property.id) === id))
+        .map(id => properties.find(property => property.id === id))
         .filter(Boolean);
 
     tray.classList.toggle("has-selections", selected.length > 0);
@@ -659,7 +693,7 @@ function openComparison() {
     const modal = document.getElementById("compareModal");
     const table = document.getElementById("compareTable");
     const selected = getComparedProperties()
-        .map(id => properties.find(property => normalizeLeaseHubPropertyId(property.id) === id))
+        .map(id => properties.find(property => property.id === id))
         .filter(Boolean);
 
     if (!modal || !table || selected.length < 2) return;
@@ -1550,92 +1584,288 @@ const registerForm =
     document.getElementById("registerForm");
 
 if (registerForm) {
-    registerForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const rawAccountType = document.getElementById("accountType").value;
-        if (!rawAccountType) {
-            showAuthStatus("Please select your account type.");
-            return;
-        }
 
-        const accountType = normalizeAccountType(rawAccountType);
-        const name = document.getElementById("registerName").value.trim();
-        const email = document.getElementById("registerEmail").value.trim().toLowerCase();
-        const phone = document.getElementById("registerPhone").value.trim();
-        const password = document.getElementById("registerPassword").value;
+    registerForm.addEventListener(
+        "submit",
+        async function(event) {
 
-        try {
-            const { data, error } = await window.LeaseHubAuth.signUp({
-                email,
-                password,
-                name,
-                phone,
-                accountType
-            });
-            if (error) throw error;
-            if (!data.session) {
-                showAuthStatus("Account created. Check your email to confirm it, then log in.", "success");
+            event.preventDefault();
+
+            const accountType =
+                document.getElementById(
+                    "accountType"
+                ).value;
+
+            const name =
+                document.getElementById(
+                    "registerName"
+                ).value.trim();
+
+            const email =
+                document.getElementById(
+                    "registerEmail"
+                ).value.trim().toLowerCase();
+
+            const phone =
+                document.getElementById(
+                    "registerPhone"
+                ).value.trim();
+
+            const password =
+                document.getElementById(
+                    "registerPassword"
+                ).value;
+
+            if (!accountType) {
+                showAuthStatus("Please select your account type.");
                 return;
             }
-            const user = data.user;
-            const currentUser = {
-                id: user.id,
-                accountType,
+
+            if (!name || !email || !password) {
+                showAuthStatus("Please fill in name, email and password.");
+                return;
+            }
+
+            if (password.length < 6) {
+                showAuthStatus("Password must be at least 6 characters.");
+                return;
+            }
+
+            const normalizedType = normalizeAccountType(accountType);
+            showAuthStatus("Creating your account...", "success");
+
+            /* ---- Phase 2: Supabase Auth first ---- */
+            if (window.LeaseHubAuth && typeof window.LeaseHubAuth.signUp === "function") {
+                try {
+                    const { data, error } = await window.LeaseHubAuth.signUp({
+                        email,
+                        password,
+                        name,
+                        phone,
+                        accountType: normalizedType
+                    });
+
+                    if (error) {
+                        showAuthStatus(error.message || "Could not create account on server.");
+                        /* fall through to local demo account so you can still test UI */
+                    } else if (data && data.user) {
+                        const newUser = {
+                            id: data.user.id,
+                            accountType: normalizedType,
+                            name,
+                            email,
+                            phone,
+                            savedProperties: [],
+                            viewingRequests: [],
+                            applications: [],
+                            properties: [],
+                            verificationStatus: normalizedType === "owner" ? "unverified" : "n/a",
+                            ownerVerificationStatus: normalizedType === "owner" ? "unverified" : "n/a",
+                            _source: "supabase"
+                        };
+                        saveCurrentUser(newUser);
+                        showAuthStatus("Account created! Redirecting...", "success");
+                        setTimeout(function () { redirectAfterAuth(newUser); }, 200);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn("Supabase signUp:", err);
+                    showAuthStatus("Server signup failed. Saving account on this device only...");
+                }
+            }
+
+            /* ---- Fallback: localStorage (Phase 1) ---- */
+            let existingUsers = [];
+            try {
+                const storedUsers = JSON.parse(
+                    localStorage.getItem("leasehubUsers")
+                );
+                existingUsers = Array.isArray(storedUsers)
+                    ? storedUsers
+                    : [];
+            } catch (error) {
+                localStorage.removeItem("leasehubUsers");
+            }
+
+            const alreadyExists = existingUsers.some(
+                user => user.email === email
+            );
+
+            if (alreadyExists) {
+                showAuthStatus("An account with this email already exists on this device.");
+                return;
+            }
+
+            const newUser = {
+                id: Date.now(),
+                accountType: normalizedType,
                 name,
                 email,
                 phone,
+                password,
                 savedProperties: [],
                 viewingRequests: [],
                 applications: [],
                 properties: [],
-                verificationStatus: accountType === "owner" ? "unverified" : "n/a",
-                ownerVerificationStatus: accountType === "owner" ? "unverified" : "n/a"
+                verificationStatus: normalizedType === "owner" ? "unverified" : "n/a",
+                ownerVerificationStatus: normalizedType === "owner" ? "unverified" : "n/a",
+                _source: "local"
             };
-            localStorage.setItem("leasehub_session_token", data.session.access_token);
-            saveCurrentUser(currentUser);
-            redirectAfterAuth(currentUser);
-        } catch (error) {
-            showAuthStatus(error.message || "Unable to create your account. Please try again.");
+
+            existingUsers.push(newUser);
+            localStorage.setItem(
+                "leasehubUsers",
+                JSON.stringify(existingUsers)
+            );
+
+            saveCurrentUser(newUser);
+            showAuthStatus("Account saved on this device. Redirecting...", "success");
+            setTimeout(function () { redirectAfterAuth(newUser); }, 150);
         }
-    });
+    );
+
 }
 
 /* ================= LOGIN ================= */
 
-const loginForm = document.getElementById("loginForm");
+const loginForm =
+    document.getElementById("loginForm");
 
 if (loginForm) {
-    loginForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const email = document.getElementById("loginEmail").value.trim().toLowerCase();
-        const password = document.getElementById("loginPassword").value;
 
-        try {
-            const { data, error } = await window.LeaseHubAuth.signIn(email, password);
-            if (error) throw error;
-            const user = data.user;
-            const metadata = user.user_metadata || {};
-            const accountType = normalizeAccountType(metadata.account_type);
-            const currentUser = {
-                id: user.id,
-                accountType,
-                name: metadata.full_name || metadata.name || email.split("@")[0],
-                email,
-                phone: metadata.phone || "",
-                savedProperties: [],
-                viewingRequests: [],
-                applications: [],
-                properties: [],
-                verificationStatus: accountType === "owner" ? "unverified" : "n/a",
-                ownerVerificationStatus: accountType === "owner" ? "unverified" : "n/a"
-            };
-            localStorage.setItem("leasehub_session_token", data.session.access_token);
-            saveCurrentUser(currentUser);
-            redirectAfterAuth(currentUser);
-        } catch (error) {
-            showAuthStatus(error.message || "Email or password is incorrect.");
+    loginForm.addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            const email =
+                document.getElementById(
+                    "loginEmail"
+                ).value.trim().toLowerCase();
+
+            const password =
+                document.getElementById(
+                    "loginPassword"
+                ).value;
+
+            if (!email || !password) {
+                showAuthStatus("Enter email and password.");
+                return;
+            }
+
+            showAuthStatus("Signing in...", "success");
+
+            /* ---- Phase 2: Supabase Auth first ---- */
+            if (window.LeaseHubAuth && typeof window.LeaseHubAuth.signIn === "function") {
+                try {
+                    const { data, error } = await window.LeaseHubAuth.signIn(email, password);
+
+                    if (!error && data && data.user) {
+                        let profile = null;
+                        try {
+                            if (window.LeaseHubData && window.LeaseHubData.getProfile) {
+                                profile = await window.LeaseHubData.getProfile(data.user.id);
+                            } else if (window.leasehubSupabase) {
+                                const res = await window.leasehubSupabase
+                                    .from("profiles")
+                                    .select("*")
+                                    .eq("id", data.user.id)
+                                    .maybeSingle();
+                                profile = res.data;
+                            }
+                        } catch (e) {}
+
+                        const accountType = normalizeAccountType(
+                            (profile && profile.account_type) ||
+                            data.user.user_metadata?.account_type ||
+                            "tenant"
+                        );
+                        const user = {
+                            id: data.user.id,
+                            email: data.user.email,
+                            name:
+                                (profile && profile.full_name) ||
+                                data.user.user_metadata?.full_name ||
+                                email,
+                            phone:
+                                (profile && profile.phone) ||
+                                data.user.user_metadata?.phone ||
+                                "",
+                            accountType,
+                            verificationStatus:
+                                (profile && profile.verification_status) ||
+                                (accountType === "owner" ? "unverified" : "n/a"),
+                            ownerVerificationStatus:
+                                (profile && profile.verification_status) ||
+                                (accountType === "owner" ? "unverified" : "n/a"),
+                            savedProperties: [],
+                            viewingRequests: [],
+                            applications: [],
+                            properties: [],
+                            _source: "supabase"
+                        };
+                        saveCurrentUser(user);
+                        showAuthStatus("Login successful! Redirecting...", "success");
+                        setTimeout(function () { redirectAfterAuth(user); }, 150);
+                        return;
+                    }
+
+                    if (error) {
+                        console.warn("Supabase signIn:", error.message);
+                        /* fall through to local */
+                    }
+                } catch (err) {
+                    console.warn("Supabase signIn exception:", err);
+                }
+            }
+
+            /* ---- Fallback: localStorage ---- */
+            let users = [];
+            try {
+                const storedUsers = JSON.parse(
+                    localStorage.getItem("leasehubUsers")
+                );
+                users = Array.isArray(storedUsers)
+                    ? storedUsers
+                    : [];
+            } catch (error) {
+                showAuthStatus("Your saved account data could not be read. Please register again.");
+                return;
+            }
+
+            const user =
+                users.find(account =>
+                    String(account.email || "")
+                        .trim()
+                        .toLowerCase() === email &&
+                    String(account.password || "") === password
+                );
+
+            if (!user) {
+                showAuthStatus(
+                    users.length === 0
+                        ? "No account found. Register first, or check email confirmation in Supabase."
+                        : "Incorrect email or password."
+                );
+                return;
+            }
+
+            user.accountType = normalizeAccountType(user.accountType);
+            try {
+                const idx = users.findIndex(u => Number(u.id) === Number(user.id) || String(u.email).toLowerCase() === email);
+                if (idx >= 0) {
+                    users[idx] = { ...users[idx], accountType: user.accountType };
+                    localStorage.setItem("leasehubUsers", JSON.stringify(users));
+                }
+            } catch (e) {}
+
+            saveCurrentUser(user);
+            showAuthStatus("Login successful! Redirecting...", "success");
+            setTimeout(function () { redirectAfterAuth(user); }, 150);
         }
-    });
+    );
+
 }
 
 /* ================= TENANT DASHBOARD ================= */
@@ -1915,19 +2145,26 @@ if (ownerPropertiesContainer) {
                 ownerListings
                     .map(property => {
                         const verificationStatus = getLeaseHubVerificationStatus(property);
-                        const listingSt = (typeof getListingStatus === "function")
+                        let listingSt = (typeof getListingStatus === "function")
                             ? getListingStatus(property)
                             : String(property.listingStatus || verificationStatus || "pending").toLowerCase();
-                        const statusClass = (listingSt === "live" || verificationStatus === "approved")
+                        /* Unverified owners cannot have Live listings on their dashboard */
+                        if (typeof ownerIsVerified !== "undefined" && !ownerIsVerified) {
+                            listingSt = "pending";
+                        }
+                        const statusClass = (listingSt === "live" || verificationStatus === "approved") && (typeof ownerIsVerified === "undefined" || ownerIsVerified)
                             ? "status-live"
                             : (listingSt === "rejected" || verificationStatus === "rejected")
                                 ? "status-rejected"
                                 : "status-pending";
-                        const statusText = (listingSt === "live" || verificationStatus === "approved")
+                        let statusText = (listingSt === "live" || verificationStatus === "approved") && (typeof ownerIsVerified === "undefined" || ownerIsVerified)
                             ? "🟢 Live"
                             : (listingSt === "rejected" || verificationStatus === "rejected")
                                 ? "⛔ Rejected"
-                                : "⏳ Pending review";
+                                : "⏳ Pending";
+                        if (typeof ownerIsVerified !== "undefined" && !ownerIsVerified) {
+                            statusText = "⏳ Pending — verify account";
+                        }
 
                         return `
 
@@ -3708,7 +3945,7 @@ function getSavedProperties() {
                 localStorage.getItem("leasehubCurrentUser") || "null"
             );
             const migrated = Array.isArray(currentUser?.savedProperties)
-                ? [...new Set(currentUser.savedProperties.map(normalizeLeaseHubPropertyId).filter(Boolean))]
+                ? [...new Set(currentUser.savedProperties.map(Number).filter(Number.isFinite))]
                 : [];
 
             if (migrated.length > 0) {
@@ -3723,14 +3960,16 @@ function getSavedProperties() {
 
     try {
         const saved = JSON.parse(storedValue || "[]");
-        return Array.isArray(saved) ? saved.map(normalizeLeaseHubPropertyId).filter(Boolean) : [];
+        return Array.isArray(saved) ? saved : [];
     } catch (error) {
         return [];
     }
 }
 
 function saveSavedProperties(saved) {
-    const normalized = [...new Set(saved.map(normalizeLeaseHubPropertyId).filter(Boolean))];
+    const normalized = [...new Set(
+        saved.map(Number).filter(Number.isFinite)
+    )];
 
     localStorage.setItem("savedProperties", JSON.stringify(normalized));
 
@@ -3850,9 +4089,8 @@ function renderRecentlyViewed() {
    ========================================================= */
 
 function createPropertyCard(property) {
-    const propertyId = String(property.id);
     const saved = typeof getSavedProperties === "function"
-        ? getSavedProperties().map(String).includes(propertyId)
+        ? getSavedProperties().map(Number).includes(Number(property.id))
         : false;
     const verified = typeof isLeaseHubPropertyVerified === "function"
         ? isLeaseHubPropertyVerified(property)
@@ -3878,8 +4116,8 @@ function createPropertyCard(property) {
         ? `<span>${icon("bx-area")}${esc(property.size)}</span>` : "";
 
     return `
-        <article class="property-card leasehub-enhanced-card" data-property-id="${esc(propertyId)}"
-            onclick='openProperty(${JSON.stringify(propertyId)})'>
+        <article class="property-card leasehub-enhanced-card" data-property-id="${Number(property.id)}"
+            onclick="openProperty(${Number(property.id)})">
             <div class="property-image">
                 <img src="${esc(image)}" alt="${title}" loading="lazy">
                 <div class="badge ${verified ? "" : "pending-badge"}">
@@ -3887,13 +4125,13 @@ function createPropertyCard(property) {
                     ${verified ? "Verified" : "Pending Verification"}
                 </div>
                 <button type="button" class="save-btn ${saved ? "saved" : ""}"
-                    data-id="${esc(propertyId)}"
+                    data-id="${Number(property.id)}"
                     aria-label="${saved ? "Remove saved property" : "Save property"}"
                     onclick="event.stopPropagation()">
                     ${icon("bx-heart")}
                 </button>
                 <button type="button" class="compare-card-btn"
-                    data-compare-id="${esc(propertyId)}"
+                    data-compare-id="${Number(property.id)}"
                     aria-label="Add property to comparison"
                     onclick="event.stopPropagation()">
                     ${icon("bx-git-compare")} Compare
@@ -3906,7 +4144,7 @@ function createPropertyCard(property) {
                 <div class="property-price">₦${price} <span>/ ${period}</span></div>
                 <div class="property-meta">${beds}${baths}${size}</div>
                 <button type="button" class="view-property-btn"
-                    onclick='event.stopPropagation(); openProperty(${JSON.stringify(propertyId)});'>
+                    onclick="event.stopPropagation(); openProperty(${Number(property.id)});">
                     View Property ${icon("bx-arrow-right")}
                 </button>
             </div>
@@ -3927,12 +4165,12 @@ function activateSaveButtons() {
 
             event.stopPropagation();
 
-            const propertyId = normalizeLeaseHubPropertyId(this.dataset.id);
+            const propertyId = Number(this.dataset.id);
 
             let saved = getSavedProperties();
 
             const index = saved
-                .map(normalizeLeaseHubPropertyId)
+                .map(Number)
                 .indexOf(propertyId);
 
             if (index === -1) {
@@ -3959,7 +4197,7 @@ function activateSaveButtons() {
         button.addEventListener("click", event => {
             event.stopPropagation();
 
-            const id = normalizeLeaseHubPropertyId(button.dataset.compareId);
+            const id = Number(button.dataset.compareId);
             const selected = getComparedProperties();
 
             if (selected.includes(id)) {
@@ -3982,7 +4220,7 @@ function activateSaveButtons() {
 
 function openProperty(id) {
 
-    const propertyId = String(id);
+    const propertyId = Number(id);
 
     if (!Array.isArray(properties)) {
         console.error("Properties data was not loaded.");
@@ -3990,7 +4228,7 @@ function openProperty(id) {
     }
 
     const property = properties.find(
-        item => String(item.id) === propertyId
+        item => Number(item.id) === propertyId
     );
 
     if (!property) {
@@ -4004,11 +4242,9 @@ function openProperty(id) {
     );
 
     // Track this property in the Recently Viewed list.
-    if (/^\d+$/.test(propertyId) && typeof addRecentlyViewed === "function") {
-        addRecentlyViewed(Number(propertyId));
-    }
+    addRecentlyViewed(propertyId);
 
-    window.location.href = `property-details.html?id=${encodeURIComponent(propertyId)}`;
+    window.location.href = `property-details.html?id=${propertyId}`;
 }
 
 
@@ -4107,11 +4343,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    if (window.loadLeaseHubPropertyCatalog) {
-        window.loadLeaseHubPropertyCatalog().then(() => loadMarketplaceProperties(properties));
-    } else {
-        loadMarketplaceProperties(properties);
-    }
+    loadMarketplaceProperties(properties);
 
 });
 
@@ -4685,19 +4917,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 card.className = "viewing-request-card";
 
 
-                const status =
-                    request.status || "pending";
-
+                const status = window.LeaseHubStatus
+                    ? window.LeaseHubStatus.normalizeViewingStatus(request.status)
+                    : (request.status || "pending");
 
                 let statusClass = "pending";
-
-                if (status === "accepted") {
-                    statusClass = "accepted";
-                }
-
-                if (status === "declined") {
-                    statusClass = "declined";
-                }
+                if (status === "accepted" || status === "completed") statusClass = "accepted";
+                if (status === "declined" || status === "cancelled") statusClass = "declined";
+                const statusLabel = window.LeaseHubStatus
+                    ? window.LeaseHubStatus.viewingLabel(status)
+                    : status;
+                const timelineHtml = window.LeaseHubStatus
+                    ? window.LeaseHubStatus.timelineHtml("viewing", status)
+                    : "";
 
 
                 /*
@@ -4750,7 +4982,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             request-status
                             status-${statusClass}
                         ">
-                            ${status.toUpperCase()}
+                            ${statusLabel}
                         </span>
 
                     </div>
@@ -4824,7 +5056,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                     ${
-                        status === "pending"
+                        status === "requested" || status === "pending"
 
                         ? `
 
@@ -4848,22 +5080,43 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         `
 
+                        : status === "accepted"
+
+                        ? `
+
+                            <div class="viewing-request-actions">
+                                <button
+                                    class="accept-viewing-btn"
+                                    data-complete-viewing="1"
+                                    data-request-id="${request.id}"
+                                >
+                                    ✓ Mark completed
+                                </button>
+                            </div>
+                            <div class="viewing-request-result">
+                                ✓ Accepted — mark completed after the visit.
+                            </div>
+
+                        `
+
                         : `
 
                             <div class="viewing-request-result">
 
                                 ${
-                                    status === "accepted"
-
-                                    ? "✓ You accepted this viewing request."
-
-                                    : "✕ You declined this viewing request."
+                                    status === "completed"
+                                    ? "✓ Viewing completed."
+                                    : status === "declined"
+                                    ? "✕ You declined this viewing request."
+                                    : "Status updated."
                                 }
 
                             </div>
 
                         `
                     }
+
+                    ${timelineHtml}
 
                 `;
 
@@ -4945,6 +5198,51 @@ document.addEventListener("DOMContentLoaded", function () {
 
         });
 
+        var completeButtons =
+            ownerViewingContainer.querySelectorAll(
+                "[data-complete-viewing]"
+            );
+
+        completeButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                const requestId = Number(button.dataset.requestId);
+                updateViewingStatus(requestId, "completed");
+            });
+        });
+
+        var reviewAppButtons =
+            document.querySelectorAll("[data-app-status]");
+        reviewAppButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                const appId = button.getAttribute("data-app-id");
+                const next = button.getAttribute("data-app-status");
+                updateApplicationStatusShared(appId, next);
+            });
+        });
+
+    }
+
+    function updateApplicationStatusShared(appId, newStatus) {
+        try {
+            var apps = JSON.parse(localStorage.getItem("rentalApplications") || "[]") || [];
+            var app = apps.find(function (a) { return String(a.id) === String(appId); });
+            if (!app) return;
+            var normalized = newStatus;
+            if (window.LeaseHubStatus) {
+                normalized = window.LeaseHubStatus.normalizeApplicationStatus(newStatus);
+                window.LeaseHubStatus.pushHistory(app, normalized, "owner");
+            }
+            app.status = normalized;
+            app.updatedAt = new Date().toISOString();
+            localStorage.setItem("rentalApplications", JSON.stringify(apps));
+            if (typeof renderOwnerApplications === "function") {
+                renderOwnerApplications();
+            } else {
+                window.location.reload();
+            }
+        } catch (e) {
+            console.error(e);
+        }
     }
 
 
@@ -4981,7 +5279,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        request.status = newStatus;
+        var normalized = newStatus;
+        if (window.LeaseHubStatus) {
+            normalized = window.LeaseHubStatus.normalizeViewingStatus(newStatus);
+            window.LeaseHubStatus.pushHistory(request, normalized, "owner");
+        }
+
+        request.status = normalized;
 
         request.updatedAt =
             new Date().toISOString();
@@ -5238,7 +5542,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ownerProperties.map(property => String(property.id));
 
 
-        const ownerApplications =
+        let ownerApplications =
             applications.filter(application => {
 
                 return ownerPropertyIds.includes(
@@ -5246,6 +5550,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
             });
+
+        /* Demo fallback: show all applications if owner has no matched property ids */
+        if (ownerApplications.length === 0 && applications.length > 0) {
+            ownerApplications = applications.slice();
+        }
 
 
         /* Update application count */
@@ -5303,193 +5612,92 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function createApplicationCard(application) {
 
-        const status =
-            application.status || "pending";
+        const S = window.LeaseHubStatus;
+        const status = S
+            ? S.normalizeApplicationStatus(application.status)
+            : String(application.status || "submitted").toLowerCase();
 
-
+        const statusText = S ? S.applicationLabel(status) : status;
         let statusClass = "pending-badge";
-        let statusText = "Pending";
+        if (status === "accepted") statusClass = "verified-badge";
+        if (status === "rejected" || status === "withdrawn") statusClass = "rejected-badge";
+        if (status === "under_review") statusClass = "review-badge";
 
-
-        if (status === "accepted") {
-
-            statusClass = "verified-badge";
-            statusText = "Accepted";
-
-        }
-
-
-        if (status === "rejected") {
-
-            statusClass = "rejected-badge";
-            statusText = "Rejected";
-
-        }
-
+        const timelineHtml = S ? S.timelineHtml("application", status) : "";
 
         const moveInDate =
             application.moveInDate
-                ? new Date(
-                    application.moveInDate
-                  ).toLocaleDateString(
-                    "en-NG",
-                    {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric"
-                    }
-                  )
+                ? new Date(application.moveInDate).toLocaleDateString("en-NG", {
+                    day: "numeric", month: "long", year: "numeric"
+                  })
                 : "Not specified";
 
-
         const submittedDate =
-            application.createdAt
-                ? new Date(
-                    application.createdAt
-                  ).toLocaleDateString(
-                    "en-NG",
-                    {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric"
-                    }
-                  )
+            application.createdAt || application.submittedAt
+                ? new Date(application.createdAt || application.submittedAt).toLocaleDateString("en-NG", {
+                    day: "numeric", month: "long", year: "numeric"
+                  })
                 : "Unknown";
 
+        const openActions = (status === "submitted" || status === "pending");
+        const reviewActions = (status === "under_review");
+
+        let actionsHtml = "";
+        if (openActions) {
+            actionsHtml = `
+                <div class="application-actions">
+                    <button type="button" class="secondary-btn application-review-btn" data-application-id="${application.id}">
+                        Mark under review
+                    </button>
+                    <button type="button" class="primary-btn application-accept-btn" data-application-id="${application.id}">
+                        Accept
+                    </button>
+                    <button type="button" class="secondary-btn application-reject-btn" data-application-id="${application.id}">
+                        Reject
+                    </button>
+                </div>`;
+        } else if (reviewActions) {
+            actionsHtml = `
+                <div class="application-actions">
+                    <button type="button" class="primary-btn application-accept-btn" data-application-id="${application.id}">
+                        Accept
+                    </button>
+                    <button type="button" class="secondary-btn application-reject-btn" data-application-id="${application.id}">
+                        Reject
+                    </button>
+                </div>`;
+        } else {
+            actionsHtml = `
+                <div class="application-status-message">
+                    ${status === "accepted"
+                        ? "✓ You accepted this rental application."
+                        : status === "rejected"
+                        ? "This rental application was rejected."
+                        : "Status updated."}
+                </div>`;
+        }
 
         return `
-
-            <article class="viewing-card application-card">
-
+            <article class="viewing-card application-card lh-status-card">
                 <div class="viewing-card-top">
-
                     <div>
-
-                        <span class="section-label">
-                            RENTAL APPLICATION
-                        </span>
-
-                        <h3>
-                            ${escapeApplicationText(
-                                application.propertyTitle ||
-                                "Property"
-                            )}
-                        </h3>
-
+                        <span class="section-label">RENTAL APPLICATION</span>
+                        <h3>${escapeApplicationText(application.propertyTitle || "Property")}</h3>
                     </div>
-
-                    <span class="${statusClass}">
-                        ${statusText}
-                    </span>
-
+                    <span class="${statusClass}">${statusText}</span>
                 </div>
-
-
-                <div class="application-details">
-
-                    <p>
-                        <strong>Applicant:</strong>
-                        ${escapeApplicationText(
-                            application.applicantName ||
-                            "Not provided"
-                        )}
-                    </p>
-
-
-                    <p>
-                        <strong>Email:</strong>
-                        ${escapeApplicationText(
-                            application.applicantEmail ||
-                            "Not provided"
-                        )}
-                    </p>
-
-
-                    <p>
-                        <strong>Phone:</strong>
-                        ${escapeApplicationText(
-                            application.applicantPhone ||
-                            "Not provided"
-                        )}
-                    </p>
-
-
-                    <p>
-                        <strong>Move-in date:</strong>
-                        ${moveInDate}
-                    </p>
-
-
-                    <p>
-                        <strong>Submitted:</strong>
-                        ${submittedDate}
-                    </p>
-
-
-                    ${
-                        application.message
-                            ? `
-                                <div class="application-message">
-
-                                    <strong>
-                                        Message from applicant
-                                    </strong>
-
-                                    <p>
-                                        ${escapeApplicationText(
-                                            application.message
-                                        )}
-                                    </p>
-
-                                </div>
-                              `
-                            : ""
-                    }
-
+                <div class="viewing-card-body">
+                    <p><strong>Applicant:</strong> ${escapeApplicationText(application.applicantName || application.name || "Tenant")}</p>
+                    <p><strong>Email:</strong> ${escapeApplicationText(application.applicantEmail || application.email || "—")}</p>
+                    <p><strong>Phone:</strong> ${escapeApplicationText(application.applicantPhone || application.phone || "—")}</p>
+                    <p><strong>Move-in:</strong> ${moveInDate}</p>
+                    <p><strong>Submitted:</strong> ${submittedDate}</p>
+                    ${application.message ? `<p><strong>Note:</strong> ${escapeApplicationText(application.message)}</p>` : ""}
                 </div>
-
-
-                ${
-                    status === "pending"
-                        ? `
-
-                            <div class="application-actions">
-
-                                <button
-                                    type="button"
-                                    class="primary-btn application-accept-btn"
-                                    data-application-id="${application.id}"
-                                >
-                                    Accept Application
-                                </button>
-
-
-                                <button
-                                    type="button"
-                                    class="secondary-btn application-reject-btn"
-                                    data-application-id="${application.id}"
-                                >
-                                    Reject
-                                </button>
-
-                            </div>
-
-                          `
-                        : `
-                            <div class="application-status-message">
-
-                                ${
-                                    status === "accepted"
-                                        ? "✓ You accepted this rental application."
-                                        : "This rental application was rejected."
-                                }
-
-                            </div>
-                          `
-                }
-
+                ${timelineHtml}
+                ${actionsHtml}
+                <p class="lh-status-hint">Tenant sees the same status on their dashboard.</p>
             </article>
-
         `;
 
     }
@@ -5545,6 +5753,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+        document.querySelectorAll(".application-review-btn").forEach(function (button) {
+            button.addEventListener("click", function () {
+                updateApplicationStatus(button.dataset.applicationId, "under_review");
+            });
+        });
+
+
     function updateApplicationStatus(
         applicationId,
         newStatus
@@ -5572,41 +5787,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        applications[
-            applicationIndex
-        ].status = newStatus;
+        var normalized = newStatus;
+        if (window.LeaseHubStatus) {
+            normalized = window.LeaseHubStatus.normalizeApplicationStatus(newStatus);
+            window.LeaseHubStatus.pushHistory(applications[applicationIndex], normalized, "owner");
+        }
 
-
-        applications[
-            applicationIndex
-        ].updatedAt =
-            new Date().toISOString();
-
+        applications[applicationIndex].status = normalized;
+        applications[applicationIndex].updatedAt = new Date().toISOString();
 
         localStorage.setItem(
             "rentalApplications",
             JSON.stringify(applications)
         );
 
-
         loadOwnerApplications();
-        if (newStatus === "accepted") {
 
-    window.location.href =
-        "rental-agreement.html?applicationId=" +
-        encodeURIComponent(
-            applications[applicationIndex].id
-        );
+        if (normalized === "accepted") {
+            window.location.href =
+                "rental-agreement.html?applicationId=" +
+                encodeURIComponent(applications[applicationIndex].id);
+            return;
+        }
 
-    return;
-}
-
-
-        alert(
-            newStatus === "accepted"
-                ? "Rental application accepted."
-                : "Rental application rejected."
-        );
+        var msg = "Application status updated.";
+        if (normalized === "under_review") msg = "Marked as Under review.";
+        if (normalized === "rejected") msg = "Rental application rejected.";
+        alert(msg);
 
     }
 

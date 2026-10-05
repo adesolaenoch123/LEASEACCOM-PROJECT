@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>try{document.documentElement.classList.add("lh-preload-lock")}catch(e){}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Owner Lounge — LeaseHub</title>
   <meta name="description" content="Manage LeaseHub property listings, viewing requests, rental applications and owner activity.">
   <link rel="stylesheet" href="CSS/style.css">
-  <link rel="stylesheet" href="CSS/notifications.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 <body class="owner-lounge-body" data-owner-page="dashboard">
@@ -31,7 +31,7 @@
       <a href="owner-dashboard.html#myProperties" class="owner-nav-item"><i class="bx bx-building-house"></i><span>Properties</span></a>
       <a href="owner-dashboard.html#ownerViewings" class="owner-nav-item"><i class="bx bx-calendar"></i><span>Viewings</span></a>
       <a href="owner-dashboard.html#ownerApplications" class="owner-nav-item"><i class="bx bx-file"></i><span>Applications</span></a>
-      <a href="owner-messages.html" class="owner-nav-item"><i class="bx bx-message-rounded"></i><span>Messages</span></a>
+      <a href="owner-messages.html" class="owner-nav-item"><i class="bx bx-message-dots"></i><span>Messages</span></a>
       <a href="owner-dashboard.html#ownerStore" class="owner-nav-item"><i class="bx bx-store"></i><span>My Store</span></a>
       <a href="owner-payments.html" class="owner-nav-item"><i class="bx bx-wallet"></i><span>Payments</span></a>
       <a href="owner-dashboard.html#ownerPlan" class="owner-nav-item"><i class="bx bx-diamond"></i><span>Plan</span></a>
@@ -45,6 +45,7 @@
           <small>Property owner</small>
         </div>
       </div>
+      <button type="button" class="owner-exit-link" id="ownerRefreshSidebar" onclick="location.reload()"><i class="bx bx-refresh"></i> Refresh</button>
       <a href="properties.html" class="owner-exit-link"><i class="bx bx-log-out"></i> Exit to Marketplace</a>
       <button type="button" id="ownerLogoutBtn" class="owner-logout-btn">Log out</button>
     </div>
@@ -55,9 +56,12 @@
   <div class="owner-main">
     <header class="owner-topbar">
       <button type="button" class="owner-menu-toggle" id="ownerMenuToggle" aria-label="Open menu"><i class="bx bx-menu"></i></button>
-      <div class="owner-topbar-title">
-        <span class="owner-eyebrow">SELLER LOUNGE</span>
-        <h1 id="ownerStoreTitle">My Store</h1>
+      <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseHub">
+        <span class="lh-lease">Lease</span><span class="lh-hub">Hub</span>
+      </a>
+      <div class="owner-topbar-title owner-topbar-title--desktop">
+        <span class="owner-eyebrow">OWNER LOUNGE</span>
+        <h1 id="ownerStoreTitle">Dashboard</h1>
       </div>
       <div class="owner-topbar-actions">
         <div class="owner-notif-wrap">
@@ -72,9 +76,8 @@
             <div id="ownerNotifList" class="owner-notif-list"></div>
           </div>
         </div>
-
-        <button type="button" class="owner-ghost-btn" id="ownerRefreshBtn"><i class="bx bx-refresh"></i> Refresh</button>
-        <a href="properties.html" class="owner-ghost-btn">Exit to Marketplace</a>
+        <button type="button" class="owner-ghost-btn owner-desktop-only" id="ownerRefreshBtn"><i class="bx bx-refresh"></i> Refresh</button>
+        <a href="properties.html" class="owner-ghost-btn owner-desktop-only">Exit to Marketplace</a>
       </div>
     </header>
 
@@ -117,7 +120,7 @@
             <a href="#myProperties" class="owner-action-tile"><i class="bx bx-building-house"></i><span>Properties</span></a>
             <a href="#ownerViewings" class="owner-action-tile"><i class="bx bx-calendar-check"></i><span>Viewings</span></a>
             <a href="#ownerApplications" class="owner-action-tile"><i class="bx bx-file"></i><span>Applications</span></a>
-            <a href="owner-messages.html" class="owner-action-tile"><i class="bx bx-message-rounded"></i><span>Messages</span></a>
+            <a href="owner-messages.html" class="owner-action-tile"><i class="bx bx-message-dots"></i><span>Messages</span></a>
             <a href="properties.html" class="owner-action-tile"><i class="bx bx-store-alt"></i><span>Storefront</span></a>
           </div>
         </article>
@@ -327,12 +330,9 @@
 </script>
 <script src="JS/owner-shell.js"></script>
 <script src="JS/data.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="JS/supabase-client.js"></script>
-<script src="JS/api-client.js"></script>
+<script src="JS/leasehub-status.js"></script>
 <script src="JS/app.js"></script>
 <script src="JS/leasehub-polish.js"></script>
 <script src="JS/owner-lounge.js"></script>
-<script src="JS/applications-ui.js"></script>
 </body>
 </html>

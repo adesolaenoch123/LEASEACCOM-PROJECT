@@ -1,304 +1,76 @@
-/* =========================================================
-   LEASEHUB - VIEWING REQUESTS
-   Tenant Dashboard
-   ========================================================= */
-
+/* LeaseHub viewing requests — tenant side + shared status */
 document.addEventListener("DOMContentLoaded", () => {
-
-    const container =
-        document.getElementById("viewingRequests");
-
-    if (!container) return;
-
-
-    /* =====================================================
-       RENDER VIEWING REQUESTS
-       ===================================================== */
-
-    function renderViewingRequests() {
-
-        let requests = [];
-
-        try {
-
-            requests =
-                JSON.parse(
-                    localStorage.getItem("viewingRequests")
-                ) || [];
-
-        } catch (error) {
-
-            console.error(
-                "Unable to load viewing requests.",
-                error
-            );
-
-            requests = [];
-
-        }
-
-
-        /* =================================================
-           UPDATE VIEWING COUNT
-           ================================================= */
-
-        const viewingCount =
-            document.getElementById("viewingCount");
-
-        if (viewingCount) {
-
-            viewingCount.textContent =
-                requests.length;
-
-        }
-
-
-        /* =================================================
-           EMPTY REQUESTS
-           ================================================= */
-
-        if (requests.length === 0) {
-
-            container.innerHTML = `
-
-                <div class="empty-requests">
-
-                    <h2>
-                        No viewing requests yet
-                    </h2>
-
-                    <p>
-                        You haven't requested a viewing for
-                        any property yet.
-                    </p>
-
-                    <a
-                        href="properties.html"
-                        class="primary-btn request-property-btn"
-                    >
-                        Browse Properties
-                    </a>
-
-                </div>
-
-            `;
-
-            return;
-        }
-
-
-        /* =================================================
-           DISPLAY REQUESTS
-           ================================================= */
-
-        container.innerHTML =
-            requests
-                .slice()
-                .reverse()
-                .map(request => {
-
-                    let status =
-                        request.status || "pending";
-
-                    status =
-                        status.toLowerCase();
-
-
-                    /* -------------------------------------
-                       DEFAULT STATUS
-                       ------------------------------------- */
-
-                    let statusClass =
-                        "status-pending";
-
-                    let statusText =
-                        "Pending";
-
-
-                    /* -------------------------------------
-                       ACCEPTED
-                       ------------------------------------- */
-
-                    if (status === "accepted") {
-
-                        statusClass =
-                            "status-accepted";
-
-                        statusText =
-                            "Accepted";
-
-                    }
-
-
-                    /* -------------------------------------
-                       DECLINED
-                       ------------------------------------- */
-
-                    if (status === "declined") {
-
-                        statusClass =
-                            "status-declined";
-
-                        statusText =
-                            "Declined";
-
-                    }
-
-
-                    /* =====================================
-                       FORMAT DATE
-                       ===================================== */
-
-                    let formattedDate =
-                        request.viewingDate ||
-                        "Date not set";
-
-
-                    if (request.viewingDate) {
-
-                        const date =
-                            new Date(
-                                request.viewingDate +
-                                "T00:00:00"
-                            );
-
-                        if (!isNaN(date)) {
-
-                            formattedDate =
-                                date.toLocaleDateString(
-                                    "en-NG",
-                                    {
-                                        weekday: "short",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric"
-                                    }
-                                );
-
-                        }
-
-                    }
-
-
-                    /* =====================================
-                       REQUEST CARD
-                       ===================================== */
-
-                    return `
-
-                        <article class="request-card">
-
-                            <div class="request-info">
-
-                                <h2>
-                                    ${
-                                        request.propertyTitle ||
-                                        "Property Viewing"
-                                    }
-                                </h2>
-
-                                <div class="request-location">
-                                    <i class="bx bx-map" aria-hidden="true"></i> Property viewing request
-                                </div>
-
-
-                                <div class="request-details">
-
-                                    <span>
-                                        <i class="bx bx-calendar" aria-hidden="true"></i>
-                                        ${formattedDate}
-                                    </span>
-
-                                    <span>
-                                        <i class="bx bx-time-five" aria-hidden="true"></i>
-                                        ${
-                                            request.viewingTime ||
-                                            "Time not set"
-                                        }
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-
-                            <div
-                                class="
-                                    request-status
-                                    ${statusClass}
-                                "
-                            >
-                                ${statusText}
-                            </div>
-
-                        </article>
-
-                    `;
-
-                })
-                .join("");
-
+  const container = document.getElementById("viewingRequests");
+  if (!container) return;
+  const S = window.LeaseHubStatus;
+
+  function loadRequests() {
+    try {
+      const v = JSON.parse(localStorage.getItem("viewingRequests") || "[]");
+      return Array.isArray(v) ? v : [];
+    } catch { return []; }
+  }
+
+  function currentUser() {
+    try {
+      return JSON.parse(localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("leaseHubCurrentUser") || "null");
+    } catch { return null; }
+  }
+
+  function escapeHtml(s) {
+    return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function render() {
+    let requests = loadRequests();
+    const user = currentUser();
+    if (user && (user.email || user.id)) {
+      const filtered = requests.filter((r) =>
+        String(r.tenantEmail || "").toLowerCase() === String(user.email || "").toLowerCase() ||
+        String(r.tenantId) === String(user.id) || String(r.userId) === String(user.id)
+      );
+      if (filtered.length) requests = filtered;
+    }
+    const countEl = document.getElementById("viewingCount");
+    if (countEl) countEl.textContent = String(requests.length);
+
+    if (!requests.length) {
+      container.innerHTML = `<div class="empty-requests"><h2>No viewing requests yet</h2>
+        <p>Request a viewing from a property page. Status updates here for you and the owner.</p>
+        <a href="properties.html" class="primary-btn">Browse properties</a></div>`;
+      return;
     }
 
-
-    /* =====================================================
-       FIRST LOAD
-       ===================================================== */
-
-    renderViewingRequests();
-
-
-    /* =====================================================
-       REFRESH WHEN PAGE BECOMES VISIBLE
-       ===================================================== */
-
-    window.addEventListener(
-        "pageshow",
-        function () {
-
-            renderViewingRequests();
-
-        }
+    requests = requests.slice().sort((a, b) =>
+      new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)
     );
 
+    container.innerHTML = requests.map((request) => {
+      const status = S ? S.normalizeViewingStatus(request.status) : String(request.status || "requested");
+      const statusClass = S ? S.viewingClass(status) : "status-pending";
+      const statusText = S ? S.viewingLabel(status) : status;
+      const timeline = S ? S.timelineHtml("viewing", status) : "";
+      let formattedDate = request.viewingDate || "Not set";
+      if (request.viewingDate) {
+        const d = new Date(request.viewingDate);
+        if (!isNaN(d)) formattedDate = d.toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+      }
+      return `<article class="request-card lh-status-card">
+        <div class="request-info">
+          <div class="request-top">
+            <h3>${escapeHtml(request.propertyTitle || "Property")}</h3>
+            <span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span>
+          </div>
+          <div class="request-location">${escapeHtml(request.propertyLocation || request.location || "")}</div>
+          <p class="request-meta"><strong>Preferred date:</strong> ${escapeHtml(formattedDate)}</p>
+          ${request.message ? `<p class="request-meta"><strong>Note:</strong> ${escapeHtml(request.message)}</p>` : ""}
+          ${timeline}
+          <p class="lh-status-hint">Owner sees the same status on their dashboard.</p>
+        </div>
+      </article>`;
+    }).join("");
+  }
 
-    /* =====================================================
-       REFRESH WHEN LOCAL STORAGE CHANGES
-       ===================================================== */
-
-    window.addEventListener(
-        "storage",
-        function (event) {
-
-            if (
-                event.key === "viewingRequests"
-            ) {
-
-                renderViewingRequests();
-
-            }
-
-        }
-    );
-
-
-    /* =====================================================
-       REFRESH WHEN TAB BECOMES ACTIVE
-       ===================================================== */
-
-    document.addEventListener(
-        "visibilitychange",
-        function () {
-
-            if (
-                document.visibilityState === "visible"
-            ) {
-
-                renderViewingRequests();
-
-            }
-
-        }
-    );
-
+  render();
+  window.addEventListener("storage", (e) => { if (e.key === "viewingRequests") render(); });
 });
