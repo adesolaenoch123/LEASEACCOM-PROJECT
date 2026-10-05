@@ -24,6 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "login.html";
         return;
     }
+    // Landlords must be verified before listing
+    const vStatus = String(currentUser.verificationStatus || currentUser.ownerVerificationStatus || "unverified").toLowerCase();
+    if (vStatus !== "verified") {
+        window.location.replace("owner-verification.html?need=list");
+        return;
+    }
 
     function compressImage(file) {
         return new Promise((resolve, reject) => {
@@ -131,20 +137,47 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!title || !type || !purpose || !state || !city || !location || !Number.isFinite(price) || price <= 0 || !description) {
             showFormStatus("Please complete all required fields."); return;
         }
+        if (description.length < 40) {
+            showFormStatus("Please write a clearer description (at least 40 characters) so tenants trust the listing."); return;
+        }
         if (selectedImages.length < MIN_IMAGES) {
             showFormStatus(`Please upload at least ${MIN_IMAGES} property photos before submitting.`); return;
+        }
+        // Owner must still be verified (extra safety if page was opened directly)
+        const ownerV = String(currentUser.verificationStatus || currentUser.ownerVerificationStatus || "unverified").toLowerCase();
+        if (ownerV !== "verified") {
+            showFormStatus("Your owner account must be verified before you can submit a listing.");
+            window.setTimeout(() => { window.location.href = "owner-verification.html?need=list"; }, 900);
+            return;
         }
         const amenities = Array.from(document.querySelectorAll('input[name="amenity"]:checked')).map(c => c.value);
         let ownerProfile = {};
         try { ownerProfile = JSON.parse(localStorage.getItem("leasehubOwnerProfile") || "{}") || {}; } catch {}
         const ownerName = ownerProfile.name || ownerProfile.displayName || currentUser.name || "Property Owner";
+        const serviceChargeEl = document.getElementById("propertyServiceCharge");
+        const cautionEl = document.getElementById("propertyCautionFee");
+        const serviceCharge = serviceChargeEl && serviceChargeEl.value !== "" ? Number(serviceChargeEl.value) : null;
+        const cautionFee = cautionEl && cautionEl.value !== "" ? Number(cautionEl.value) : null;
+
         const newProperty = {
             id: Date.now(), title, type, purpose, state, city, location, price, period, bedrooms, bathrooms, size,
-            description, amenities, image: selectedImages[coverIndex] || selectedImages[0], images: selectedImages,
+            description, amenities, image: selectedImages[coverIndex] || selectedImages[0], images: selectedImages.slice(),
             ownerId: currentUser.id, ownerName, ownerAvatar: ownerProfile.avatar || currentUser.avatar || "",
             ownerPhone: ownerProfile.phone || currentUser.phone || "",
-            verified: false, verificationStatus: "pending", verificationLabel: "Pending Verification",
-            submittedAt: new Date().toISOString(), listingStatus: "pending"
+            ownerVerified: true,
+            ownerVerificationStatus: "verified",
+            verified: false,
+            verificationStatus: "pending",
+            verificationLabel: "Pending review",
+            listingStatus: "pending",
+            quality: {
+                photos: selectedImages.length,
+                descriptionLength: description.length,
+                minPhotosRequired: MIN_IMAGES
+            },
+            serviceCharge: Number.isFinite(serviceCharge) ? serviceCharge : undefined,
+            cautionFee: Number.isFinite(cautionFee) ? cautionFee : undefined,
+            submittedAt: new Date().toISOString()
         };
         let storedProperties = [];
         try { const parsed = JSON.parse(localStorage.getItem("leasehubProperties") || "[]"); storedProperties = Array.isArray(parsed) ? parsed : []; } catch {}
@@ -164,5 +197,52 @@ document.addEventListener("DOMContentLoaded", () => {
         showFormStatus("Property submitted successfully. Your listing is now pending verification.", "success");
         window.setTimeout(() => { window.location.href = "owner-dashboard.html"; }, 700);
     });
+
+
+    function renderQualityChecklist() {
+        let box = document.getElementById("listingQualityChecklist");
+        if (!box) {
+            box = document.createElement("div");
+            box.id = "listingQualityChecklist";
+            box.className = "listing-quality-box";
+            const status = document.getElementById("propertyFormStatus");
+            if (status && status.parentNode) status.parentNode.insertBefore(box, status);
+            else form.appendChild(box);
+        }
+        const desc = document.getElementById("propertyDescription")?.value.trim() || "";
+        const titleOk = Boolean(document.getElementById("propertyTitle")?.value.trim());
+        const priceOk = Number(document.getElementById("propertyPrice")?.value) > 0;
+        const locOk = Boolean(document.getElementById("propertyLocation")?.value.trim());
+        const items = [
+            { ok: selectedImages.length >= MIN_IMAGES, label: `${MIN_IMAGES}+ photos`, meta: `${selectedImages.length}/${MIN_IMAGES}` },
+            { ok: desc.length >= 40, label: "Description 40+ chars", meta: `${desc.length}` },
+            { ok: titleOk, label: "Title", meta: "" },
+            { ok: priceOk, label: "Price", meta: "" },
+            { ok: locOk, label: "Location", meta: "" }
+        ];
+        const passed = items.filter(i => i.ok).length;
+        box.innerHTML = `
+            <div class="listing-quality-head">
+                <strong>Listing quality</strong>
+                <span>${passed}/${items.length} ready</span>
+            </div>
+            <ul class="listing-quality-list">
+                ${items.map(i => `<li class="${i.ok ? "is-ok" : "is-miss"}"><i class="bx ${i.ok ? "bx-check-circle" : "bx-circle"}"></i> ${i.label}${i.meta ? ` <small>${i.meta}</small>` : ""}</li>`).join("")}
+            </ul>
+            <p class="listing-quality-note">After submit, status is <strong>Pending</strong> until LeaseHub approves — then it goes <strong>Live</strong> on the marketplace.</p>
+        `;
+    }
+
+    form.querySelectorAll("input, textarea, select").forEach(el => {
+        el.addEventListener("input", renderQualityChecklist);
+        el.addEventListener("change", renderQualityChecklist);
+    });
+    const _origRenderPreview = renderPreview;
+    renderPreview = function () {
+        _origRenderPreview();
+        renderQualityChecklist();
+    };
+
     renderPreview();
+    renderQualityChecklist();
 });

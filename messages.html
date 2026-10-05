@@ -918,7 +918,310 @@
         .message-form { min-height: 62px; padding: 9px 14px; align-items: center; background: #f0f2f5; border-top: 0; }.message-input { min-height: 42px; border: 0; border-radius: 21px; padding: 0 16px; background: #fff; font-size: 13px; }.message-input:focus { border: 0; box-shadow: 0 0 0 2px rgba(7,94,84,.18); }.send-message-btn { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 42px; background: #00a884; font-size: 17px; }.send-message-btn:hover { background: #008f70; }
         @media (max-width: 650px) { .messages-topbar { height: 56px; padding: 0 12px; }.messages-logo { width: 44px; height: 44px; }.messages-shell { height: calc(100vh - 56px); }.chat-header { padding: 7px 10px; }.chat-header-actions .chat-action:nth-child(1), .chat-header-actions .chat-action:nth-child(2) { display: none; }.chat-messages { padding: 54px 12px 14px; }.message-content { max-width: 88%; }.chat-protection { top: 69px; font-size: 9px; }.message-form { padding: 7px 9px; } }
 
-    </style>
+    
+
+        /* Messages header redesign */
+        .messages-logo {
+            display: flex !important;
+            align-items: center;
+            text-decoration: none;
+            width: auto !important;
+            height: auto !important;
+            min-width: 0;
+        }
+        .messages-logo img { display: none !important; }
+        .messages-logo-text {
+            display: inline-flex;
+            align-items: baseline;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+            line-height: 1;
+        }
+        .messages-logo-text .lh-lease { color: #fff; }
+        .messages-logo-text .lh-hub { color: #b7f0d2; }
+
+        .top-landlord {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            min-width: 0;
+        }
+        .top-landlord[hidden] { display: none !important; }
+        .top-landlord-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            object-fit: cover; background: rgba(255,255,255,.2);
+            flex: 0 0 36px;
+        }
+        .top-landlord-meta { min-width: 0; }
+        .top-landlord-meta strong {
+            display: block; color: #fff; font-size: 13px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;
+        }
+        .top-landlord-meta span { color: #b7f0d2; font-size: 11px; }
+
+        .chat-header {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 0 !important;
+            padding: 0 !important;
+            background: #f0f2f5 !important;
+        }
+        .chat-header-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .chat-header-primary {
+            border-bottom: 1px solid #e5e9eb;
+            min-height: 56px;
+        }
+        .chat-header-secondary {
+            justify-content: space-between;
+            min-height: 44px;
+            background: #e9eef1;
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+        .chat-person { flex: 1; min-width: 0; }
+        .chat-back-btn {
+            display: inline-flex !important;
+            align-items: center;
+            gap: 6px;
+            width: auto !important;
+            height: 36px !important;
+            min-width: 36px;
+            padding: 0 12px 0 8px !important;
+            border: 0;
+            border-radius: 999px !important;
+            background: #fff !important;
+            color: #075e54 !important;
+            font-size: 18px !important;
+            font-weight: 700;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            cursor: pointer;
+        }
+        .chat-back-label { font-size: 13px; }
+        .chat-my-profile-btn {
+            display: inline-flex !important;
+            align-items: center;
+            gap: 6px;
+            width: auto !important;
+            height: 36px !important;
+            padding: 0 12px !important;
+            border-radius: 999px !important;
+            background: #fff !important;
+            color: #075e54 !important;
+            font-size: 13px !important;
+            font-weight: 700;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        }
+        .chat-my-profile-btn i { font-size: 16px; }
+        @media (min-width: 651px) {
+            .chat-header-secondary { display: none; } /* desktop uses sidebar list */
+            .chat-back-btn { display: none !important; }
+        }
+        @media (max-width: 650px) {
+            .conversation-search { display: none !important; }
+            .top-profile { display: none !important; }
+            .messages-topbar {
+                justify-content: space-between;
+                gap: 10px;
+            }
+            .chat-header-actions-desktop { display: none !important; }
+            .chat-back-btn { display: inline-flex !important; }
+            .chat-header-secondary { display: flex !important; }
+        }
+
+        /* === WhatsApp mobile sticky composer FIX === */
+        .chat-content {
+            display: flex !important;
+            flex-direction: column !important;
+            height: 100% !important;
+            min-height: 0 !important;
+            position: relative;
+        }
+        .chat-messages {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 12px !important;
+        }
+        .message-form {
+            flex: 0 0 auto !important;
+            position: sticky !important;
+            bottom: 0 !important;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            display: flex !important;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            background: #f0f2f5 !important;
+            border-top: 1px solid rgba(0,0,0,.06);
+            padding: 8px 10px !important;
+            min-height: 58px;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+        }
+        .message-input {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+        }
+        .send-message-btn {
+            flex: 0 0 44px !important;
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 50% !important;
+            display: grid !important;
+            place-items: center !important;
+        }
+        @media (max-width: 650px) {
+            .messages-shell {
+                height: calc(100dvh - 56px) !important;
+                max-height: calc(100dvh - 56px) !important;
+                overflow: hidden !important;
+            }
+            .chat-area {
+                display: flex !important;
+                flex-direction: column !important;
+                height: 100% !important;
+                min-height: 0 !important;
+                overflow: hidden !important;
+            }
+            .chat-header {
+                flex: 0 0 auto;
+                position: sticky;
+                top: 0;
+                z-index: 15;
+            }
+            .chat-protection {
+                flex: 0 0 auto;
+            }
+            /* WhatsApp-like bubbles already partially styled */
+            .message-row.tenant .message-bubble {
+                background: #d9fdd3 !important;
+                color: #111 !important;
+                border-radius: 8px 8px 0 8px !important;
+            }
+            .message-row.owner .message-bubble {
+                background: #fff !important;
+                border-radius: 8px 8px 8px 0 !important;
+            }
+            .chat-area {
+                background: #efeae2 !important;
+            }
+        }
+
+        
+        /* === MOBILE CHAT NAV (list ↔ conversation) === */
+        @media (max-width: 650px) {
+            .messages-shell {
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+                position: relative;
+            }
+            .messages-shell:not(.chat-open) .messages-sidebar {
+                display: flex !important;
+                flex-direction: column;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100% !important;
+                z-index: 2;
+            }
+            .messages-shell:not(.chat-open) .chat-area {
+                display: none !important;
+            }
+            .messages-shell.chat-open .messages-sidebar {
+                display: none !important;
+            }
+            .messages-shell.chat-open .chat-area {
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+                height: 100% !important;
+                min-height: 0 !important;
+            }
+            .chat-header {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 0 !important;
+                background: #075e54 !important;
+                color: #fff !important;
+                border-bottom: 0 !important;
+                padding: 0 !important;
+            }
+            .chat-header-primary {
+                order: 1;
+                padding: 8px 12px !important;
+                background: #075e54 !important;
+                min-height: 52px;
+                align-items: center;
+            }
+            .chat-header-secondary {
+                order: 0;
+                display: flex !important;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 10px !important;
+                background: #064e46 !important;
+                min-height: 44px;
+            }
+            .chat-back-btn {
+                display: inline-flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                align-items: center;
+                gap: 6px;
+                min-height: 40px !important;
+                padding: 0 14px 0 10px !important;
+                border-radius: 999px !important;
+                background: rgba(255,255,255,.15) !important;
+                color: #fff !important;
+                border: 0 !important;
+                font-weight: 800 !important;
+                font-size: 15px !important;
+                z-index: 20 !important;
+                position: relative;
+            }
+            .chat-back-btn i { font-size: 20px !important; color: #fff !important; }
+            .chat-back-label { color: #fff !important; }
+            .chat-my-profile-btn {
+                background: rgba(255,255,255,.12) !important;
+                color: #fff !important;
+            }
+            .chat-person-name, .chat-property, .online-status { color: #fff !important; }
+            .online-status { opacity: .85; }
+            .chat-person-avatar {
+                border: 2px solid rgba(255,255,255,.35);
+            }
+            .messages-logo-text {
+                font-size: 18px;
+                font-weight: 800;
+                letter-spacing: -0.3px;
+            }
+            .messages-logo-text .lh-lease { color: #fff; }
+            .messages-logo-text .lh-hub { color: #25d366; }
+            .messages-topbar {
+                background: #075e54 !important;
+            }
+            .message-form {
+                position: sticky !important;
+                bottom: 0 !important;
+                z-index: 12 !important;
+                background: #f0f2f5 !important;
+                padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+            }
+        }
+
+        </style>
 
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
@@ -933,48 +1236,31 @@
 
 <header class="messages-topbar">
 
-    <a
-        href="index.html"
-        class="messages-logo"
-    >
-            <img src="IMAGES/Lease Hub logo.png" alt="Lease Hub">
+    <a href="index.html" class="messages-logo" aria-label="LeaseHub home">
+        <span class="messages-logo-text"><span class="lh-lease">Lease</span><span class="lh-hub">Hub</span></span>
     </a>
 
-
     <div class="conversation-search">
-
         <span class="search-icon"><i class="bx bx-search" aria-hidden="true"></i></span>
-
-        <input
-            type="text"
-            id="tenantConversationSearch"
-            placeholder="Search conversations..."
-        >
-
+        <input type="text" id="tenantConversationSearch" placeholder="Search conversations...">
     </div>
 
-
-    <div class="top-profile">
-
-        <img
-            id="tenantTopProfileAvatar"
-            class="top-profile-avatar"
-            src=""
-            alt="Profile"
-        >
-
-        <div class="top-profile-info">
-
-            <strong id="tenantTopProfileName">
-                Tenant
-            </strong>
-
-            <span>
-                Tenant
-            </span>
-
+    <!-- Landlord (active chat) summary on the right — filled by JS when a chat is open -->
+    <div class="top-landlord" id="topLandlordStrip" hidden>
+        <img id="topLandlordAvatar" class="top-landlord-avatar" src="" alt="">
+        <div class="top-landlord-meta">
+            <strong id="topLandlordName">Property Owner</strong>
+            <span id="topLandlordStatus">Online</span>
         </div>
+    </div>
 
+    <!-- Keep ids for JS compatibility but hide top tenant avatar -->
+    <div class="top-profile" hidden aria-hidden="true">
+        <img id="tenantTopProfileAvatar" class="top-profile-avatar" src="" alt="">
+        <div class="top-profile-info">
+            <strong id="tenantTopProfileName">Tenant</strong>
+            <span>Tenant</span>
+        </div>
     </div>
 
 </header>
@@ -1100,57 +1386,30 @@
 
             <header class="chat-header">
 
-                <button type="button" class="chat-person chat-owner-trigger" id="chatOwnerProfileBtn" aria-label="Open owner profile">
-
-                    <img
-                        id="tenantChatOwnerAvatar"
-                        class="chat-person-avatar"
-                        src=""
-                        alt="Property Owner"
-                    >
-
-
-                    <div>
-
-                        <div
-                            id="chatPersonName"
-                            class="chat-person-name"
-                        >
-                            Property Owner
+                <div class="chat-header-row chat-header-primary">
+                    <button type="button" class="chat-person chat-owner-trigger" id="chatOwnerProfileBtn" aria-label="Open owner profile">
+                        <img id="tenantChatOwnerAvatar" class="chat-person-avatar" src="" alt="Property Owner">
+                        <div>
+                            <div id="chatPersonName" class="chat-person-name">Property Owner</div>
+                            <div class="online-status"><span class="online-dot"></span> Online</div>
+                            <div id="chatPropertyName" class="chat-property">Property</div>
                         </div>
-
-
-                        <div class="online-status">
-
-                            <span class="online-dot"></span>
-
-                            Online
-
-                        </div>
-
-
-                        <div
-                            id="chatPropertyName"
-                            class="chat-property"
-                        >
-                            Property
-                        </div>
-
+                    </button>
+                    <div class="chat-header-actions chat-header-actions-desktop">
+                        <button type="button" class="chat-action" id="chatCallBtn" title="Call owner" aria-label="Call owner"><i class="bx bx-phone"></i></button>
+                        <button type="button" class="chat-action" id="chatVideoBtn" title="Start video call" aria-label="Start video call"><i class="bx bx-video"></i></button>
                     </div>
+                </div>
 
-                </button>
-
-
-                <div class="chat-header-actions">
-
-                    <button type="button" class="chat-action" id="chatCallBtn" title="Call owner" aria-label="Call owner"><i class="bx bx-phone"></i></button>
-
-
-                    <button type="button" class="chat-action" id="chatVideoBtn" title="Start video call" aria-label="Start video call"><i class="bx bx-video"></i></button>
-
-
-                    <button type="button" class="chat-action" id="openTenantProfileBtn" title="Your profile" aria-label="Open your profile"><i class="bx bx-user"></i></button>
-
+                <div class="chat-header-row chat-header-secondary">
+                    <button type="button" class="chat-back-btn" id="chatBackBtn" aria-label="Back to conversations" title="Back">
+                        <i class="bx bx-arrow-back" aria-hidden="true"></i>
+                        <span class="chat-back-label">Back</span>
+                    </button>
+                    <button type="button" class="chat-action chat-my-profile-btn" id="openTenantProfileBtn" title="Your profile" aria-label="Open your profile">
+                        <i class="bx bx-user" aria-hidden="true"></i>
+                        <span>My profile</span>
+                    </button>
                 </div>
 
             </header>
@@ -1358,6 +1617,94 @@
 <script src="JS/leasehub-polish.js"></script>
 
 <footer class="site-footer leasehub-standard-footer"><div class="footer-bottom"><span>© 2026 LeaseHub. All rights reserved.</span><span>Built for Nigeria</span></div></footer>
+
+
+<script>
+(function () {
+  var shell = document.querySelector(".messages-shell");
+  var back = document.getElementById("chatBackBtn");
+  var strip = document.getElementById("topLandlordStrip");
+
+  function syncLandlordStrip() {
+    if (!strip) return;
+    var name = document.getElementById("chatPersonName");
+    var av = document.getElementById("tenantChatOwnerAvatar");
+    var tn = document.getElementById("topLandlordName");
+    var ta = document.getElementById("topLandlordAvatar");
+    if (name && tn) tn.textContent = name.textContent.trim() || "Property Owner";
+    if (av && ta && av.src) { ta.src = av.src; ta.style.display = ""; }
+    var open = shell && shell.classList.contains("chat-open");
+    if (open) strip.removeAttribute("hidden");
+    else strip.setAttribute("hidden", "");
+  }
+
+  function openChat() {
+    if (shell) shell.classList.add("chat-open");
+    var content = document.getElementById("chatContent");
+    var empty = document.getElementById("chatEmpty");
+    if (content) content.style.display = "flex";
+    if (empty) empty.style.display = "none";
+    syncLandlordStrip();
+    try {
+      if (window.history && window.history.pushState) {
+        window.history.pushState({ leasehubChat: true }, "", window.location.href);
+      }
+    } catch (err) {}
+  }
+  function closeChat() {
+    if (shell) shell.classList.remove("chat-open");
+    var content = document.getElementById("chatContent");
+    var empty = document.getElementById("chatEmpty");
+    if (content) content.style.display = "none";
+    if (empty) empty.style.display = "flex";
+    try { localStorage.removeItem("activeConversationId"); } catch (err) {}
+    document.querySelectorAll(".conversation-item.active").forEach(function (el) {
+      el.classList.remove("active");
+    });
+    syncLandlordStrip();
+  }
+
+  if (back) {
+    back.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeChat();
+      // Stay on messages page — only leave the conversation view
+      if (window.history && window.history.replaceState) {
+        try { window.history.replaceState({}, "", "messages.html"); } catch (err) {}
+      }
+    });
+  }
+
+  // Hardware / browser back on mobile returns to conversation list first
+  window.addEventListener("popstate", function () {
+    if (shell && shell.classList.contains("chat-open")) {
+      closeChat();
+    }
+  });
+
+  document.addEventListener("click", function (e) {
+    if (e.target.closest(".conversation-item, [data-conversation-id], .conversation-list button, .conversation-list a, .conversation-list .conversation")) {
+      openChat();
+      setTimeout(syncLandlordStrip, 50);
+      setTimeout(syncLandlordStrip, 300);
+    }
+  });
+
+  var obsTarget = document.getElementById("chatContent");
+  if (obsTarget && window.MutationObserver) {
+    new MutationObserver(function () {
+      if (obsTarget.style.display !== "none" && !obsTarget.hidden) openChat();
+      syncLandlordStrip();
+    }).observe(obsTarget, { attributes: true, attributeFilter: ["style", "hidden", "class"], subtree: true, childList: true });
+  }
+
+  // If chat content is visible on load
+  if (obsTarget && !obsTarget.hidden && getComputedStyle(obsTarget).display !== "none") openChat();
+})();
+</script>
+
+
 </body>
 
 </html>

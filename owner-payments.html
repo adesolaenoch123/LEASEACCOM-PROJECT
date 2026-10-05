@@ -12,14 +12,14 @@
 
 <div id="ownerShellMount">
 
-  <!-- Status banner -->
-  <section class="owner-panel pay-status-banner">
-    <div class="pay-status-icon"><i class="bx bx-info-circle"></i></div>
+  <!-- Simple page intro -->
+  <section class="pay-page-intro">
     <div>
-      <strong>Payments are in design mode</strong>
-      <p class="owner-muted">This page shows how rent collection and owner payouts will work. No real money is moved yet. Connect Paystack / Flutterwave / bank payouts later.</p>
+      <p class="pay-page-kicker">Owner lounge</p>
+      <h2 class="pay-page-title">Payments</h2>
+      <p class="pay-page-sub">Track rent collections and request payouts. Demo mode — no real money moves yet.</p>
     </div>
-    <span class="owner-plan-pill">DEMO</span>
+    <span class="pay-demo-chip">Demo</span>
   </section>
 
   <!-- KPI row -->
@@ -104,8 +104,12 @@
       <label class="owner-field">Amount (₦)
         <input type="number" id="payWithdrawAmount" min="0" step="1000" placeholder="0" disabled>
       </label>
-      <button type="button" class="primary-btn" id="payWithdrawBtn" disabled>Withdraw (coming soon)</button>
-      <p class="owner-muted" style="margin-top:10px">Minimum payout and fees will be set when payments go live.</p>
+      <button type="button" class="pay-withdraw-btn" id="payWithdrawBtn" disabled>
+        <i class="bx bx-money-withdraw" aria-hidden="true"></i>
+        <span class="pay-withdraw-label">Request payout</span>
+        <span class="pay-withdraw-soon">Coming soon</span>
+      </button>
+      <p class="pay-withdraw-note">Available when payments go live. Min. amount &amp; fees will be shown here.</p>
     </article>
   </section>
 

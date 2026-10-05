@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Owner Lounge — LeaseHub</title>
   <meta name="description" content="Manage LeaseHub property listings, viewing requests, rental applications and owner activity.">
   <link rel="stylesheet" href="CSS/style.css">
+  <link rel="stylesheet" href="CSS/notifications.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 <body class="owner-lounge-body" data-owner-page="dashboard">
@@ -162,20 +163,15 @@
           </div>
           <p class="owner-muted">Based on listings, applications and message activity in this browser.</p>
         </article>
-        <article class="owner-panel owner-featured-panel">
-          <div class="owner-panel-head">
-            <div>
-              <span>PROPERTY SPOTLIGHT</span>
-              <h3 class="owner-panel-title">A closer look at home</h3>
+        <article class="owner-panel">
+          <div class="owner-panel-head"><span>RECENT ACTIVITY</span></div>
+          <div id="ownerRecentActivity" class="owner-activity-list">
+            <div class="owner-activity-empty">
+              <i class="bx bx-package"></i>
+              <p>No activity yet</p>
+              <small>Viewings, applications and listings will show up here.</small>
             </div>
-            <span class="owner-points-pill">HOUSE TOUR</span>
           </div>
-          <video class="owner-featured-video" controls muted playsinline preload="metadata" aria-label="Featured house tour video">
-            <source src="7578541-uhd_3840_2160_30fps.mp4" type="video/mp4">
-            Your browser does not support embedded videos.
-          </video>
-          <p class="owner-muted">Show tenants what makes a property feel like home.</p>
-        </article>
         </article>
       </section>
 
@@ -289,89 +285,54 @@
         </div>
       </section>
 
-      <section class="owner-subscription" id="ownerPlan">
-        <div class="owner-plan-hero">
-          <img class="owner-plan-hero-image" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&amp;fit=crop&amp;w=1600&amp;q=85" alt="" aria-hidden="true">
-          <div class="owner-plan-hero-copy">
-            <span class="owner-plan-kicker">LEASEHUB PREMIUM</span>
-            <h2>Grow your property business</h2>
-            <p>Reach serious tenants, promote your listings and manage more of your business in one place.</p>
-            <a class="owner-plan-hero-link" href="#ownerPlanOptions">Explore plans <i class="bx bx-right-arrow-alt"></i></a>
-          </div>
-          <div class="owner-plan-hero-note" aria-label="More exposure, more tenants, higher returns">
-            <i class="bx bx-trending-up" aria-hidden="true"></i>
-            <span>Better exposure.</span>
-            <strong>More tenants.<br>Higher returns.</strong>
+      <section class="owner-panel" id="ownerPlan">
+        <div class="owner-panel-head">
+          <div>
+            <span>PLAN</span>
+            <h3 class="owner-panel-title">Subscription</h3>
           </div>
         </div>
-
-        <div class="owner-pricing-heading">
-          <span>CHOOSE YOUR PLAN</span>
-          <h2>Simple, transparent pricing</h2>
-          <p>Select a plan and unlock more ways to grow your property business.</p>
-        </div>
-
-        <div class="owner-plan-grid" id="ownerPlanOptions">
-          <article class="owner-plan-option">
-            <div class="owner-plan-name"><span class="owner-plan-icon"><i class="bx bx-leaf"></i></span><div><h3>Starter</h3><p>For new property owners</p></div></div>
-            <p class="owner-plan-price">₦10,000 <span>/ month</span></p>
-            <small class="owner-plan-unit">Per property</small>
-            <button type="button" class="owner-plan-button" data-owner-plan="Starter">Get started</button>
-            <ul>
-              <li><i class="bx bx-check-circle"></i> Featured listing badge</li>
-              <li><i class="bx bx-check-circle"></i> Up to 3 property listings</li>
-              <li><i class="bx bx-check-circle"></i> Basic analytics</li>
-              <li><i class="bx bx-check-circle"></i> Standard support</li>
-              <li><i class="bx bx-check-circle"></i> Owner dashboard access</li>
-            </ul>
-          </article>
-
-          <article class="owner-plan-option is-popular">
-            <span class="owner-plan-popular">MOST POPULAR</span>
-            <div class="owner-plan-name"><span class="owner-plan-icon"><i class="bx bx-crown"></i></span><div><h3>Professional</h3><p>For growing property businesses</p></div></div>
-            <p class="owner-plan-price">₦20,000 <span>/ month</span></p>
-            <small class="owner-plan-unit">Per property</small>
-            <button type="button" class="owner-plan-button" data-owner-plan="Professional">Subscribe now</button>
-            <ul>
-              <li><i class="bx bx-check-circle"></i> Premium featured listings</li>
-              <li><i class="bx bx-check-circle"></i> Up to 10 property listings</li>
-              <li><i class="bx bx-check-circle"></i> Priority search placement</li>
-              <li><i class="bx bx-check-circle"></i> Advanced analytics</li>
-              <li><i class="bx bx-check-circle"></i> Unlimited messages</li>
-              <li><i class="bx bx-check-circle"></i> Priority customer support</li>
-            </ul>
-          </article>
-
-          <article class="owner-plan-option">
-            <div class="owner-plan-name"><span class="owner-plan-icon"><i class="bx bx-diamond"></i></span><div><h3>Business</h3><p>For larger property companies</p></div></div>
-            <p class="owner-plan-price">₦35,000 <span>/ month</span></p>
-            <small class="owner-plan-unit">Per property</small>
-            <button type="button" class="owner-plan-button" data-owner-plan="Business">Get started</button>
-            <ul>
-              <li><i class="bx bx-check-circle"></i> Premium featured listings</li>
-              <li><i class="bx bx-check-circle"></i> Unlimited property listings</li>
-              <li><i class="bx bx-check-circle"></i> Top search placement</li>
-              <li><i class="bx bx-check-circle"></i> Advanced analytics and reports</li>
-              <li><i class="bx bx-check-circle"></i> Dedicated account manager</li>
-              <li><i class="bx bx-check-circle"></i> Priority support, 24/7</li>
-            </ul>
-          </article>
-        </div>
-        <p class="owner-plan-notice" id="ownerPlanNotice" role="status" hidden></p>
-        <div class="owner-plan-benefits">
-          <div><i class="bx bx-bar-chart-alt-2"></i><span><strong>More exposure</strong><small>Reach more prospective tenants</small></span></div>
-          <div><i class="bx bx-check-shield"></i><span><strong>Verified &amp; trusted</strong><small>Build confidence with every listing</small></span></div>
-          <div><i class="bx bx-support"></i><span><strong>Here to help</strong><small>Get support when you need it</small></span></div>
+        <div class="owner-plan-card">
+          <div>
+            <strong>Free</strong>
+            <p class="owner-muted">List properties, receive viewings and applications. Premium payout tools can be added later.</p>
+          </div>
+          <button type="button" class="owner-ghost-btn" id="ownerManagePlanBtn">Manage</button>
         </div>
       </section>
     </main>
   </div>
 </div>
 
+
+<script id="leasehub-auth-gate">
+(function () {
+  try {
+    var raw = localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("leaseHubCurrentUser") || localStorage.getItem("currentUser");
+    var user = raw ? JSON.parse(raw) : null;
+    if (!user) {
+      window.location.replace("login.html");
+      return;
+    }
+    var type = String(user.accountType || "").trim().toLowerCase();
+    var isOwner = type === "owner" || type === "landlord" || type.indexOf("owner") >= 0 || type.indexOf("business") >= 0;
+    if (!isOwner) {
+      // Wrong dashboard for this account — send to tenant, not back to login (prevents loop)
+      window.location.replace("tenant-dashboard.html");
+    }
+  } catch (e) {
+    window.location.replace("login.html");
+  }
+})();
+</script>
 <script src="JS/owner-shell.js"></script>
 <script src="JS/data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="JS/supabase-client.js"></script>
+<script src="JS/api-client.js"></script>
 <script src="JS/app.js"></script>
 <script src="JS/leasehub-polish.js"></script>
 <script src="JS/owner-lounge.js"></script>
+<script src="JS/applications-ui.js"></script>
 </body>
 </html>

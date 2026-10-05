@@ -399,3 +399,25 @@
         setupImages();
     });
 })();
+
+    /* Text logo on non-landing pages */
+    (function brandLogoText() {
+        try {
+            var page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+            var isLanding = page === "" || page === "index.html" || page === "/";
+            if (isLanding) {
+                document.body.classList.add("is-landing-page");
+            } else {
+                document.body.classList.remove("is-landing-page");
+            }
+            document.querySelectorAll(".navbar .logo, .messages-topbar .logo, a.logo").forEach(function (logo) {
+                if (logo.querySelector(".logo-text")) return;
+                var span = document.createElement("span");
+                span.className = "logo-text";
+                span.setAttribute("aria-label", "LeaseHub");
+                span.innerHTML = '<span class="lh-lease">Lease</span><span class="lh-hub">Hub</span>';
+                logo.appendChild(span);
+            });
+        } catch (e) {}
+    })();
+

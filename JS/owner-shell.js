@@ -9,7 +9,7 @@
 
   function currentUser() {
     try {
-      return JSON.parse(localStorage.getItem('leaseHubCurrentUser') || localStorage.getItem('currentUser') || 'null');
+      return JSON.parse(localStorage.getItem('leasehubCurrentUser') || localStorage.getItem('leaseHubCurrentUser') || localStorage.getItem('currentUser') || 'null');
     } catch {
       return null;
     }
@@ -61,6 +61,7 @@
   <nav class="owner-sidebar-nav">
     ${item('owner-dashboard.html', 'dashboard', 'bx-grid-alt', 'Dashboard')}
     ${item('owner-dashboard.html#myProperties', 'properties', 'bx-building-house', 'Properties')}
+    ${item('owner-verification.html', 'verification', 'bx-badge-check', 'Verification')}
     ${item('add-property.html', 'add', 'bx-plus-circle', 'Add property')}
     ${item('owner-dashboard.html#ownerViewings', 'viewings', 'bx-calendar', 'Viewings')}
     ${item('owner-dashboard.html#ownerApplications', 'applications', 'bx-file', 'Applications')}
@@ -210,3 +211,25 @@
 
   document.addEventListener('DOMContentLoaded', maybeBuildShell);
 })();
+
+
+  // Verification banner on owner pages
+  document.addEventListener('DOMContentLoaded', function () {
+    try {
+      var user = currentUser();
+      if (!user) return;
+      var st = String(user.verificationStatus || user.ownerVerificationStatus || 'unverified').toLowerCase();
+      if (st === 'verified') return;
+      var main = document.querySelector('.owner-main, #ownerShellMount, .owner-lounge-main');
+      if (!main) return;
+      if (document.getElementById('ownerVerifyBanner')) return;
+      var bar = document.createElement('div');
+      bar.id = 'ownerVerifyBanner';
+      bar.setAttribute('style', 'margin:0 0 16px;padding:14px 16px;border-radius:14px;background:#fff8e8;border:1px solid #f0e0b0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;');
+      var msg = st === 'pending'
+        ? '<strong>Verification pending</strong><span style="display:block;font-size:13px;color:#6b5a20;margin-top:4px">You cannot publish listings until LeaseHub approves your details.</span>'
+        : '<strong>Verify your owner account</strong><span style="display:block;font-size:13px;color:#6b5a20;margin-top:4px">Landlords must complete verification before listing a property.</span>';
+      bar.innerHTML = '<div>' + msg + '</div><a href="owner-verification.html" class="primary-btn" style="text-decoration:none;white-space:nowrap">Verify now</a>';
+      main.insertBefore(bar, main.firstChild);
+    } catch (e) {}
+  });

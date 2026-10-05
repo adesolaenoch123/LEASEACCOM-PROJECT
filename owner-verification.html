@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner verification — LeaseHub</title>
+  <meta name="description" content="Verify your identity as a property owner on LeaseHub before listing homes.">
+  <link rel="stylesheet" href="CSS/style.css">
+  <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
+  <style>
+    .ov-page { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
+    .ov-hero { margin-bottom: 20px; }
+    .ov-kicker { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #15945c; margin: 0 0 6px; }
+    .ov-hero h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -0.5px; color: #101311; }
+    .ov-hero p { margin: 0; color: #5f6b64; font-size: 14px; line-height: 1.5; }
+    .ov-status {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 16px; border-radius: 14px; margin-bottom: 18px;
+      border: 1px solid #d7e3dc; background: #f4faf6;
+    }
+    .ov-status i { font-size: 22px; color: #15945c; margin-top: 2px; }
+    .ov-status.pending { background: #fff8e8; border-color: #f0e0b0; }
+    .ov-status.pending i { color: #b8860b; }
+    .ov-status.rejected { background: #fff1f0; border-color: #f0c4c0; }
+    .ov-status.rejected i { color: #c0392b; }
+    .ov-status.verified { background: #e9f7ef; border-color: #b7e4c7; }
+    .ov-status strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .ov-status p { margin: 0; font-size: 13px; color: #5f6b64; line-height: 1.45; }
+    .ov-card {
+      background: #fff; border: 1px solid #e3ebe6; border-radius: 16px;
+      padding: 18px 16px 20px; margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(16,19,17,.04);
+    }
+    .ov-card h2 { margin: 0 0 4px; font-size: 16px; }
+    .ov-card .ov-card-sub { margin: 0 0 14px; font-size: 12px; color: #6b746e; }
+    .ov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px) { .ov-grid { grid-template-columns: 1fr; } }
+    .ov-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .ov-field label { font-size: 12px; font-weight: 700; color: #2c3330; }
+    .ov-field input, .ov-field select, .ov-field textarea {
+      border: 1px solid #d5ddd8; border-radius: 10px; padding: 11px 12px;
+      font-size: 14px; background: #fbfcfb; color: #101311;
+    }
+    .ov-field textarea { min-height: 88px; resize: vertical; }
+    .ov-field input:focus, .ov-field select:focus, .ov-field textarea:focus {
+      outline: none; border-color: #15945c; box-shadow: 0 0 0 3px rgba(21,148,92,.15);
+    }
+    .ov-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #3a433e; line-height: 1.45; margin: 8px 0 16px; }
+    .ov-check input { margin-top: 3px; }
+    .ov-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .ov-actions .primary-btn { min-height: 48px; border-radius: 12px; padding: 12px 18px; font-weight: 800; }
+    .ov-actions .owner-ghost-btn, .ov-ghost {
+      min-height: 48px; border-radius: 12px; padding: 12px 16px;
+      border: 1px solid #d5ddd8; background: #fff; font-weight: 700; cursor: pointer; text-decoration: none; color: #2c3330;
+      display: inline-flex; align-items: center;
+    }
+    .ov-note { font-size: 12px; color: #6b746e; margin-top: 12px; line-height: 1.45; }
+    .ov-locked .ov-card input:disabled, .ov-locked .ov-card select:disabled, .ov-locked .ov-card textarea:disabled {
+      opacity: .75; background: #f3f5f4;
+    }
+    body.owner-lounge-body .ov-page { padding-top: 8px; }
+  </style>
+</head>
+<body class="owner-lounge-body" data-owner-page="verification" data-owner-title="Verification">
+
+<div id="ownerShellMount">
+  <div class="ov-page" id="ownerVerificationPage">
+
+    <div class="ov-hero">
+      <p class="ov-kicker">Trust &amp; safety</p>
+      <h1>Verify as a property owner</h1>
+      <p>Complete this once. LeaseHub reviews your details before you can publish listings. Verified owners get a badge tenants can trust.</p>
+    </div>
+
+    <div id="ovStatusBanner" class="ov-status" hidden></div>
+
+    <form id="ownerVerificationForm">
+
+      <section class="ov-card">
+        <h2>1. Personal details</h2>
+        <p class="ov-card-sub">Must match your government ID.</p>
+        <div class="ov-grid">
+          <div class="ov-field">
+            <label for="ovFullName">Full legal name</label>
+            <input id="ovFullName" name="fullName" type="text" required placeholder="As on your ID" maxlength="120">
+          </div>
+          <div class="ov-field">
+            <label for="ovPhone">Phone number</label>
+            <input id="ovPhone" name="phone" type="tel" required placeholder="e.g. 0803 000 0000" maxlength="20">
+          </div>
+        </div>
+        <div class="ov-grid">
+          <div class="ov-field">
+            <label for="ovEmail">Email</label>
+            <input id="ovEmail" name="email" type="email" required placeholder="you@example.com" maxlength="120">
+          </div>
+          <div class="ov-field">
+            <label for="ovCity">City</label>
+            <input id="ovCity" name="city" type="text" required placeholder="e.g. Lagos" maxlength="80">
+          </div>
+        </div>
+        <div class="ov-field">
+          <label for="ovAddress">Residential address</label>
+          <input id="ovAddress" name="address" type="text" required placeholder="Street, area, LGA" maxlength="200">
+        </div>
+        <div class="ov-field">
+          <label for="ovState">State</label>
+          <select id="ovState" name="state" required>
+            <option value="">Select state</option>
+            <option>Lagos</option><option>Abuja FCT</option><option>Rivers</option><option>Oyo</option>
+            <option>Ogun</option><option>Kano</option><option>Kaduna</option><option>Enugu</option>
+            <option>Anambra</option><option>Delta</option><option>Edo</option><option>Other</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="ov-card">
+        <h2>2. Identity document</h2>
+        <p class="ov-card-sub">Used only for verification. Demo stores data in this browser.</p>
+        <div class="ov-grid">
+          <div class="ov-field">
+            <label for="ovIdType">ID type</label>
+            <select id="ovIdType" name="idType" required>
+              <option value="">Select ID</option>
+              <option value="nin">NIN slip / National ID</option>
+              <option value="voters">Voter’s card</option>
+              <option value="passport">International passport</option>
+              <option value="drivers">Driver’s licence</option>
+            </select>
+          </div>
+          <div class="ov-field">
+            <label for="ovIdNumber">ID number</label>
+            <input id="ovIdNumber" name="idNumber" type="text" required placeholder="Enter ID number" maxlength="40">
+          </div>
+        </div>
+        <div class="ov-field">
+          <label for="ovIdFile">Upload ID photo (optional in demo)</label>
+          <input id="ovIdFile" name="idFile" type="file" accept="image/*,.pdf">
+        </div>
+      </section>
+
+      <section class="ov-card">
+        <h2>3. Listing authority</h2>
+        <p class="ov-card-sub">Tell us how you are allowed to list properties.</p>
+        <div class="ov-field">
+          <label for="ovRole">I am listing as</label>
+          <select id="ovRole" name="listingRole" required>
+            <option value="">Select</option>
+            <option value="owner">Property owner</option>
+            <option value="manager">Property manager (authorized)</option>
+            <option value="agent">Agent (will be disclosed on listings)</option>
+          </select>
+        </div>
+        <div class="ov-field">
+          <label for="ovBusiness">Business / company name (optional)</label>
+          <input id="ovBusiness" name="businessName" type="text" placeholder="If you list under a company" maxlength="120">
+        </div>
+        <div class="ov-field">
+          <label for="ovProofNote">Proof of authority (optional note)</label>
+          <textarea id="ovProofNote" name="proofNote" placeholder="e.g. I own the property / I manage for the family / agency agreement" maxlength="500"></textarea>
+        </div>
+        <div class="ov-field">
+          <label for="ovProofFile">Upload proof document (optional)</label>
+          <input id="ovProofFile" name="proofFile" type="file" accept="image/*,.pdf">
+        </div>
+      </section>
+
+      <section class="ov-card">
+        <h2>4. Declaration</h2>
+        <label class="ov-check">
+          <input type="checkbox" id="ovAgreeTruth" required>
+          <span>I confirm the information is true. I understand false details can lead to removal and ban from LeaseHub.</span>
+        </label>
+        <label class="ov-check">
+          <input type="checkbox" id="ovAgreeTerms" required>
+          <span>I agree to list only properties I own or am authorized to rent out, and to keep chat and viewings honest.</span>
+        </label>
+
+        <div class="ov-actions">
+          <button type="submit" class="primary-btn" id="ovSubmitBtn">Submit for verification</button>
+          <a class="ov-ghost" href="owner-dashboard.html">Back to dashboard</a>
+        </div>
+        <p class="ov-note">After you submit, status becomes <strong>Pending</strong>. You can list properties only when status is <strong>Verified</strong>. An admin reviews requests in the Verification Center.</p>
+        <p id="ovFormStatus" class="form-status" role="status" aria-live="polite"></p>
+      </section>
+    </form>
+
+  </div>
+</div>
+
+<script src="JS/owner-shell.js"></script>
+<script src="JS/data.js"></script>
+<script src="JS/owner-verification.js"></script>
+<script src="JS/leasehub-polish.js"></script>
+</body>
+</html>

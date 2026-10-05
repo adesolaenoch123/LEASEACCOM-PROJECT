@@ -2,12 +2,16 @@
    LEASEHUB - PROPERTY DETAILS
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
     const detailsContainer =
         document.getElementById("propertyDetails");
 
     if (!detailsContainer) return;
+
+    if (window.loadLeaseHubPropertyCatalog) {
+        await window.loadLeaseHubPropertyCatalog();
+    }
 
 
     function isPublicProperty(listing) {
@@ -26,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
         new URLSearchParams(window.location.search);
 
     const propertyId =
-        Number(urlParams.get("id"));
+        String(urlParams.get("id") || "");
 
 
     /* =====================================================
@@ -56,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const property =
         properties.find(
-            item => Number(item.id) === propertyId
+            item => String(item.id) === propertyId
         );
 
 
@@ -132,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const isSaved =
         savedProperties
-            .map(Number)
+            .map(String)
             .includes(propertyId);
 
 
@@ -217,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
        ===================================================== */
 
     function isSameProperty(item, compareTo) {
-        return Number(item.id) === Number(compareTo.id);
+        return String(item.id) === String(compareTo.id);
     }
 
     const similarProperties =
@@ -233,16 +237,14 @@ document.addEventListener("DOMContentLoaded", () => {
             )
             .slice(0, 3);
 
-    const similarIds = similarProperties.map(item =>
-        Number(item.id)
-    );
+    const similarIds = similarProperties.map(item => String(item.id));
 
     const recommendedProperties =
         properties
             .filter(item =>
                 isPublicProperty(item) &&
                 !isSameProperty(item, property) &&
-                !similarIds.includes(Number(item.id)) &&
+                !similarIds.includes(String(item.id)) &&
                 (
                     item.city === property.city ||
                     item.state === property.state
@@ -250,17 +252,15 @@ document.addEventListener("DOMContentLoaded", () => {
             )
             .slice(0, 3);
 
-    const recommendedIds = recommendedProperties.map(item =>
-        Number(item.id)
-    );
+    const recommendedIds = recommendedProperties.map(item => String(item.id));
 
     const recentProperties =
         typeof getRecentlyViewedProperties === "function"
             ? getRecentlyViewedProperties()
                 .filter(item =>
                     !isSameProperty(item, property) &&
-                    !similarIds.includes(Number(item.id)) &&
-                    !recommendedIds.includes(Number(item.id))
+                    !similarIds.includes(String(item.id)) &&
+                    !recommendedIds.includes(String(item.id))
                 )
                 .slice(0, 3)
             : [];
@@ -287,6 +287,66 @@ document.addEventListener("DOMContentLoaded", () => {
     const rentDisplay = formattedPrice;
     const periodDisplay = property.period || "year";
 
+    /* =====================================================
+       TOTAL COST + TRUST PANEL DATA
+       ===================================================== */
+    const rentAmount = Number(property.price) || 0;
+    const fmtNaira = (n) => "₦" + new Intl.NumberFormat("en-NG").format(Math.max(0, Math.round(Number(n) || 0)));
+
+    // Use explicit fields when present; otherwise sensible NG-style estimates (clearly labeled)
+    const hasService = property.serviceCharge != null && property.serviceCharge !== "";
+    const hasCaution = property.cautionFee != null && property.cautionFee !== "";
+    const hasAgency = property.agencyFee != null && property.agencyFee !== "";
+    const hasLegal = property.legalFee != null && property.legalFee !== "";
+
+    const serviceCharge = hasService ? Number(property.serviceCharge) : Math.round(rentAmount * 0.05);
+    const cautionFee = hasCaution ? Number(property.cautionFee) : Math.round(rentAmount * 0.1);
+    const agencyFee = hasAgency ? Number(property.agencyFee) : 0;
+    const legalFee = hasLegal ? Number(property.legalFee) : 0;
+    const otherFees = Number(property.otherFees) || 0;
+
+    const totalMoveIn = rentAmount + serviceCharge + cautionFee + agencyFee + legalFee + otherFees;
+
+    const ownerVerified = String(property.ownerVerificationStatus || property.ownerVerified || "").toLowerCase() === "verified"
+        || (property.ownerVerified === true)
+        || (isVerified && property.verified === true);
+
+    const checks = [
+        { ok: isVerified, label: "Listing reviewed by LeaseHub" },
+        { ok: ownerVerified || isVerified, label: "Owner identity status checked" },
+        { ok: Array.isArray(property.images) ? property.images.length >= 4 : Boolean(property.image), label: "Multiple photos on listing" },
+        { ok: Boolean(property.location || property.city), label: "Location provided" },
+        { ok: rentAmount > 0, label: "Rent amount published" },
+        { ok: Boolean(property.description && String(property.description).length > 40), label: "Description provided" }
+    ];
+
+    const trustScore = checks.filter(c => c.ok).length;
+    const trustChecksHtml = checks.map(c => `
+        <li class="trust-check ${c.ok ? "is-ok" : "is-miss"}">
+            <i class="bx ${c.ok ? "bx-check-circle" : "bx-circle"}" aria-hidden="true"></i>
+            <span>${c.label}</span>
+        </li>
+    `).join("");
+
+    const costRows = [
+        { label: `Rent / ${periodDisplay}`, value: fmtNaira(rentAmount), note: "" },
+        { label: "Service charge", value: fmtNaira(serviceCharge), note: hasService ? "" : "Estimate (5%) — confirm with owner" },
+        { label: "Caution / security deposit", value: fmtNaira(cautionFee), note: hasCaution ? "" : "Estimate (10%) — confirm with owner" },
+    ];
+    if (agencyFee > 0) costRows.push({ label: "Agency fee", value: fmtNaira(agencyFee), note: hasAgency ? "" : "" });
+    if (legalFee > 0) costRows.push({ label: "Legal / agreement fee", value: fmtNaira(legalFee), note: "" });
+    if (otherFees > 0) costRows.push({ label: property.otherFeesLabel || "Other fees", value: fmtNaira(otherFees), note: "" });
+
+    const costRowsHtml = costRows.map(r => `
+        <div class="cost-row">
+            <div class="cost-row-label">
+                <span>${r.label}</span>
+                ${r.note ? `<small class="cost-estimate-note">${r.note}</small>` : ""}
+            </div>
+            <strong>${r.value}</strong>
+        </div>
+    `).join("");
+
 
     /* =====================================================
        PROPERTY DETAILS HTML
@@ -304,19 +364,26 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="property-details-main">
 
 
-                <!-- PROPERTY IMAGE -->
+                <!-- PROPERTY GALLERY (multi-photo carousel) -->
 
-                <div class="property-details-image">
-
-                    <img
-                        src="${property.image || ""}"
-                        alt="${property.title || "Property"}"
-                        onerror="
-                            this.style.display='none';
-                            this.parentElement.classList.add('image-error');
-                        "
-                    >
-
+                <div class="property-gallery-carousel" id="propertyGalleryCarousel" data-autoplay="true">
+                    <div class="gallery-track" id="galleryTrack">
+                        ${(
+                            (Array.isArray(property.images) && property.images.length
+                                ? property.images
+                                : [property.image || ""]
+                            ).filter(Boolean)
+                        ).map((src, i) => `
+                            <div class="gallery-slide">
+                                <img src="${src}" alt="${(property.title || "Property")} photo ${i + 1}"
+                                    onerror="this.style.opacity=.3">
+                            </div>
+                        `).join("")}
+                    </div>
+                    <button type="button" class="gallery-nav prev" id="galleryPrev" aria-label="Previous photo">‹</button>
+                    <button type="button" class="gallery-nav next" id="galleryNext" aria-label="Next photo">›</button>
+                    <div class="gallery-counter" id="galleryCounter">1 / 1</div>
+                    <div class="gallery-dots" id="galleryDots"></div>
                 </div>
 
 
@@ -684,115 +751,64 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
 
-                <!-- COST BREAKDOWN (UI only — no payments yet) -->
-
-                <div class="cost-breakdown">
-
-                    <h3>
-                        Rental cost breakdown
-                    </h3>
-
-                    <div class="cost-row">
-
-                        <span>
-                            Rent
-                        </span>
-
-                        <strong>
-                            ₦${rentDisplay}
-                            <small>
-                                / ${periodDisplay}
-                            </small>
-                        </strong>
-
+                <!-- TOTAL COST (move-in clarity) -->
+                <div class="cost-breakdown lh-total-cost">
+                    <div class="lh-cost-head">
+                        <h3>Total cost to move in</h3>
+                        <span class="lh-cost-pill">Transparent pricing</span>
                     </div>
-
-                    <div class="cost-row">
-
-                        <span>
-                            LeaseHub service fee
-                        </span>
-
-                        <strong class="cost-muted">
-                            Coming soon
-                        </strong>
-
-                    </div>
-
+                    ${costRowsHtml}
                     <div class="cost-row cost-total">
-
-                        <span>
-                            Estimated total
-                        </span>
-
-                        <strong>
-                            ${rentDisplay} + applicable fees
-                        </strong>
-
+                        <span>Estimated total (first payment)</span>
+                        <strong>${fmtNaira(totalMoveIn)}</strong>
                     </div>
-
                     <p class="cost-note">
-                        Final costs are confirmed during the
-                        LeaseHub rental process.
+                        Figures marked as estimates should be confirmed with the owner before you pay.
+                        Prefer LeaseHub-protected payment when it goes live — never send money to a random account.
                     </p>
-
                 </div>
 
-
-                <!-- VERIFICATION CARD -->
-
-                <div class="info-card">
-
-                    <div class="info-icon">
-                        ✓
+                <!-- TRUST PANEL -->
+                <div class="lh-trust-panel">
+                    <div class="lh-trust-head">
+                        <div>
+                            <span class="lh-trust-kicker">LeaseHub trust</span>
+                            <h3>${isVerified ? "Verified listing" : "Verification in progress"}</h3>
+                        </div>
+                        <div class="lh-trust-score" title="Trust checklist score">
+                            <strong>${trustScore}</strong><span>/ ${checks.length}</span>
+                        </div>
                     </div>
+                    <ul class="lh-trust-checks">
+                        ${trustChecksHtml}
+                    </ul>
+                    <div class="lh-trust-owner">
+                        <div class="lh-trust-owner-avatar">${(property.ownerName || "O").trim().charAt(0).toUpperCase()}</div>
+                        <div>
+                            <strong>${property.ownerName || "Property owner"}</strong>
+                            <span>${ownerVerified || isVerified ? "Owner status: Verified path" : "Owner status: Standard listing"}</span>
+                        </div>
+                    </div>
+                    <p class="lh-trust-foot">
+                        ${isVerified
+                            ? "LeaseHub has reviewed this listing. Always inspect the property and keep conversations in-app."
+                            : "This listing is still under review. Extra caution is advised until verification completes."}
+                    </p>
+                </div>
 
+                <!-- SAFETY + REPORT -->
+                <div class="info-card lh-safety-card">
+                    <div class="info-icon">🛡️</div>
                     <div>
-
-                        <h3>
-                            ${
-                                isVerified
-                                    ? "Verified Property"
-                                    : "Verification Pending"
-                            }
-                        </h3>
-
-                        <p>
-                            ${
-                                isVerified
-                                    ? "LeaseHub has reviewed this property listing."
-                                    : "This property is currently awaiting LeaseHub verification."
-                            }
-                        </p>
-
+                        <h3>Stay safe on LeaseHub</h3>
+                        <p>Never pay inspection fees or deposits outside the app to unknown accounts. Use Request Viewing and Apply so there is a record.</p>
                     </div>
-
                 </div>
 
-
-                <!-- LEASEHUB SAFETY -->
-
-                <div class="info-card">
-
-                    <div class="info-icon">
-                        🛡️
-                    </div>
-
-                    <div>
-
-                        <h3>
-                            LeaseHub Protection
-                        </h3>
-
-                        <p>
-                            Never send money directly to a
-                            property owner before completing
-                            the LeaseHub process.
-                        </p>
-
-                    </div>
-
-                </div>
+                <button type="button" class="lh-report-btn" id="reportListingBtn">
+                    <i class="bx bx-flag" aria-hidden="true"></i>
+                    Report this listing
+                </button>
 
 
             </aside>
@@ -933,6 +949,73 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
     }
+
+
+    /* =====================================================
+       GALLERY CAROUSEL (arrows + autoplay 3.5s)
+       ===================================================== */
+    (function initPropertyGallery() {
+        const root = document.getElementById("propertyGalleryCarousel");
+        const track = document.getElementById("galleryTrack");
+        if (!root || !track) return;
+        const slides = Array.from(track.querySelectorAll(".gallery-slide"));
+        const n = slides.length;
+        if (n === 0) return;
+        let index = 0;
+        let timer = null;
+        const counter = document.getElementById("galleryCounter");
+        const dotsWrap = document.getElementById("galleryDots");
+        const prev = document.getElementById("galleryPrev");
+        const next = document.getElementById("galleryNext");
+
+        if (n <= 1) {
+            if (prev) prev.style.display = "none";
+            if (next) next.style.display = "none";
+        }
+
+        if (dotsWrap) {
+            dotsWrap.innerHTML = slides.map((_, i) =>
+                `<button type="button" data-i="${i}" aria-label="Go to photo ${i + 1}"></button>`
+            ).join("");
+        }
+
+        function go(i) {
+            index = (i + n) % n;
+            track.style.transform = `translateX(-${index * 100}%)`;
+            if (counter) counter.textContent = `${index + 1} / ${n}`;
+            if (dotsWrap) {
+                dotsWrap.querySelectorAll("button").forEach((b, bi) => {
+                    b.classList.toggle("active", bi === index);
+                });
+            }
+        }
+
+        function startAuto() {
+            stopAuto();
+            if (n <= 1) return;
+            timer = setInterval(() => go(index + 1), 3500);
+        }
+        function stopAuto() {
+            if (timer) clearInterval(timer);
+            timer = null;
+        }
+
+        prev?.addEventListener("click", () => { go(index - 1); startAuto(); });
+        next?.addEventListener("click", () => { go(index + 1); startAuto(); });
+        dotsWrap?.addEventListener("click", (e) => {
+            const btn = e.target.closest("button[data-i]");
+            if (!btn) return;
+            go(Number(btn.dataset.i));
+            startAuto();
+        });
+        root.addEventListener("mouseenter", stopAuto);
+        root.addEventListener("mouseleave", startAuto);
+        root.addEventListener("touchstart", stopAuto, { passive: true });
+
+        go(0);
+        startAuto();
+    })();
+
 
 
     /* =====================================================
@@ -1414,7 +1497,7 @@ LeaseHub will process your request.`
 
         rentalApplicationForm.addEventListener(
             "submit",
-            event => {
+            async event => {
 
                 event.preventDefault();
 
@@ -1514,8 +1597,8 @@ LeaseHub will process your request.`
                 const alreadyApplied =
                     applications.some(
                         application =>
-                            Number(application.propertyId) ===
-                                Number(property.id) &&
+                            String(application.propertyId) ===
+                                String(property.id) &&
                             String(application.applicantEmail || "")
                                 .toLowerCase() ===
                                 applicantEmail.toLowerCase() &&
@@ -1534,6 +1617,32 @@ LeaseHub will process your request.`
                     return;
                 }
 
+                const submitButton = rentalApplicationForm.querySelector('[type="submit"]');
+                if (submitButton) submitButton.disabled = true;
+
+                let backendApplication;
+                try {
+                    const response = await window.LeaseHubApi.request("/applications", {
+                        method: "POST",
+                        body: {
+                            property_id: String(property.id),
+                            applicant_name: applicantName,
+                            applicant_phone: applicantPhone,
+                            move_in_date: moveInDate,
+                            message: applicationMessage || null
+                        }
+                    });
+                    backendApplication = response.application;
+                } catch (error) {
+                    if (submitButton) submitButton.disabled = false;
+                    if (typeof leaseHubToast === "function") {
+                        leaseHubToast(error.message || "Unable to submit your application.");
+                    } else {
+                        alert(error.message || "Unable to submit your application.");
+                    }
+                    return;
+                }
+
 
                 /* =====================================
                    CREATE APPLICATION
@@ -1542,7 +1651,7 @@ LeaseHub will process your request.`
                 const rentalApplication = {
 
                     id:
-                        Date.now(),
+                        backendApplication.id,
 
                     propertyId:
                         property.id,
@@ -1565,6 +1674,12 @@ LeaseHub will process your request.`
                         property.period ||
                         "year",
 
+                    tenantId:
+                        currentUser.id,
+
+                    ownerId:
+                        backendApplication.owner_id,
+
                     ownerName:
                         property.ownerName ||
                         "Property Owner",
@@ -1585,10 +1700,10 @@ LeaseHub will process your request.`
                         applicationMessage,
 
                     status:
-                        "pending",
+                        backendApplication.status || "submitted",
 
                     createdAt:
-                        new Date().toISOString()
+                        backendApplication.created_at || new Date().toISOString()
 
                 };
 
@@ -1670,6 +1785,7 @@ LeaseHub will process your request.`
                 rentalApplicationForm.reset();
                 applicationModal.classList.remove("active");
                 document.body.classList.remove("modal-open");
+                if (submitButton) submitButton.disabled = false;
 
             }
         );
@@ -1866,6 +1982,49 @@ LeaseHub will process your request.`
 
         moveInDate.min = today;
 
+    }
+
+
+
+    /* =====================================================
+       REPORT LISTING
+       ===================================================== */
+    const reportBtn = document.getElementById("reportListingBtn");
+    if (reportBtn) {
+        reportBtn.addEventListener("click", () => {
+            const reasons = [
+                "Suspected scam / fake listing",
+                "Photos or details misleading",
+                "Wrong price or location",
+                "Owner unresponsive / abusive",
+                "Property not available",
+                "Other"
+            ];
+            const choice = window.prompt(
+                "Report listing — type a number:\\n" +
+                reasons.map((r, i) => (i + 1) + ". " + r).join("\\n") +
+                "\\n\\nOr type your own reason:"
+            );
+            if (choice == null || !String(choice).trim()) return;
+            let reason = String(choice).trim();
+            const num = Number(reason);
+            if (num >= 1 && num <= reasons.length) reason = reasons[num - 1];
+
+            const key = "leasehubListingReports";
+            let reports = [];
+            try { reports = JSON.parse(localStorage.getItem(key) || "[]") || []; } catch (e) { reports = []; }
+            reports.unshift({
+                id: "rep-" + Date.now(),
+                propertyId: propertyId,
+                title: property.title || "",
+                reason: reason,
+                at: new Date().toISOString()
+            });
+            localStorage.setItem(key, JSON.stringify(reports.slice(0, 50)));
+            reportBtn.textContent = "Report submitted — thank you";
+            reportBtn.disabled = true;
+            alert("Thanks. LeaseHub will review this report: " + reason);
+        });
     }
 
 });

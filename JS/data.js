@@ -8,6 +8,14 @@ const properties = [
         city: "Lagos",
         price: 2800000,
         period: "year",
+        serviceCharge: 150000,
+        cautionFee: 280000,
+        agencyFee: 0,
+        ownerName: "Yaba Stay Homes",
+        ownerVerified: true,
+        verificationStatus: "approved",
+        listingStatus: "live",
+        description: "Bright 2-bedroom apartment in Lekki Phase 1 with reliable power backup, fitted kitchen, and secured estate access. Ideal for professionals who want a clear, transparent rental process on LeaseHub.",
         bedrooms: 2,
         bathrooms: 2,
         verified: true,
@@ -17,7 +25,11 @@ images: [
     "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85",
     "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1200&q=85",
     "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=85",
-    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85"
+    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1600573472592-401b489a3cdc?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=85"
 ]
     },
 
@@ -29,6 +41,14 @@ images: [
         city: "Abuja",
         price: 6500000,
         period: "year",
+        serviceCharge: 300000,
+        cautionFee: 650000,
+        agencyFee: 0,
+        ownerName: "Gwarinpa Residences",
+        ownerVerified: true,
+        verificationStatus: "approved",
+        listingStatus: "live",
+        description: "Spacious 4-bedroom duplex in Gwarinpa with compound parking, all-ensuite rooms, and a quiet street. Listed with full cost breakdown so tenants know what to budget before viewing.",
         bedrooms: 4,
         bathrooms: 4,
         verified: true,
@@ -301,8 +321,69 @@ function isPropertyRejected(property) {
     return normalizeVerificationStatus(property) === "rejected";
 }
 
+/** Normalized marketplace listing lifecycle */
+function getListingStatus(property) {
+    if (!property) return "pending";
+    if (isPropertyRejected(property)) return "rejected";
+
+    const ls = String(property.listingStatus || "")
+        .trim()
+        .toLowerCase();
+
+    if (ls === "draft" || ls === "paused" || ls === "live" || ls === "pending") {
+        return ls;
+    }
+
+    // Legacy demo data: verified flag / approved status counts as live
+    if (isPropertyVerified(property)) return "live";
+    return "pending";
+}
+
+function countPropertyPhotos(property) {
+    if (Array.isArray(property?.images) && property.images.length) {
+        return property.images.filter(Boolean).length;
+    }
+    return property?.image ? 1 : 0;
+}
+
+const LEASEHUB_MIN_PUBLIC_PHOTOS = 4;
+const LEASEHUB_MIN_DESCRIPTION = 40;
+
+/**
+ * Public marketplace rules:
+ * - not rejected
+ * - listingStatus live (or legacy verified)
+ * - enough photos
+ * - has title, price, location
+ */
 function isPropertyPublic(property) {
-    return !isPropertyRejected(property);
+    if (!property || isPropertyRejected(property)) return false;
+    if (getListingStatus(property) !== "live") return false;
+
+    const photos = countPropertyPhotos(property);
+    if (photos < LEASEHUB_MIN_PUBLIC_PHOTOS) return false;
+
+    const title = String(property.title || "").trim();
+    const location = String(property.location || property.city || "").trim();
+    const price = Number(property.price) || 0;
+    if (!title || !location || price <= 0) return false;
+
+    return true;
+}
+
+function getListingQualityReport(property) {
+    const photos = countPropertyPhotos(property);
+    const desc = String(property.description || "").trim();
+    const checks = [
+        { ok: photos >= LEASEHUB_MIN_PUBLIC_PHOTOS, label: `At least ${LEASEHUB_MIN_PUBLIC_PHOTOS} photos`, detail: photos + " uploaded" },
+        { ok: desc.length >= LEASEHUB_MIN_DESCRIPTION, label: "Clear description", detail: desc.length + " characters" },
+        { ok: (Number(property.price) || 0) > 0, label: "Rent price set", detail: "" },
+        { ok: Boolean(String(property.location || property.city || "").trim()), label: "Location set", detail: "" },
+        { ok: Boolean(String(property.title || "").trim()), label: "Title set", detail: "" },
+        { ok: Boolean(property.type), label: "Property type set", detail: "" }
+    ];
+    const passed = checks.filter(c => c.ok).length;
+    return { checks, passed, total: checks.length, ready: passed === checks.length };
 }
 
 /* ================= LOCAL PROPERTIES ================= */

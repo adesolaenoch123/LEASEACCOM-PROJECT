@@ -439,6 +439,10 @@ document.addEventListener("DOMContentLoaded", () => {
         chatContent.style.display =
             "flex";
 
+        document.body.classList.add("chat-open");
+        const shellEl = document.querySelector(".messages-shell");
+        if (shellEl) shellEl.classList.add("chat-open");
+
 
         const tenantProfile =
             getTenantProfile();

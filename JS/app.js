@@ -184,12 +184,13 @@ function loadFeatured() {
                 button.addEventListener("click", () => {
 
                     const id =
-                        Number(button.dataset.id);
+                        normalizeLeaseHubPropertyId(button.dataset.id);
 
                     let saved =
                         JSON.parse(
                             localStorage.getItem("savedProperties")
                         ) || [];
+                    saved = saved.map(normalizeLeaseHubPropertyId);
 
                     if (saved.includes(id)) {
 
@@ -613,16 +614,25 @@ function loadFeatured() {
 
     /* ================= INITIALIZE ================= */
 
-    loadFeatured();
+    if (window.loadLeaseHubPropertyCatalog) {
+        window.loadLeaseHubPropertyCatalog().then(loadFeatured);
+    } else {
+        loadFeatured();
+    }
 
 });
 
 function getComparedProperties() {
-    return JSON.parse(localStorage.getItem("compareProperties")) || [];
+    return (JSON.parse(localStorage.getItem("compareProperties")) || []).map(normalizeLeaseHubPropertyId);
+}
+
+function normalizeLeaseHubPropertyId(value) {
+    const id = String(value ?? "").trim();
+    return /^\d+$/.test(id) ? Number(id) : id;
 }
 
 function saveComparedProperties(ids) {
-    localStorage.setItem("compareProperties", JSON.stringify(ids.slice(0, 3)));
+    localStorage.setItem("compareProperties", JSON.stringify(ids.map(normalizeLeaseHubPropertyId).slice(0, 3)));
 }
 
 function updateCompareTray() {
@@ -634,7 +644,7 @@ function updateCompareTray() {
     if (!tray || !selectedContainer || !count || !compareButton) return;
 
     const selected = getComparedProperties()
-        .map(id => properties.find(property => property.id === id))
+        .map(id => properties.find(property => normalizeLeaseHubPropertyId(property.id) === id))
         .filter(Boolean);
 
     tray.classList.toggle("has-selections", selected.length > 0);
@@ -649,7 +659,7 @@ function openComparison() {
     const modal = document.getElementById("compareModal");
     const table = document.getElementById("compareTable");
     const selected = getComparedProperties()
-        .map(id => properties.find(property => property.id === id))
+        .map(id => properties.find(property => normalizeLeaseHubPropertyId(property.id) === id))
         .filter(Boolean);
 
     if (!modal || !table || selected.length < 2) return;
@@ -1496,223 +1506,136 @@ function showAuthStatus(message, type = "error") {
     authStatus.className = `form-status is-visible is-${type}`;
 }
 
+
+function getCurrentUser() {
+    try {
+        const raw =
+            localStorage.getItem("leasehubCurrentUser") ||
+            localStorage.getItem("leaseHubCurrentUser") ||
+            localStorage.getItem("currentUser");
+        if (!raw) return null;
+        const user = JSON.parse(raw);
+        if (!user || typeof user !== "object") return null;
+        user.accountType = normalizeAccountType(user.accountType);
+        return user;
+    } catch (e) {
+        return null;
+    }
+}
+
+function normalizeAccountType(value) {
+    const v = String(value || "").trim().toLowerCase();
+    if (!v) return "tenant";
+    if (v === "owner" || v === "landlord" || v.includes("owner") || v.includes("business") || v.includes("landlord")) {
+        return "owner";
+    }
+    return "tenant";
+}
+
+function saveCurrentUser(user) {
+    const payload = JSON.stringify(user);
+    localStorage.setItem("leasehubCurrentUser", payload);
+    // compatibility with older/owner-shell keys
+    localStorage.setItem("leaseHubCurrentUser", payload);
+    localStorage.setItem("currentUser", payload);
+}
+
+function redirectAfterAuth(user) {
+    const type = normalizeAccountType(user && user.accountType);
+    const target = type === "owner" ? "owner-dashboard.html" : "tenant-dashboard.html";
+    window.location.replace(target);
+}
+
 const registerForm =
     document.getElementById("registerForm");
 
 if (registerForm) {
-
-    registerForm.addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-            const accountType =
-                document.getElementById(
-                    "accountType"
-                ).value;
-
-            const name =
-                document.getElementById(
-                    "registerName"
-                ).value.trim();
-
-            const email =
-                document.getElementById(
-                    "registerEmail"
-                ).value.trim().toLowerCase();
-
-            const phone =
-                document.getElementById(
-                    "registerPhone"
-                ).value.trim();
-
-            const password =
-                document.getElementById(
-                    "registerPassword"
-                ).value;
-
-
-            if (!accountType) {
-
-                showAuthStatus("Please select your account type.");
-
-                return;
-
-            }
-
-
-            let existingUsers = [];
-
-            try {
-                const storedUsers = JSON.parse(
-                    localStorage.getItem("leasehubUsers")
-                );
-                existingUsers = Array.isArray(storedUsers)
-                    ? storedUsers
-                    : [];
-            } catch (error) {
-                localStorage.removeItem("leasehubUsers");
-            }
-
-
-            const alreadyExists =
-                existingUsers.some(
-                    user =>
-                        user.email === email
-                );
-
-
-            if (alreadyExists) {
-
-                showAuthStatus("An account with this email already exists.");
-
-                return;
-
-            }
-
-
-            const newUser = {
-
-                id: Date.now(),
-
-                accountType,
-
-                name,
-
-                email,
-
-                phone,
-
-                password,
-
-                savedProperties: [],
-
-                viewingRequests: [],
-
-                applications: [],
-
-                properties: []
-
-            };
-
-
-            existingUsers.push(newUser);
-
-
-            localStorage.setItem(
-                "leasehubUsers",
-                JSON.stringify(existingUsers)
-            );
-
-
-            localStorage.setItem(
-                "leasehubCurrentUser",
-                JSON.stringify(newUser)
-            );
-
-
-            if (accountType === "owner") {
-
-                window.location.href =
-                    "owner-dashboard.html";
-
-            } else {
-
-                window.location.href =
-                    "tenant-dashboard.html";
-
-            }
-
+    registerForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const rawAccountType = document.getElementById("accountType").value;
+        if (!rawAccountType) {
+            showAuthStatus("Please select your account type.");
+            return;
         }
-    );
 
+        const accountType = normalizeAccountType(rawAccountType);
+        const name = document.getElementById("registerName").value.trim();
+        const email = document.getElementById("registerEmail").value.trim().toLowerCase();
+        const phone = document.getElementById("registerPhone").value.trim();
+        const password = document.getElementById("registerPassword").value;
+
+        try {
+            const { data, error } = await window.LeaseHubAuth.signUp({
+                email,
+                password,
+                name,
+                phone,
+                accountType
+            });
+            if (error) throw error;
+            if (!data.session) {
+                showAuthStatus("Account created. Check your email to confirm it, then log in.", "success");
+                return;
+            }
+            const user = data.user;
+            const currentUser = {
+                id: user.id,
+                accountType,
+                name,
+                email,
+                phone,
+                savedProperties: [],
+                viewingRequests: [],
+                applications: [],
+                properties: [],
+                verificationStatus: accountType === "owner" ? "unverified" : "n/a",
+                ownerVerificationStatus: accountType === "owner" ? "unverified" : "n/a"
+            };
+            localStorage.setItem("leasehub_session_token", data.session.access_token);
+            saveCurrentUser(currentUser);
+            redirectAfterAuth(currentUser);
+        } catch (error) {
+            showAuthStatus(error.message || "Unable to create your account. Please try again.");
+        }
+    });
 }
+
 /* ================= LOGIN ================= */
 
-const loginForm =
-    document.getElementById("loginForm");
+const loginForm = document.getElementById("loginForm");
 
 if (loginForm) {
+    loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+        const password = document.getElementById("loginPassword").value;
 
-    loginForm.addEventListener(
-        "submit",
-        function(event) {
-
-            event.preventDefault();
-
-
-            const email =
-                document.getElementById(
-                    "loginEmail"
-                ).value.trim().toLowerCase();
-
-            const password =
-                document.getElementById(
-                    "loginPassword"
-                ).value;
-
-
-            let users = [];
-
-            try {
-                const storedUsers = JSON.parse(
-                    localStorage.getItem("leasehubUsers")
-                );
-                users = Array.isArray(storedUsers)
-                    ? storedUsers
-                    : [];
-            } catch (error) {
-                showAuthStatus("Your saved account data could not be read. Please register again.");
-                return;
-            }
-
-
-            const user =
-                users.find(account =>
-                    String(account.email || "")
-                        .trim()
-                        .toLowerCase() === email &&
-                    String(account.password || "") === password
-                );
-
-
-            if (!user) {
-
-                showAuthStatus(
-                    users.length === 0
-                        ? "No LeaseHub account was found in this browser. Please register first."
-                        : "Incorrect email or password. Check the email and password you used when registering."
-                );
-
-                return;
-
-            }
-
-
-            localStorage.setItem(
-                "leasehubCurrentUser",
-                JSON.stringify(user)
-            );
-
-
-            if (
-                user.accountType === "owner"
-            ) {
-
-                window.location.href =
-                    "owner-dashboard.html";
-
-            } else {
-
-                window.location.href =
-                    "tenant-dashboard.html";
-
-            }
-
+        try {
+            const { data, error } = await window.LeaseHubAuth.signIn(email, password);
+            if (error) throw error;
+            const user = data.user;
+            const metadata = user.user_metadata || {};
+            const accountType = normalizeAccountType(metadata.account_type);
+            const currentUser = {
+                id: user.id,
+                accountType,
+                name: metadata.full_name || metadata.name || email.split("@")[0],
+                email,
+                phone: metadata.phone || "",
+                savedProperties: [],
+                viewingRequests: [],
+                applications: [],
+                properties: [],
+                verificationStatus: accountType === "owner" ? "unverified" : "n/a",
+                ownerVerificationStatus: accountType === "owner" ? "unverified" : "n/a"
+            };
+            localStorage.setItem("leasehub_session_token", data.session.access_token);
+            saveCurrentUser(currentUser);
+            redirectAfterAuth(currentUser);
+        } catch (error) {
+            showAuthStatus(error.message || "Email or password is incorrect.");
         }
-    );
-
+    });
 }
 
 /* ================= TENANT DASHBOARD ================= */
@@ -1722,24 +1645,12 @@ const tenantDashboard =
 
 if (tenantDashboard) {
 
-    const currentUser =
-        JSON.parse(
-            localStorage.getItem(
-                "leasehubCurrentUser"
-            )
-        );
+    const currentUser = getCurrentUser();
 
-
-    /* PROTECT DASHBOARD */
-
-    if (
-        !currentUser ||
-        currentUser.accountType !== "tenant"
-    ) {
-
-        window.location.href =
-            "login.html";
-
+    if (!currentUser) {
+        window.location.replace("login.html");
+    } else if (normalizeAccountType(currentUser.accountType) !== "tenant") {
+        window.location.replace("owner-dashboard.html");
     } else {
 
         const welcomeName =
@@ -1918,23 +1829,18 @@ const ownerPropertiesContainer =
 
 if (ownerPropertiesContainer) {
 
-    const currentUser =
-        JSON.parse(
-            localStorage.getItem(
-                "leasehubCurrentUser"
-            )
-        );
+    const currentUser = getCurrentUser();
 
 
-    /* PROTECT PAGE */
+    /* PROTECT PAGE — never loop: send wrong role to the right dashboard */
 
-    if (
-        !currentUser ||
-        currentUser.accountType !== "owner"
-    ) {
+    if (!currentUser) {
 
-        window.location.href =
-            "login.html";
+        window.location.replace("login.html");
+
+    } else if (normalizeAccountType(currentUser.accountType) !== "owner") {
+
+        window.location.replace("tenant-dashboard.html");
 
     } else {
 
@@ -2009,16 +1915,19 @@ if (ownerPropertiesContainer) {
                 ownerListings
                     .map(property => {
                         const verificationStatus = getLeaseHubVerificationStatus(property);
-                        const statusClass = verificationStatus === "approved"
+                        const listingSt = (typeof getListingStatus === "function")
+                            ? getListingStatus(property)
+                            : String(property.listingStatus || verificationStatus || "pending").toLowerCase();
+                        const statusClass = (listingSt === "live" || verificationStatus === "approved")
                             ? "status-live"
-                            : verificationStatus === "rejected"
+                            : (listingSt === "rejected" || verificationStatus === "rejected")
                                 ? "status-rejected"
                                 : "status-pending";
-                        const statusText = verificationStatus === "approved"
+                        const statusText = (listingSt === "live" || verificationStatus === "approved")
                             ? "🟢 Live"
-                            : verificationStatus === "rejected"
+                            : (listingSt === "rejected" || verificationStatus === "rejected")
                                 ? "⛔ Rejected"
-                                : "⏳ Pending verification";
+                                : "⏳ Pending review";
 
                         return `
 
@@ -3799,7 +3708,7 @@ function getSavedProperties() {
                 localStorage.getItem("leasehubCurrentUser") || "null"
             );
             const migrated = Array.isArray(currentUser?.savedProperties)
-                ? [...new Set(currentUser.savedProperties.map(Number).filter(Number.isFinite))]
+                ? [...new Set(currentUser.savedProperties.map(normalizeLeaseHubPropertyId).filter(Boolean))]
                 : [];
 
             if (migrated.length > 0) {
@@ -3814,16 +3723,14 @@ function getSavedProperties() {
 
     try {
         const saved = JSON.parse(storedValue || "[]");
-        return Array.isArray(saved) ? saved : [];
+        return Array.isArray(saved) ? saved.map(normalizeLeaseHubPropertyId).filter(Boolean) : [];
     } catch (error) {
         return [];
     }
 }
 
 function saveSavedProperties(saved) {
-    const normalized = [...new Set(
-        saved.map(Number).filter(Number.isFinite)
-    )];
+    const normalized = [...new Set(saved.map(normalizeLeaseHubPropertyId).filter(Boolean))];
 
     localStorage.setItem("savedProperties", JSON.stringify(normalized));
 
@@ -3943,8 +3850,9 @@ function renderRecentlyViewed() {
    ========================================================= */
 
 function createPropertyCard(property) {
+    const propertyId = String(property.id);
     const saved = typeof getSavedProperties === "function"
-        ? getSavedProperties().map(Number).includes(Number(property.id))
+        ? getSavedProperties().map(String).includes(propertyId)
         : false;
     const verified = typeof isLeaseHubPropertyVerified === "function"
         ? isLeaseHubPropertyVerified(property)
@@ -3970,8 +3878,8 @@ function createPropertyCard(property) {
         ? `<span>${icon("bx-area")}${esc(property.size)}</span>` : "";
 
     return `
-        <article class="property-card leasehub-enhanced-card" data-property-id="${Number(property.id)}"
-            onclick="openProperty(${Number(property.id)})">
+        <article class="property-card leasehub-enhanced-card" data-property-id="${esc(propertyId)}"
+            onclick='openProperty(${JSON.stringify(propertyId)})'>
             <div class="property-image">
                 <img src="${esc(image)}" alt="${title}" loading="lazy">
                 <div class="badge ${verified ? "" : "pending-badge"}">
@@ -3979,13 +3887,13 @@ function createPropertyCard(property) {
                     ${verified ? "Verified" : "Pending Verification"}
                 </div>
                 <button type="button" class="save-btn ${saved ? "saved" : ""}"
-                    data-id="${Number(property.id)}"
+                    data-id="${esc(propertyId)}"
                     aria-label="${saved ? "Remove saved property" : "Save property"}"
                     onclick="event.stopPropagation()">
                     ${icon("bx-heart")}
                 </button>
                 <button type="button" class="compare-card-btn"
-                    data-compare-id="${Number(property.id)}"
+                    data-compare-id="${esc(propertyId)}"
                     aria-label="Add property to comparison"
                     onclick="event.stopPropagation()">
                     ${icon("bx-git-compare")} Compare
@@ -3998,7 +3906,7 @@ function createPropertyCard(property) {
                 <div class="property-price">₦${price} <span>/ ${period}</span></div>
                 <div class="property-meta">${beds}${baths}${size}</div>
                 <button type="button" class="view-property-btn"
-                    onclick="event.stopPropagation(); openProperty(${Number(property.id)});">
+                    onclick='event.stopPropagation(); openProperty(${JSON.stringify(propertyId)});'>
                     View Property ${icon("bx-arrow-right")}
                 </button>
             </div>
@@ -4019,12 +3927,12 @@ function activateSaveButtons() {
 
             event.stopPropagation();
 
-            const propertyId = Number(this.dataset.id);
+            const propertyId = normalizeLeaseHubPropertyId(this.dataset.id);
 
             let saved = getSavedProperties();
 
             const index = saved
-                .map(Number)
+                .map(normalizeLeaseHubPropertyId)
                 .indexOf(propertyId);
 
             if (index === -1) {
@@ -4051,7 +3959,7 @@ function activateSaveButtons() {
         button.addEventListener("click", event => {
             event.stopPropagation();
 
-            const id = Number(button.dataset.compareId);
+            const id = normalizeLeaseHubPropertyId(button.dataset.compareId);
             const selected = getComparedProperties();
 
             if (selected.includes(id)) {
@@ -4074,7 +3982,7 @@ function activateSaveButtons() {
 
 function openProperty(id) {
 
-    const propertyId = Number(id);
+    const propertyId = String(id);
 
     if (!Array.isArray(properties)) {
         console.error("Properties data was not loaded.");
@@ -4082,7 +3990,7 @@ function openProperty(id) {
     }
 
     const property = properties.find(
-        item => Number(item.id) === propertyId
+        item => String(item.id) === propertyId
     );
 
     if (!property) {
@@ -4096,9 +4004,11 @@ function openProperty(id) {
     );
 
     // Track this property in the Recently Viewed list.
-    addRecentlyViewed(propertyId);
+    if (/^\d+$/.test(propertyId) && typeof addRecentlyViewed === "function") {
+        addRecentlyViewed(Number(propertyId));
+    }
 
-    window.location.href = `property-details.html?id=${propertyId}`;
+    window.location.href = `property-details.html?id=${encodeURIComponent(propertyId)}`;
 }
 
 
@@ -4197,7 +4107,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    loadMarketplaceProperties(properties);
+    if (window.loadLeaseHubPropertyCatalog) {
+        window.loadLeaseHubPropertyCatalog().then(() => loadMarketplaceProperties(properties));
+    } else {
+        loadMarketplaceProperties(properties);
+    }
 
 });
 

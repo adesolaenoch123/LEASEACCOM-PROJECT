@@ -641,6 +641,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 "flex";
         }
 
+        // Mobile: show conversation full-screen
+        const shell = document.querySelector(".messages-shell");
+        if (shell) shell.classList.add("chat-open");
+
 
         if (chatPersonName) {
 
@@ -1862,3 +1866,21 @@ document.addEventListener(
 
     }
 );
+
+/* Mobile back to conversation list (shared with inline script) */
+document.addEventListener("DOMContentLoaded", function () {
+  var backBtn = document.getElementById("chatBackBtn");
+  if (!backBtn || backBtn.dataset.lhBound) return;
+  backBtn.dataset.lhBound = "1";
+  backBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var shell = document.querySelector(".messages-shell");
+    if (shell) shell.classList.remove("chat-open");
+    var content = document.getElementById("chatContent");
+    var empty = document.getElementById("chatEmpty");
+    if (content) content.style.display = "none";
+    if (empty) empty.style.display = "flex";
+    try { localStorage.removeItem("activeConversationId"); } catch (err) {}
+  });
+});
