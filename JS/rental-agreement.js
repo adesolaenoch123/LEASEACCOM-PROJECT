@@ -2,7 +2,7 @@
    LEASEHUB RENTAL AGREEMENT ENGINE
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
     const agreementContent =
         document.getElementById("agreementContent");
@@ -81,12 +81,56 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    const application =
+    let application =
         applications.find(
             item =>
                 String(item.id) ===
                 String(applicationId)
         );
+
+    let backendMode = false;
+    let backendAgreement = null;
+    let backendLoadError = null;
+    let currentUser = null;
+    try {
+        currentUser = JSON.parse(localStorage.getItem("leasehubCurrentUser") || "null");
+    } catch (error) {
+        currentUser = null;
+    }
+
+    if (window.LeaseHubApi && window.LeaseHubAuth) {
+        try {
+            const token = await window.LeaseHubAuth.getAccessToken();
+            if (token) {
+                const response = await window.LeaseHubApi.request(
+                    `/applications/${encodeURIComponent(applicationId)}`
+                );
+                const record = response.application;
+                application = {
+                    ...application,
+                    id: record.id,
+                    propertyId: record.property_id,
+                    propertyTitle: record.property_title,
+                    propertyImage: record.property_image,
+                    propertyLocation: record.property_location,
+                    propertyPrice: record.property_price,
+                    propertyPeriod: record.property_period,
+                    ownerId: record.owner_id,
+                    ownerName: record.owner_name,
+                    applicantName: record.applicant_name,
+                    applicantEmail: record.applicant_email,
+                    applicantPhone: record.applicant_phone,
+                    moveInDate: record.move_in_date,
+                    stayLength: record.stay_length,
+                    tenantId: record.tenant_id,
+                    status: record.status
+                };
+                backendMode = true;
+            }
+        } catch (error) {
+            backendLoadError = error;
+        }
+    }
 
 
     if (!application) {
@@ -94,11 +138,11 @@ document.addEventListener("DOMContentLoaded", () => {
         agreementContent.innerHTML = `
             <div class="dashboard-empty">
                 <h3>
-                    Application not found
+                    ${backendLoadError ? "Agreement could not be loaded" : "Application not found"}
                 </h3>
 
                 <p>
-                    This rental application could not be found.
+                    ${backendLoadError ? escapeHTML(backendLoadError.message) : "This rental application could not be found."}
                 </p>
             </div>
         `;
@@ -154,12 +198,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    const property =
+    let property =
         properties.find(
             item =>
                 String(item.id) ===
                 String(application.propertyId)
         );
+
+    if (!property && backendMode) {
+        property = {
+            id: application.propertyId,
+            title: application.propertyTitle,
+            image: application.propertyImage,
+            location: application.propertyLocation,
+            price: application.propertyPrice,
+            period: application.propertyPeriod,
+            ownerName: application.ownerName
+        };
+    }
 
 
     if (!property) {
@@ -821,7 +877,63 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
-    if (!agreement) {
+    if (backendMode) {
+        try {
+            const response = await window.LeaseHubApi.request("/agreements");
+            backendAgreement = (response.agreements || []).find((item) =>
+                String(item.application_id) === String(application.id)
+            );
+
+            if (!backendAgreement) {
+                const requestedStay = String(application.stayLength || "");
+                const requestedValue = Number(requestedStay.match(/\d+/)?.[0]) || 1;
+                const termMonths = /month/i.test(requestedStay)
+                    ? requestedValue
+                    : requestedValue * 12;
+                const created = await window.LeaseHubApi.request("/agreements", {
+                    method: "POST",
+                    body: {
+                        application_id: String(application.id),
+                        term_months: Math.max(1, termMonths),
+                        start_date: application.moveInDate || null
+                    }
+                });
+                backendAgreement = created.agreement;
+            }
+
+            agreement = {
+                id: backendAgreement.id,
+                applicationId: backendAgreement.application_id,
+                propertyId: backendAgreement.property_id,
+                propertyTitle: application.propertyTitle || property.title,
+                agreementType,
+                ownerName,
+                tenantName: application.applicantName,
+                rent: backendAgreement.monthly_rent,
+                period: backendAgreement.property_period || property.period || "year",
+                moveInDate: backendAgreement.start_date || application.moveInDate,
+                status: backendAgreement.status,
+                ownerAgreed: Boolean(backendAgreement.owner_agreed),
+                tenantAgreed: Boolean(backendAgreement.tenant_agreed),
+                ownerAgreedAt: backendAgreement.owner_agreed_at,
+                tenantAgreedAt: backendAgreement.tenant_agreed_at,
+                createdAt: backendAgreement.created_at
+            };
+        } catch (error) {
+            agreementContent.innerHTML = `
+                <div class="dashboard-empty">
+                    <h3>Agreement could not be loaded</h3>
+                    <p>${escapeHTML(error.message || "The agreement service is unavailable.")}</p>
+                </div>
+            `;
+            ownerAgreeBtn.disabled = true;
+            tenantAgreeBtn.disabled = true;
+            return;
+        }
+    }
+
+
+    if (!agreement && !backendMode) {
 
         agreement = {
 
@@ -867,9 +979,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
 
-        agreements.push(
-            agreement
-        );
+        agreements.push(agreement);
 
 
         localStorage.setItem(
@@ -956,27 +1066,43 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    async function recordSignature(role) {
+        if (backendMode) {
+            try {
+                const response = await window.LeaseHubApi.request(
+                    `/agreements/${encodeURIComponent(backendAgreement.id)}/sign`,
+                    { method: "PATCH" }
+                );
+                backendAgreement = response.agreement;
+                agreement.ownerAgreed = Boolean(backendAgreement.owner_agreed);
+                agreement.tenantAgreed = Boolean(backendAgreement.tenant_agreed);
+                agreement.ownerAgreedAt = backendAgreement.owner_agreed_at;
+                agreement.tenantAgreedAt = backendAgreement.tenant_agreed_at;
+                agreement.status = backendAgreement.status;
+            } catch (error) {
+                window.alert(error.message || "Unable to record your agreement.");
+                return;
+            }
+        } else {
+            agreement[`${role}Agreed`] = true;
+            agreement[`${role}AgreedAt`] = new Date().toISOString();
+            saveAgreement();
+        }
+
+        refreshStatus();
+    }
+
+
     /* =====================================================
        OWNER AGREES
        ===================================================== */
 
     ownerAgreeBtn.addEventListener(
         "click",
-        () => {
-
-            agreement.ownerAgreed =
-                true;
-
-
-            agreement.ownerAgreedAt =
-                new Date().toISOString();
-
-
-            saveAgreement();
-
-
-            refreshStatus();
-
+        async () => {
+            ownerAgreeBtn.disabled = true;
+            await recordSignature("owner");
+            if (!agreement.ownerAgreed) ownerAgreeBtn.disabled = false;
         }
     );
 
@@ -987,23 +1113,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tenantAgreeBtn.addEventListener(
         "click",
-        () => {
-
-            agreement.tenantAgreed =
-                true;
-
-
-            agreement.tenantAgreedAt =
-                new Date().toISOString();
-
-
-            saveAgreement();
-
-
-            refreshStatus();
-
+        async () => {
+            tenantAgreeBtn.disabled = true;
+            await recordSignature("tenant");
+            if (!agreement.tenantAgreed) tenantAgreeBtn.disabled = false;
         }
     );
+
+    if (backendMode) {
+        const role = String(currentUser?.accountType || "").toLowerCase();
+        ownerAgreeBtn.style.display = role === "owner" ? "" : "none";
+        tenantAgreeBtn.style.display = role === "tenant" ? "" : "none";
+    }
 
 
     function saveAgreement() {

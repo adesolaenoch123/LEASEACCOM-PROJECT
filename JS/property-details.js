@@ -1217,7 +1217,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         viewingForm.addEventListener(
             "submit",
-            event => {
+            async event => {
 
                 event.preventDefault();
 
@@ -1306,6 +1306,30 @@ document.addEventListener("DOMContentLoaded", async () => {
                     statusHistory: [{ status: "requested", at: new Date().toISOString(), by: "tenant" }]
 
                 };
+
+
+                try {
+                    const response = await window.LeaseHubApi?.createViewingRequest({
+                        property_id: String(property.id),
+                        preferred_date: viewingDate,
+                        preferred_time: viewingTime
+                    });
+                    const savedViewing = response?.viewing_request;
+                    if (savedViewing) {
+                        Object.assign(viewingRequest, {
+                            id: savedViewing.id,
+                            propertyId: savedViewing.property_id,
+                            tenantId: savedViewing.tenant_id,
+                            ownerId: savedViewing.owner_id,
+                            status: savedViewing.status,
+                            createdAt: savedViewing.created_at,
+                            updatedAt: savedViewing.updated_at
+                        });
+                    }
+                } catch (error) {
+                    alert(error.message || "Unable to submit your viewing request.");
+                    return;
+                }
 
 
                 let requests = [];
@@ -1506,7 +1530,7 @@ LeaseHub will process your request.`
 
         rentalApplicationForm.addEventListener(
             "submit",
-            event => {
+            async event => {
 
                 event.preventDefault();
 
@@ -1606,8 +1630,8 @@ LeaseHub will process your request.`
                 const alreadyApplied =
                     applications.some(
                         application =>
-                            Number(application.propertyId) ===
-                                Number(property.id) &&
+                            String(application.propertyId) ===
+                                String(property.id) &&
                             String(application.applicantEmail || "")
                                 .toLowerCase() ===
                                 applicantEmail.toLowerCase() &&
@@ -1683,6 +1707,31 @@ LeaseHub will process your request.`
                         new Date().toISOString()
 
                 };
+
+
+                try {
+                    const response = await window.LeaseHubApi?.createApplication({
+                        property_id: String(property.id),
+                        applicant_name: rentalApplication.applicantName,
+                        applicant_phone: rentalApplication.applicantPhone,
+                        move_in_date: rentalApplication.moveInDate,
+                        message: rentalApplication.message
+                    });
+                    const savedApplication = response?.application;
+                    if (savedApplication) {
+                        Object.assign(rentalApplication, {
+                            id: savedApplication.id,
+                            propertyId: savedApplication.property_id,
+                            tenantId: savedApplication.tenant_id,
+                            ownerId: savedApplication.owner_id,
+                            status: savedApplication.status,
+                            createdAt: savedApplication.created_at
+                        });
+                    }
+                } catch (error) {
+                    alert(error.message || "Unable to submit your application.");
+                    return;
+                }
 
 
                 /* =====================================

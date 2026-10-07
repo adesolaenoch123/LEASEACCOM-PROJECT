@@ -58,6 +58,113 @@ test("tenant dashboard reads saved properties from the shared saved store", asyn
     })).toEqual([1]);
 });
 
+test("tenant application dashboard loads applications from the backend", async ({ page }) => {
+    await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
+        contentType: "application/javascript",
+        body: `window.supabase = { createClient: () => ({ auth: {
+            getSession: async () => ({ data: { session: { access_token: "backend-test-token" } }, error: null })
+        } }) };`
+    }));
+    await page.route("http://127.0.0.1:8000/applications", async route => {
+        expect(route.request().headers().authorization).toBe("Bearer backend-test-token");
+        await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                applications: [{
+                    id: "application-test-1",
+                    property_title: "Backend test rental",
+                    status: "submitted",
+                    move_in_date: "2026-11-01"
+                }],
+                count: 1
+            })
+        });
+    });
+    await page.addInitScript(() => {
+        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+            id: "tenant-test",
+            name: "Test Tenant",
+            accountType: "tenant"
+        }));
+    });
+
+    await page.goto("/tenant-dashboard.html");
+
+    await expect(page.locator("#tenantApplicationList")).toContainText("Backend test rental");
+});
+
+test("apply form posts the tenant application and rental details to the backend", async ({ page }) => {
+    let submittedPayload;
+    await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
+        contentType: "application/javascript",
+        body: `window.supabase = { createClient: () => ({ auth: {
+            getSession: async () => ({ data: { session: { access_token: "application-test-token" } }, error: null })
+        } }) };`
+    }));
+    await page.route("http://127.0.0.1:8000/**", async route => {
+        const request = route.request();
+        const headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "authorization,content-type"
+        };
+        if (request.method() === "OPTIONS") {
+            await route.fulfill({ status: 204, headers });
+            return;
+        }
+
+        expect(request.method()).toBe("POST");
+        expect(request.headers().authorization).toBe("Bearer application-test-token");
+        submittedPayload = request.postDataJSON();
+        await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            headers,
+            body: JSON.stringify({
+                application: {
+                    id: "backend-application-1",
+                    property_id: "1",
+                    tenant_id: "tenant-test",
+                    owner_id: "owner-test",
+                    status: "submitted",
+                    created_at: "2026-10-07T00:00:00Z"
+                }
+            })
+        });
+    });
+    await page.addInitScript(() => {
+        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+            id: "tenant-test",
+            name: "Test Tenant",
+            email: "tenant@example.com",
+            accountType: "tenant"
+        }));
+    });
+    page.on("dialog", dialog => dialog.accept());
+
+    await page.goto("/apply.html?property=1");
+    await page.locator("#applicantName").fill("Test Tenant");
+    await page.locator("#applicantEmail").fill("tenant@example.com");
+    await page.locator("#applicantPhone").fill("08000000000");
+    await page.locator("#occupants").fill("2");
+    await page.locator("#moveInDate").fill("2026-11-01");
+    await page.locator("#stayLength").selectOption({ label: "1 year" });
+    await page.locator("#employmentStatus").selectOption({ label: "Employed" });
+    await page.locator("#incomeRange").selectOption({ label: "₦100,000 – ₦250,000" });
+    await page.locator("#applicationMessage").fill("I am interested in this property.");
+    await page.getByRole("button", { name: "Submit Application" }).click();
+
+    await expect(page).toHaveURL(/tenant-dashboard\.html$/);
+    expect(submittedPayload).toMatchObject({
+        property_id: "1",
+        applicant_name: "Test Tenant",
+        occupants: 2,
+        stay_length: "1 year",
+        income_range: "₦100,000 – ₦250,000",
+        employment_status: "Employed"
+    });
+});
+
 test("notification panels are accessible on mobile app screens", async ({ page }) => {
     await page.addInitScript(() => {
         localStorage.setItem("leasehubCurrentUser", JSON.stringify({
@@ -99,6 +206,60 @@ test("notification panels are accessible on mobile app screens", async ({ page }
     await expect.poll(() => page.locator("#ownerNotifPanel").evaluate((element) =>
         getComputedStyle(element).position
     )).toBe("fixed");
+});
+
+test("tenant notification panel loads and marks backend notifications read", async ({ page }) => {
+    let isRead = false;
+    await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
+        contentType: "application/javascript",
+        body: `window.supabase = { createClient: () => ({ auth: {
+            getSession: async () => ({ data: { session: { access_token: "notification-test-token" } }, error: null })
+        } }) };`
+    }));
+    await page.route("http://127.0.0.1:8000/**", async route => {
+        const request = route.request();
+        const headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers": "authorization,content-type"
+        };
+        if (request.method() === "OPTIONS") {
+            await route.fulfill({ status: 204, headers });
+            return;
+        }
+        expect(request.headers().authorization).toBe("Bearer notification-test-token");
+        if (request.method() === "PATCH") isRead = true;
+        await route.fulfill({
+            contentType: "application/json",
+            headers,
+            body: JSON.stringify({
+                count: 1,
+                notifications: [{
+                    id: "notification-test-1",
+                    title: "Viewing accepted",
+                    message: "Your viewing request was accepted.",
+                    type: "success",
+                    read: isRead
+                }]
+            })
+        });
+    });
+    await page.addInitScript(() => {
+        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+            id: "tenant-notification-test",
+            accountType: "tenant"
+        }));
+    });
+
+    await page.goto("/tenant-dashboard.html");
+    const bell = page.getByRole("button", { name: "Open notifications" });
+    await expect(page.locator("[data-notifications-badge]")).toHaveText("1");
+    await bell.click();
+    await expect(page.locator("[data-notifications-list]")).toContainText("Viewing accepted");
+    await page.getByRole("button", { name: "Mark read" }).click();
+
+    await expect(page.locator("[data-notifications-badge]")).toBeHidden();
+    await expect(page.getByRole("button", { name: "Read" })).toBeDisabled();
 });
 
 test("login uses Supabase Auth without caching the password", async ({ page }) => {
@@ -185,6 +346,358 @@ test("approved Supabase UUID listings render and open their details", async ({ p
     await card.click();
     await expect(page).toHaveURL(new RegExp(`property-details\\.html\\?id=${propertyId}`));
     await expect(page.locator("#propertyDetails")).toContainText("Live Supabase Apartment");
+});
+
+test("property details rental modal submits applications to the backend", async ({ page }) => {
+    const propertyId = "4f814eed-2f4e-4bb0-b41c-647223d495bd";
+    const listing = {
+        id: propertyId,
+        owner_id: "owner-user-id",
+        owner_name: "Test Owner",
+        verification_status: "approved",
+        title: "Modal test apartment",
+        city: "Lagos",
+        type: "Apartment",
+        price: 2500000,
+        period: "year",
+        location: "Lekki, Lagos",
+        image: "https://example.com/listing.jpg",
+        images: [
+            "https://example.com/listing-1.jpg",
+            "https://example.com/listing-2.jpg",
+            "https://example.com/listing-3.jpg",
+            "https://example.com/listing-4.jpg"
+        ],
+        bedrooms: 2,
+        bathrooms: 2,
+        description: "Approved test listing with enough detail for a rental application flow."
+    };
+    let submittedPayload;
+    await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
+        contentType: "application/javascript",
+        body: `window.supabase = { createClient: () => ({
+            from: () => ({
+                select() { return this; },
+                eq() { return this; },
+                order() { return Promise.resolve({ data: [${JSON.stringify(listing)}], error: null }); }
+            }),
+            auth: { getSession: async () => ({ data: { session: { access_token: "modal-test-token" } }, error: null }) }
+        }) };`
+    }));
+    await page.route("http://127.0.0.1:8000/**", async route => {
+        const request = route.request();
+        const headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "authorization,content-type"
+        };
+        if (request.method() === "OPTIONS") {
+            await route.fulfill({ status: 204, headers });
+            return;
+        }
+
+        expect(request.headers().authorization).toBe("Bearer modal-test-token");
+        submittedPayload = request.postDataJSON();
+        await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            headers,
+            body: JSON.stringify({
+                application: {
+                    id: "backend-modal-application",
+                    property_id: propertyId,
+                    tenant_id: "tenant-modal-test",
+                    owner_id: "owner-user-id",
+                    status: "submitted"
+                }
+            })
+        });
+    });
+    await page.addInitScript(() => {
+        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+            id: "tenant-modal-test",
+            name: "Modal Tenant",
+            email: "modal@example.com",
+            accountType: "tenant"
+        }));
+    });
+    page.on("dialog", dialog => dialog.accept());
+
+    await page.goto(`/property-details.html?id=${propertyId}`);
+    await page.locator("#applyRentBtn").click();
+    await page.locator("#applicantName").fill("Modal Tenant");
+    await page.locator("#applicantEmail").fill("modal@example.com");
+    await page.locator("#applicantPhone").fill("08000000000");
+    await page.locator("#moveInDate").fill("2026-11-01");
+    await page.locator("#applicationMessage").fill("I would like to rent this apartment.");
+    await page.getByRole("button", { name: "Submit Application" }).click();
+
+    await expect(page.locator("#applicationModal")).not.toHaveClass(/active/);
+    expect(submittedPayload).toMatchObject({
+        property_id: propertyId,
+        applicant_name: "Modal Tenant",
+        applicant_phone: "08000000000",
+        move_in_date: "2026-11-01"
+    });
+});
+
+test("tenant viewing request is created and loaded from the backend", async ({ page }) => {
+    const propertyId = "81f25c40-7b5d-4b2e-a2c1-9bc7826b4501";
+    const listing = {
+        id: propertyId,
+        owner_id: "owner-user-id",
+        owner_name: "Test Owner",
+        verification_status: "approved",
+        title: "Viewing test apartment",
+        city: "Lagos",
+        type: "Apartment",
+        price: 2500000,
+        period: "year",
+        location: "Lekki, Lagos",
+        image: "https://example.com/listing.jpg",
+        images: [
+            "https://example.com/listing-1.jpg",
+            "https://example.com/listing-2.jpg",
+            "https://example.com/listing-3.jpg",
+            "https://example.com/listing-4.jpg"
+        ],
+        bedrooms: 2,
+        bathrooms: 2,
+        description: "Approved test listing with sufficient images and details for a viewing request."
+    };
+    let viewingStatus = "requested";
+    let submittedPayload;
+    await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
+        contentType: "application/javascript",
+        body: `window.supabase = { createClient: () => ({
+            from: () => ({
+                select() { return this; },
+                eq() { return this; },
+                order() { return Promise.resolve({ data: [${JSON.stringify(listing)}], error: null }); }
+            }),
+            auth: { getSession: async () => ({ data: { session: { access_token: "viewing-test-token" } }, error: null }) }
+        }) };`
+    }));
+    await page.route("http://127.0.0.1:8000/**", async route => {
+        const request = route.request();
+        const headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "authorization,content-type"
+        };
+        if (request.method() === "OPTIONS") {
+            await route.fulfill({ status: 204, headers });
+            return;
+        }
+        if (request.method() === "POST") {
+            expect(request.headers().authorization).toBe("Bearer viewing-test-token");
+            submittedPayload = request.postDataJSON();
+            await route.fulfill({
+                status: 201,
+                contentType: "application/json",
+                headers,
+                body: JSON.stringify({ viewing_request: { id: "viewing-test-1", ...submittedPayload, status: viewingStatus } })
+            });
+            return;
+        }
+        await route.fulfill({
+            contentType: "application/json",
+            headers,
+            body: JSON.stringify({
+                count: 1,
+                viewing_requests: [{
+                    id: "viewing-test-1",
+                    property_id: propertyId,
+                    preferred_date: "2026-11-01",
+                    preferred_time: "10:00 AM",
+                    status: viewingStatus,
+                    property: { title: "Viewing test apartment", location: "Lekki, Lagos" }
+                }]
+            })
+        });
+    });
+    await page.addInitScript(() => {
+        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+            id: "tenant-viewing-test",
+            name: "Viewing Tenant",
+            email: "viewing@example.com",
+            accountType: "tenant"
+        }));
+    });
+    page.on("dialog", dialog => dialog.accept());
+
+    await page.goto(`/property-details.html?id=${propertyId}`);
+    await page.locator("#requestViewingBtn").click();
+    await page.locator("#viewerName").fill("Viewing Tenant");
+    await page.locator("#viewingDate").fill("2026-11-01");
+    await page.locator("#viewingTime").selectOption({ label: "10:00 AM" });
+    await page.getByRole("button", { name: "Request Viewing" }).click();
+
+    expect(submittedPayload).toMatchObject({
+        property_id: propertyId,
+        preferred_date: "2026-11-01",
+        preferred_time: "10:00 AM"
+    });
+    await page.goto("/viewing-requests.html");
+    await expect(page.locator("#viewingRequests")).toContainText("Viewing test apartment");
+    await expect(page.locator("#viewingRequests")).toContainText("10:00 AM");
+});
+
+test("owner viewing action updates status through the backend", async ({ page }) => {
+    let viewingStatus = "requested";
+    let patchPayload;
+    await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
+        contentType: "application/javascript",
+        body: `window.supabase = { createClient: () => ({ auth: {
+            getSession: async () => ({ data: { session: { access_token: "owner-viewing-token" } }, error: null })
+        } }) };`
+    }));
+    await page.route("http://127.0.0.1:8000/**", async route => {
+        const request = route.request();
+        const headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers": "authorization,content-type"
+        };
+        if (request.method() === "OPTIONS") {
+            await route.fulfill({ status: 204, headers });
+            return;
+        }
+        expect(request.headers().authorization).toBe("Bearer owner-viewing-token");
+        if (request.method() === "PATCH") {
+            patchPayload = request.postDataJSON();
+            viewingStatus = patchPayload.status;
+        }
+        await route.fulfill({
+            contentType: "application/json",
+            headers,
+            body: JSON.stringify({
+                count: 1,
+                viewing_requests: [{
+                    id: "viewing-owner-test",
+                    property_id: "property-owner-test",
+                    status: viewingStatus,
+                    preferred_date: "2026-11-01",
+                    preferred_time: "10:00 AM",
+                    property: { title: "Owner viewing test property", location: "Lagos" }
+                }]
+            })
+        });
+    });
+    await page.addInitScript(() => {
+        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+            id: "owner-viewing-test",
+            name: "Test Owner",
+            accountType: "owner"
+        }));
+    });
+
+    await page.goto("/owner-dashboard.html");
+    const acceptButton = page.locator('[data-viewing-status="accepted"]');
+    await acceptButton.click();
+
+    await expect(page.locator("#ownerViewingRequests .request-status")).toHaveText(/Accepted/i);
+    expect(patchPayload).toEqual({ status: "accepted" });
+});
+
+test("accepted application creates and signs a backend rental agreement", async ({ page }) => {
+    const application = {
+        id: "application-agreement-test",
+        property_id: "property-agreement-test",
+        property_title: "Agreement test apartment",
+        property_location: "Lekki, Lagos",
+        property_price: 2800000,
+        property_period: "year",
+        owner_id: "owner-agreement-test",
+        tenant_id: "tenant-agreement-test",
+        applicant_name: "Agreement Tenant",
+        applicant_email: "tenant@example.com",
+        move_in_date: "2026-11-01",
+        stay_length: "1 year",
+        status: "accepted"
+    };
+    let storedAgreement = null;
+    await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
+        contentType: "application/javascript",
+        body: `window.supabase = { createClient: () => ({ auth: {
+            getSession: async () => ({ data: { session: { access_token: "agreement-test-token" } }, error: null })
+        } }) };`
+    }));
+    await page.route("http://127.0.0.1:8000/**", async route => {
+        const request = route.request();
+        const url = new URL(request.url());
+        const headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers": "authorization,content-type"
+        };
+        if (request.method() === "OPTIONS") {
+            await route.fulfill({ status: 204, headers });
+            return;
+        }
+        expect(request.headers().authorization).toBe("Bearer agreement-test-token");
+        if (url.pathname === "/applications/application-agreement-test") {
+            await route.fulfill({ contentType: "application/json", headers, body: JSON.stringify({ application }) });
+            return;
+        }
+        if (url.pathname === "/agreements" && request.method() === "GET") {
+            await route.fulfill({
+                contentType: "application/json",
+                headers,
+                body: JSON.stringify({ agreements: storedAgreement ? [storedAgreement] : [] })
+            });
+            return;
+        }
+        if (url.pathname === "/agreements" && request.method() === "POST") {
+            storedAgreement = {
+                id: "agreement-backend-test",
+                application_id: application.id,
+                property_id: application.property_id,
+                owner_id: application.owner_id,
+                tenant_id: application.tenant_id,
+                monthly_rent: application.property_price,
+                property_period: application.property_period,
+                start_date: application.move_in_date,
+                status: "pending",
+                owner_agreed: false,
+                tenant_agreed: false
+            };
+            expect(request.postDataJSON().application_id).toBe(application.id);
+            await route.fulfill({
+                status: 201,
+                contentType: "application/json",
+                headers,
+                body: JSON.stringify({ agreement: storedAgreement })
+            });
+            return;
+        }
+        if (url.pathname === "/agreements/agreement-backend-test/sign") {
+            storedAgreement = { ...storedAgreement, tenant_agreed: true, status: "pending" };
+            await route.fulfill({
+                contentType: "application/json",
+                headers,
+                body: JSON.stringify({ agreement: storedAgreement })
+            });
+            return;
+        }
+        throw new Error(`Unexpected agreement API request: ${request.method()} ${url.pathname}`);
+    });
+    await page.addInitScript(() => {
+        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+            id: "tenant-agreement-test",
+            name: "Agreement Tenant",
+            email: "tenant@example.com",
+            accountType: "tenant"
+        }));
+    });
+
+    await page.goto("/rental-agreement.html?applicationId=application-agreement-test");
+
+    await expect(page.locator("#agreementContent")).toContainText("Agreement test apartment");
+    await expect(page.locator("#ownerAgreeBtn")).toBeHidden();
+    await page.getByRole("button", { name: "Tenant Agrees" }).click();
+    await expect(page.getByRole("button", { name: "Tenant Agreed" })).toBeDisabled();
+    expect(storedAgreement.tenant_agreed).toBe(true);
 });
 
 test("owner dashboard shows the house tour and subscription plans", async ({ page }) => {

@@ -3603,15 +3603,13 @@ if (applicationForm) {
 
 
     const propertyId =
-        Number(
-            params.get("property")
-        );
+        params.get("property") || "";
 
 
     const property =
         properties.find(
             item =>
-                item.id === propertyId
+                String(item.id) === propertyId
         );
 
 
@@ -3709,7 +3707,7 @@ if (applicationForm) {
 
     applicationForm.addEventListener(
         "submit",
-        function(event) {
+        async function(event) {
 
             event.preventDefault();
 
@@ -3730,10 +3728,8 @@ if (applicationForm) {
             const existingApplication =
                 applications.find(
                     application =>
-                        application.propertyId ===
-                            property.id &&
-                        application.tenantId ===
-                            currentUser.id &&
+                        String(application.propertyId) === String(property.id) &&
+                        String(application.tenantId) === String(currentUser.id) &&
 String(application.status || "pending").toLowerCase() ===
                             "pending"
                 );
@@ -3837,6 +3833,35 @@ String(application.status || "pending").toLowerCase() ===
                     new Date().toISOString()
 
             };
+
+
+            try {
+                const response = await window.LeaseHubApi?.createApplication({
+                    property_id: String(property.id),
+                    applicant_name: newApplication.applicantName,
+                    applicant_phone: newApplication.applicantPhone,
+                    move_in_date: newApplication.moveInDate,
+                    occupants: newApplication.occupants,
+                    stay_length: newApplication.stayLength,
+                    income_range: newApplication.incomeRange,
+                    employment_status: newApplication.employmentStatus,
+                    message: newApplication.message
+                });
+                const savedApplication = response?.application;
+                if (savedApplication) {
+                    Object.assign(newApplication, {
+                        id: savedApplication.id,
+                        propertyId: savedApplication.property_id,
+                        tenantId: savedApplication.tenant_id,
+                        ownerId: savedApplication.owner_id,
+                        status: savedApplication.status,
+                        createdAt: savedApplication.created_at
+                    });
+                }
+            } catch (error) {
+                alert(error.message || "Unable to submit your application.");
+                return;
+            }
 
 
             applications.push(

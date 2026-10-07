@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, Header, HTTPException, Query
@@ -36,6 +37,21 @@ application_service = ApplicationService()
 viewing_service = ViewingService()
 agreement_service = AgreementService()
 notification_service = NotificationService()
+logger = logging.getLogger(__name__)
+
+
+async def _notify_user(user_id: str, title: str, message: str, link: str) -> None:
+    try:
+        await notification_service.create_notification({
+            "user_id": user_id,
+            "title": title,
+            "message": message,
+            "type": "info",
+            "link": link,
+            "read": False,
+        })
+    except Exception:
+        logger.exception("Unable to create a LeaseHub notification.")
 
 
 class ChatRequest(BaseModel):
@@ -72,6 +88,9 @@ class ApplicationCreateRequest(BaseModel):
     applicant_name: str = Field(..., min_length=1, max_length=150)
     applicant_phone: str = Field(..., min_length=1, max_length=40)
     move_in_date: str = Field(..., min_length=1, max_length=40)
+    occupants: int = Field(default=1, gt=0)
+    stay_length: str | None = Field(default=None, max_length=40)
+    income_range: str | None = Field(default=None, max_length=80)
     message: str | None = Field(default=None, max_length=2000)
     employment_status: str | None = None
     monthly_income: float | None = None
@@ -83,19 +102,18 @@ class ApplicationUpdateRequest(BaseModel):
 
 class ViewingRequestCreateRequest(BaseModel):
     property_id: str = Field(..., min_length=1)
-    owner_id: str = Field(..., min_length=1)
     preferred_date: str | None = None
     preferred_time: str | None = None
     notes: str | None = Field(default=None, max_length=2000)
 
 
+class ViewingStatusUpdateRequest(BaseModel):
+    status: str = Field(..., pattern="^(accepted|declined|completed|cancelled)$")
+
+
 class AgreementCreateRequest(BaseModel):
-    property_id: str = Field(..., min_length=1)
-    owner_id: str = Field(..., min_length=1)
-    tenant_id: str | None = None
-    title: str = Field(..., min_length=1, max_length=200)
-    term_months: int = Field(..., gt=0)
-    monthly_rent: float = Field(..., gt=0)
+    application_id: str = Field(..., min_length=1)
+    term_months: int = Field(default=12, gt=0)
     deposit_amount: float | None = None
     start_date: str | None = None
     notes: str | None = Field(default=None, max_length=4000)
@@ -326,6 +344,12 @@ async def create_application(
         application = await application_service.create_application(
             application_payload, user["id"], str(owner_id)
         )
+        await _notify_user(
+            str(owner_id),
+            "New rental application",
+            f"{payload.applicant_name} applied for {property_data.get('title', 'your property')}.",
+            "owner-dashboard.html#ownerApplications",
+        )
         return {"application": application, "message": "Application submitted successfully."}
     except HTTPException:
         raise
@@ -353,6 +377,14 @@ async def update_application(
         )
         if not application:
             raise HTTPException(status_code=404, detail="Application not found.")
+        tenant_id = application.get("tenant_id")
+        if tenant_id:
+            await _notify_user(
+                str(tenant_id),
+                "Application status updated",
+                f"Your application status is now {payload.status.replace('_', ' ')}.",
+                "tenant-dashboard.html",
+            )
         return {"application": application, "message": "Application status updated."}
     except HTTPException:
         raise
@@ -397,12 +429,70 @@ async def create_viewing_request(
         raise HTTPException(status_code=403, detail="Tenant access required.")
 
     try:
-        viewing = await viewing_service.create_viewing(payload.model_dump(exclude_none=True), user["id"], payload.owner_id)
+        if property_service.client is None:
+            raise RuntimeError("Supabase backend is not configured.")
+
+        property_data = await property_service.get_property(payload.property_id)
+        if not property_data:
+            raise HTTPException(status_code=404, detail="Property not found.")
+        if str(property_data.get("verification_status", "")).lower() != "approved":
+            raise HTTPException(status_code=409, detail="This property is not available for viewing requests.")
+
+        owner_id = property_data.get("owner_id")
+        if not owner_id:
+            raise HTTPException(status_code=409, detail="Property owner is not configured.")
+
+        viewing = await viewing_service.create_viewing(
+            payload.model_dump(exclude_none=True), user["id"], str(owner_id)
+        )
+        await _notify_user(
+            str(owner_id),
+            "New viewing request",
+            f"A tenant requested a viewing for {property_data.get('title', 'your property')}.",
+            "owner-dashboard.html#ownerViewings",
+        )
         return {"viewing_request": viewing, "message": "Viewing request created successfully."}
+    except HTTPException:
+        raise
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail="Unable to create viewing request.") from exc
+
+
+@app.patch("/viewing-requests/{viewing_id}")
+async def update_viewing_request(
+    viewing_id: str,
+    payload: ViewingStatusUpdateRequest,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") not in {"owner", "admin"}:
+        raise HTTPException(status_code=403, detail="Owner or admin access required.")
+
+    try:
+        viewing = await viewing_service.update_viewing(
+            viewing_id, payload.model_dump(), user["id"], user["role"]
+        )
+        if not viewing:
+            raise HTTPException(status_code=404, detail="Viewing request not found.")
+        tenant_id = viewing.get("tenant_id")
+        if tenant_id:
+            await _notify_user(
+                str(tenant_id),
+                "Viewing request updated",
+                f"Your viewing request was {payload.status}.",
+                "viewing-requests.html",
+            )
+        return {"viewing_request": viewing, "message": "Viewing request status updated."}
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=500, detail="Unable to update viewing request.") from exc
 
 
 @app.get("/agreements")
@@ -436,20 +526,83 @@ async def create_agreement(
     user = await auth_service.get_session_user(authorization)
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required.")
-    if user.get("role") not in {"owner", "admin"}:
-        raise HTTPException(status_code=403, detail="Owner or admin access required.")
+    if user.get("role") not in {"owner", "tenant", "admin"}:
+        raise HTTPException(status_code=403, detail="Agreement participant access required.")
 
     try:
+        application = await application_service.get_application(
+            payload.application_id, user["id"], user["role"]
+        )
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found.")
+        if application.get("status") != "accepted":
+            raise HTTPException(status_code=409, detail="The application must be accepted before creating an agreement.")
+
+        owner_id = str(application.get("owner_id") or "")
+        tenant_id = str(application.get("tenant_id") or "")
+        property_id = str(application.get("property_id") or "")
+        monthly_rent = application.get("property_price")
+        if not owner_id or not tenant_id or not property_id or not monthly_rent:
+            raise HTTPException(status_code=409, detail="The accepted application is missing agreement details.")
+
+        agreement_payload = {
+            "application_id": payload.application_id,
+            "property_id": property_id,
+            "title": f"Rental agreement: {application.get('property_title') or 'Property'}",
+            "term_months": payload.term_months,
+            "monthly_rent": monthly_rent,
+            "property_period": application.get("property_period") or "year",
+            "deposit_amount": payload.deposit_amount,
+            "start_date": payload.start_date or application.get("move_in_date"),
+            "notes": payload.notes,
+        }
         agreement = await agreement_service.create_agreement(
-            payload.model_dump(exclude_none=True),
-            payload.tenant_id or user["id"],
-            payload.owner_id,
+            {key: value for key, value in agreement_payload.items() if value is not None},
+            tenant_id,
+            owner_id,
         )
         return {"agreement": agreement, "message": "Agreement created successfully."}
+    except HTTPException:
+        raise
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail="Unable to create agreement.") from exc
+
+
+@app.patch("/agreements/{agreement_id}/sign")
+async def sign_agreement(
+    agreement_id: str,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") not in {"owner", "tenant"}:
+        raise HTTPException(status_code=403, detail="Agreement participant access required.")
+
+    try:
+        agreement = await agreement_service.sign_agreement(
+            agreement_id, user["id"], user["role"]
+        )
+        if not agreement:
+            raise HTTPException(status_code=404, detail="Agreement not found.")
+
+        recipient_id = agreement.get("tenant_id") if user["role"] == "owner" else agreement.get("owner_id")
+        if recipient_id:
+            await _notify_user(
+                str(recipient_id),
+                "Rental agreement updated",
+                "The other party has agreed to the rental agreement.",
+                f"rental-agreement.html?applicationId={agreement.get('application_id', '')}",
+            )
+        return {"agreement": agreement, "message": "Agreement signature recorded."}
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=500, detail="Unable to sign agreement.") from exc
 
 
 @app.get("/notifications")

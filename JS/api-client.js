@@ -33,6 +33,26 @@
         throw new Error(payload.detail || "LeaseHub could not complete that request.");
       }
       return payload;
+    },
+
+    async createApplication(payload) {
+      const token = await window.LeaseHubAuth?.getAccessToken();
+      if (!token) return null;
+
+      return this.request("/applications", {
+        method: "POST",
+        body: payload
+      });
+    },
+
+    async createViewingRequest(payload) {
+      const token = await window.LeaseHubAuth?.getAccessToken();
+      if (!token) return null;
+
+      return this.request("/viewing-requests", {
+        method: "POST",
+        body: payload
+      });
     }
   };
 })();

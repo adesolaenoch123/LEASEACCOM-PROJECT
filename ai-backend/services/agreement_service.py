@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from supabase import Client, create_client
@@ -55,18 +56,67 @@ class AgreementService:
         if not self.client:
             raise RuntimeError("Supabase backend is not configured.")
 
+        existing = await self.get_for_application(str(payload["application_id"]))
+        if existing:
+            return existing
+
         data = {
             "tenant_id": tenant_id,
             "owner_id": owner_id,
-            "status": "draft",
+            "status": "pending",
             **payload,
         }
-        response = self.client.table("agreements").insert(data).execute()
-        return response.data[0] if response.data else data
+        try:
+            response = self.client.table("agreements").insert(data).execute()
+            return response.data[0] if response.data else data
+        except Exception:
+            existing = await self.get_for_application(str(payload["application_id"]))
+            if existing:
+                return existing
+            raise
 
-    async def update_agreement(self, agreement_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def get_for_application(self, application_id: str) -> Optional[Dict[str, Any]]:
+        if not self.client:
+            return None
+
+        response = (
+            self.client.table("agreements")
+            .select("*")
+            .eq("application_id", application_id)
+            .maybe_single()
+            .execute()
+        )
+        return response.data
+
+    async def sign_agreement(
+        self, agreement_id: str, user_id: str, role: str
+    ) -> Optional[Dict[str, Any]]:
         if not self.client:
             raise RuntimeError("Supabase backend is not configured.")
 
-        response = self.client.table("agreements").update(payload).eq("id", agreement_id).execute()
-        return response.data[0] if response.data else payload
+        query = self.client.table("agreements").select("*").eq("id", agreement_id)
+        participant_column = "owner_id" if role == "owner" else "tenant_id"
+        agreement_response = query.eq(participant_column, user_id).maybe_single().execute()
+        agreement = agreement_response.data
+        if not agreement:
+            return None
+
+        signed_at = datetime.now(timezone.utc).isoformat()
+        update: Dict[str, Any] = {"updated_at": signed_at}
+        if role == "owner":
+            update.update({"owner_agreed": True, "owner_agreed_at": signed_at})
+            other_party_agreed = agreement.get("tenant_agreed")
+        else:
+            update.update({"tenant_agreed": True, "tenant_agreed_at": signed_at})
+            other_party_agreed = agreement.get("owner_agreed")
+        update["status"] = "signed" if other_party_agreed else "pending"
+
+        result = (
+            self.client.table("agreements")
+            .update(update)
+            .eq("id", agreement_id)
+            .eq(participant_column, user_id)
+            .select("*")
+            .execute()
+        )
+        return result.data[0] if result.data else None

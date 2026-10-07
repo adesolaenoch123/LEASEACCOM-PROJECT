@@ -15,6 +15,12 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+alter table public.profiles
+  add column if not exists verification_status text not null default 'unverified'
+    check (verification_status in ('unverified', 'pending', 'verified', 'rejected')),
+  add column if not exists avatar_url text,
+  add column if not exists updated_at timestamptz not null default now();
+
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger
@@ -41,7 +47,7 @@ create trigger on_auth_user_created
 
 -- 2) Properties
 create table if not exists public.properties (
-  id uuid primary key default gen_random_uuid(),
+  id text primary key default gen_random_uuid()::text,
   owner_id uuid not null references public.profiles(id) on delete cascade,
   title text not null,
   type text,
@@ -100,7 +106,7 @@ create index if not exists properties_status_idx on public.properties(verificati
 -- 3) Viewings
 create table if not exists public.viewings (
   id uuid primary key default gen_random_uuid(),
-  property_id uuid not null references public.properties(id) on delete cascade,
+  property_id text not null references public.properties(id) on delete cascade,
   tenant_id uuid not null references public.profiles(id) on delete cascade,
   owner_id uuid not null references public.profiles(id) on delete cascade,
   status text not null default 'requested'
@@ -124,7 +130,7 @@ alter table public.viewings add column if not exists notes text;
 -- 4) Applications
 create table if not exists public.applications (
   id uuid primary key default gen_random_uuid(),
-  property_id uuid not null references public.properties(id) on delete cascade,
+  property_id text not null references public.properties(id) on delete cascade,
   tenant_id uuid not null references public.profiles(id) on delete cascade,
   owner_id uuid not null references public.profiles(id) on delete cascade,
   status text not null default 'submitted'
@@ -139,6 +145,9 @@ create table if not exists public.applications (
     property_price numeric,
     property_period text not null default 'year',
     owner_name text not null default 'Property Owner',
+    occupants integer not null default 1 check (occupants > 0),
+    stay_length text,
+    income_range text,
   message text,
     employment_status text,
     monthly_income numeric check (monthly_income is null or monthly_income >= 0),
@@ -155,13 +164,16 @@ alter table public.applications add column if not exists property_location text 
 alter table public.applications add column if not exists property_price numeric;
 alter table public.applications add column if not exists property_period text not null default 'year';
 alter table public.applications add column if not exists owner_name text not null default 'Property Owner';
+alter table public.applications add column if not exists occupants integer not null default 1 check (occupants > 0);
+alter table public.applications add column if not exists stay_length text;
+alter table public.applications add column if not exists income_range text;
 alter table public.applications add column if not exists employment_status text;
 alter table public.applications add column if not exists monthly_income numeric;
 
 -- 5) Conversations + messages
 create table if not exists public.conversations (
   id uuid primary key default gen_random_uuid(),
-  property_id uuid references public.properties(id) on delete set null,
+  property_id text references public.properties(id) on delete set null,
   tenant_id uuid not null references public.profiles(id) on delete cascade,
   owner_id uuid not null references public.profiles(id) on delete cascade,
   last_message text,
@@ -197,27 +209,45 @@ create table if not exists public.owner_verifications (
 
   create table if not exists public.saved_properties (
     user_id uuid not null references public.profiles(id) on delete cascade,
-    property_id uuid not null references public.properties(id) on delete cascade,
+    property_id text not null references public.properties(id) on delete cascade,
     created_at timestamptz not null default now(),
     primary key (user_id, property_id)
   );
 
   create table if not exists public.agreements (
     id uuid primary key default gen_random_uuid(),
-    property_id uuid not null references public.properties(id) on delete cascade,
+    application_id uuid references public.applications(id) on delete cascade,
+    property_id text not null references public.properties(id) on delete cascade,
     tenant_id uuid not null references public.profiles(id) on delete cascade,
     owner_id uuid not null references public.profiles(id) on delete cascade,
     title text not null,
     term_months integer not null check (term_months > 0),
     monthly_rent numeric not null check (monthly_rent > 0),
+    property_period text not null default 'year',
     deposit_amount numeric check (deposit_amount is null or deposit_amount >= 0),
     start_date date,
     notes text,
+    owner_agreed boolean not null default false,
+    tenant_agreed boolean not null default false,
+    owner_agreed_at timestamptz,
+    tenant_agreed_at timestamptz,
     status text not null default 'draft'
       check (status in ('draft', 'pending', 'signed', 'cancelled')),
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
   );
+
+alter table public.agreements
+  add column if not exists application_id uuid references public.applications(id) on delete cascade,
+  add column if not exists property_period text not null default 'year',
+  add column if not exists owner_agreed boolean not null default false,
+  add column if not exists tenant_agreed boolean not null default false,
+  add column if not exists owner_agreed_at timestamptz,
+  add column if not exists tenant_agreed_at timestamptz;
+
+create unique index if not exists agreements_application_id_idx
+  on public.agreements(application_id)
+  where application_id is not null;
 
   create table if not exists public.notifications (
     id uuid primary key default gen_random_uuid(),
@@ -293,8 +323,8 @@ create policy "viewings_tenant_insert" on public.viewings
     tenant_id = auth.uid()
     and exists (
       select 1 from public.properties p
-      where p.id = property_id
-        and p.owner_id = owner_id
+      where p.id::text = property_id::text
+        and p.owner_id = viewings.owner_id
         and p.verification_status = 'approved'
     )
   );
@@ -311,8 +341,8 @@ create policy "applications_tenant_insert" on public.applications
     tenant_id = auth.uid()
     and exists (
       select 1 from public.properties p
-      where p.id = property_id
-        and p.owner_id = owner_id
+      where p.id::text = property_id::text
+        and p.owner_id = applications.owner_id
         and p.verification_status = 'approved'
     )
   );

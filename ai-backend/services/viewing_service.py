@@ -21,7 +21,9 @@ class ViewingService:
             return []
 
         try:
-            query = self.client.table("viewings").select("*")
+            query = self.client.table("viewings").select(
+                "*,property:properties(title,location,city)"
+            )
             if role == "tenant":
                 query = query.eq("tenant_id", user_id)
             elif role == "owner":
@@ -64,9 +66,14 @@ class ViewingService:
         response = self.client.table("viewings").insert(data).execute()
         return response.data[0] if response.data else data
 
-    async def update_viewing(self, viewing_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_viewing(
+        self, viewing_id: str, payload: Dict[str, Any], user_id: str, role: str
+    ) -> Optional[Dict[str, Any]]:
         if not self.client:
             raise RuntimeError("Supabase backend is not configured.")
 
-        response = self.client.table("viewings").update(payload).eq("id", viewing_id).execute()
-        return response.data[0] if response.data else payload
+        query = self.client.table("viewings").update(payload).eq("id", viewing_id)
+        if role == "owner":
+            query = query.eq("owner_id", user_id)
+        response = query.select("*").execute()
+        return response.data[0] if response.data else None

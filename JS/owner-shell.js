@@ -6,6 +6,7 @@
 (function () {
   const STORE_KEY = 'leasehub_owner_store_v1';
   const NOTIF_KEY = 'leasehub_owner_notifs_v1';
+  let backendNotifications = null;
 
   function currentUser() {
     try {
@@ -115,10 +116,9 @@
 </header>`;
   }
 
-  function renderNotifList() {
+  function renderNotifList(items = backendNotifications || loadNotifs()) {
     const list = document.getElementById('ownerNotifList');
     if (!list) return;
-    const items = loadNotifs();
     if (!items.length) {
       list.innerHTML = '<p class="owner-muted">No notifications yet.</p>';
       return;
@@ -127,10 +127,29 @@
       .map(
         (n) => `<article class="owner-notif-item ${n.read ? '' : 'is-unread'}">
         <strong>${escapeHtml(n.title || 'Update')}</strong>
-        <p>${escapeHtml(n.body || '')}</p>
+        <p>${escapeHtml(n.message || n.body || '')}</p>
       </article>`
       )
       .join('');
+  }
+
+  async function loadBackendNotifications() {
+    if (!window.LeaseHubApi || !window.LeaseHubAuth) return;
+    try {
+      const token = await window.LeaseHubAuth.getAccessToken();
+      if (!token) return;
+      const payload = await window.LeaseHubApi.request('/notifications');
+      backendNotifications = payload.notifications || [];
+      renderNotifList(backendNotifications);
+      const badge = document.getElementById('ownerNotifBadge');
+      const unreadCount = backendNotifications.filter((item) => !item.read).length;
+      if (badge) {
+        badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+        badge.hidden = unreadCount === 0;
+      }
+    } catch (error) {
+      console.warn('Backend owner notifications could not be loaded.', error);
+    }
   }
 
   function escapeHtml(s) {
@@ -153,6 +172,7 @@
 
     seedNotifsFromData();
     renderNotifList();
+    loadBackendNotifications();
     const badge = document.getElementById('ownerNotifBadge');
     const panel = document.getElementById('ownerNotifPanel');
     document.getElementById('ownerNotifBtn')?.addEventListener('click', (e) => {
@@ -160,7 +180,21 @@
       if (!panel) return;
       panel.hidden = !panel.hidden;
     });
-    document.getElementById('ownerNotifReadAll')?.addEventListener('click', () => {
+    document.getElementById('ownerNotifReadAll')?.addEventListener('click', async () => {
+      if (backendNotifications && window.LeaseHubApi) {
+        try {
+          await Promise.all(backendNotifications
+            .filter((item) => !item.read)
+            .map((item) => window.LeaseHubApi.request(
+              `/notifications/${encodeURIComponent(item.id)}/read`,
+              { method: 'PATCH' }
+            )));
+          await loadBackendNotifications();
+          return;
+        } catch (error) {
+          console.warn('Owner notifications could not be marked read.', error);
+        }
+      }
       const items = loadNotifs().map((n) => ({ ...n, read: true }));
       saveNotifs(items);
       renderNotifList();

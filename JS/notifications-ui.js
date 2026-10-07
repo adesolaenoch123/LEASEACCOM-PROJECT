@@ -9,6 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!bellButton || !list) return;
 
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  })[character]);
+
   const showFallback = (message, icon = '🔔') => {
     list.innerHTML = `
       <div class="leasehub-empty-state">
@@ -31,17 +39,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     list.innerHTML = items.map(item => `
-      <div class="leasehub-notification ${item.read ? 'is-read' : 'is-unread'}" data-id="${item.id || ''}">
+      <div class="leasehub-notification ${item.read ? 'is-read' : 'is-unread'}" data-id="${escapeHtml(item.id)}">
         <div class="leasehub-notification__icon ${item.type || 'info'}">${
           item.type === 'success' ? '✓' :
           item.type === 'warning' ? '!' :
           item.type === 'danger' ? '✕' : 'ℹ'
         }</div>
         <div class="leasehub-notification__body">
-          <strong>${(item.title || 'Notification').replace(/</g, '&lt;')}</strong>
-          <p>${(item.message || '').replace(/</g, '&lt;')}</p>
+          <strong>${escapeHtml(item.title || 'Notification')}</strong>
+          <p>${escapeHtml(item.message || '')}</p>
         </div>
-        <button class="leasehub-notification__mark" type="button" data-mark-read="${item.id || ''}">
+        <button class="leasehub-notification__mark" type="button" data-mark-read="${escapeHtml(item.id)}" ${item.read ? 'disabled' : ''}>
           ${item.read ? 'Read' : 'Mark read'}
         </button>
       </div>
@@ -51,6 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const fetchNotifications = async () => {
     try {
       if (!window.LeaseHubApi) throw new Error('Notifications are not configured.');
+      const token = await window.LeaseHubAuth?.getAccessToken();
+      if (!token) {
+        showFallback('Log in to view notifications.', '🔒');
+        return;
+      }
       const payload = await window.LeaseHubApi.request('/notifications');
       renderNotifications(payload.notifications || []);
     } catch (error) {
@@ -91,12 +104,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = markButton.getAttribute('data-mark-read');
     if (!id) return;
 
+    markButton.disabled = true;
     try {
       await window.LeaseHubApi.request(`/notifications/${encodeURIComponent(id)}/read`, {
         method: 'PATCH'
       });
       await fetchNotifications();
     } catch (error) {
+      markButton.disabled = false;
       showFallback(error.message || 'Unable to update this notification.', '⚠️');
     }
   });

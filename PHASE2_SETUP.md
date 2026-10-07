@@ -13,8 +13,9 @@ Same app, but data works on **phone + PC** (not only one browser).
 ### A. Database (do first — 15 min)
 1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project
 2. **SQL Editor** → New query
-3. Paste and run: `migrations/001_leasehub_core.sql`
-4. Confirm tables exist: `profiles`, `properties`, `viewings`, `applications`, `conversations`, `messages`, `owner_verifications`
+3. For the current unified schema, paste and run: `migrations/001_leasehub_core.sql`
+4. Do not also run the older split files in `ai-backend/migrations/`; they define overlapping tables with an incompatible `images` column type. If one of those migrations has already been applied, inspect and reconcile the existing schema before applying anything else.
+5. Confirm tables exist: `profiles`, `properties`, `viewings`, `applications`, `conversations`, `messages`, `owner_verifications`, `agreements`, `notifications`
 
 ### B. Auth settings
 1. Authentication → Providers → Email enabled
@@ -38,7 +39,7 @@ Same app, but data works on **phone + PC** (not only one browser).
 - [ ] Same login works on phone (or second browser)
 - [ ] Profile `account_type` + `verification_status` in `profiles`
 - [ ] Create property row in Supabase
-- [ ] Set `listing_status = live` → appears on marketplace from DB
+- [ ] Set `verification_status = approved` → appears on marketplace from DB
 
 ### F. Do not do yet
 - Live Paystack

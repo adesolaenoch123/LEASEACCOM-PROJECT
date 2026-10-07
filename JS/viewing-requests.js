@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("viewingRequests");
   if (!container) return;
   const S = window.LeaseHubStatus;
+  let backendRequests = null;
 
   function loadRequests() {
     try {
@@ -22,9 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function render() {
-    let requests = loadRequests();
+    let requests = backendRequests === null ? loadRequests() : backendRequests;
     const user = currentUser();
-    if (user && (user.email || user.id)) {
+    if (backendRequests === null && user && (user.email || user.id)) {
       const filtered = requests.filter((r) =>
         String(r.tenantEmail || "").toLowerCase() === String(user.email || "").toLowerCase() ||
         String(r.tenantId) === String(user.id) || String(r.userId) === String(user.id)
@@ -63,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <div class="request-location">${escapeHtml(request.propertyLocation || request.location || "")}</div>
           <p class="request-meta"><strong>Preferred date:</strong> ${escapeHtml(formattedDate)}</p>
+          ${request.viewingTime ? `<p class="request-meta"><strong>Preferred time:</strong> ${escapeHtml(request.viewingTime)}</p>` : ""}
           ${request.message ? `<p class="request-meta"><strong>Note:</strong> ${escapeHtml(request.message)}</p>` : ""}
           ${timeline}
           <p class="lh-status-hint">Owner sees the same status on their dashboard.</p>
@@ -71,6 +73,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
   }
 
+  async function loadBackendRequests() {
+    try {
+      const token = await window.LeaseHubAuth?.getAccessToken();
+      if (!token || !window.LeaseHubApi) return;
+
+      const payload = await window.LeaseHubApi.request("/viewing-requests");
+      backendRequests = (payload.viewing_requests || []).map((record) => ({
+        id: record.id,
+        propertyId: record.property_id,
+        propertyTitle: record.property?.title || "Property",
+        propertyLocation: record.property?.location || record.property?.city || "",
+        viewingDate: record.preferred_date || record.viewing_date,
+        viewingTime: record.preferred_time,
+        message: record.notes || record.message,
+        status: record.status,
+        createdAt: record.created_at,
+        updatedAt: record.updated_at
+      }));
+      render();
+    } catch (error) {
+      console.warn("Backend viewing requests could not be loaded.", error);
+    }
+  }
+
   render();
+  loadBackendRequests();
   window.addEventListener("storage", (e) => { if (e.key === "viewingRequests") render(); });
 });

@@ -22,6 +22,7 @@ class ApplicationRouteTests(unittest.IsolatedAsyncioTestCase):
             patch.object(main.property_service, "client", object()),
             patch.object(main.property_service, "get_property", new=AsyncMock(return_value=property_data)),
             patch.object(main.application_service, "create_application", new=AsyncMock(return_value=created_application)) as create_application,
+            patch.object(main.notification_service, "create_notification", new=AsyncMock()) as create_notification,
         ):
             result = await main.create_application(
                 main.ApplicationCreateRequest(
@@ -39,6 +40,8 @@ class ApplicationRouteTests(unittest.IsolatedAsyncioTestCase):
         args = create_application.await_args.args
         self.assertEqual(args[1:], ("tenant-1", "actual-owner"))
         self.assertEqual(args[0]["applicant_email"], "tenant@example.com")
+        create_notification.assert_awaited_once()
+        self.assertEqual(create_notification.await_args.args[0]["user_id"], "actual-owner")
 
     async def test_application_rejects_unapproved_property(self):
         user = {"id": "tenant-1", "email": "tenant@example.com", "role": "tenant"}
