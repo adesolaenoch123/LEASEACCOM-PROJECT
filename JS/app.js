@@ -4089,8 +4089,9 @@ function renderRecentlyViewed() {
    ========================================================= */
 
 function createPropertyCard(property) {
+    const propertyId = String(property.id);
     const saved = typeof getSavedProperties === "function"
-        ? getSavedProperties().map(Number).includes(Number(property.id))
+        ? getSavedProperties().some(id => String(id) === propertyId)
         : false;
     const verified = typeof isLeaseHubPropertyVerified === "function"
         ? isLeaseHubPropertyVerified(property)
@@ -4116,8 +4117,8 @@ function createPropertyCard(property) {
         ? `<span>${icon("bx-area")}${esc(property.size)}</span>` : "";
 
     return `
-        <article class="property-card leasehub-enhanced-card" data-property-id="${Number(property.id)}"
-            onclick="openProperty(${Number(property.id)})">
+        <article class="property-card leasehub-enhanced-card" data-property-id="${esc(propertyId)}"
+            onclick="openProperty('${esc(propertyId)}')">
             <div class="property-image">
                 <img src="${esc(image)}" alt="${title}" loading="lazy">
                 <div class="badge ${verified ? "" : "pending-badge"}">
@@ -4125,13 +4126,13 @@ function createPropertyCard(property) {
                     ${verified ? "Verified" : "Pending Verification"}
                 </div>
                 <button type="button" class="save-btn ${saved ? "saved" : ""}"
-                    data-id="${Number(property.id)}"
+                    data-id="${esc(propertyId)}"
                     aria-label="${saved ? "Remove saved property" : "Save property"}"
                     onclick="event.stopPropagation()">
                     ${icon("bx-heart")}
                 </button>
                 <button type="button" class="compare-card-btn"
-                    data-compare-id="${Number(property.id)}"
+                    data-compare-id="${esc(propertyId)}"
                     aria-label="Add property to comparison"
                     onclick="event.stopPropagation()">
                     ${icon("bx-git-compare")} Compare
@@ -4144,7 +4145,7 @@ function createPropertyCard(property) {
                 <div class="property-price">₦${price} <span>/ ${period}</span></div>
                 <div class="property-meta">${beds}${baths}${size}</div>
                 <button type="button" class="view-property-btn"
-                    onclick="event.stopPropagation(); openProperty(${Number(property.id)});">
+                    onclick="event.stopPropagation(); openProperty('${esc(propertyId)}');">
                     View Property ${icon("bx-arrow-right")}
                 </button>
             </div>
@@ -4165,12 +4166,12 @@ function activateSaveButtons() {
 
             event.stopPropagation();
 
-            const propertyId = Number(this.dataset.id);
+            const propertyId = String(this.dataset.id);
 
             let saved = getSavedProperties();
 
             const index = saved
-                .map(Number)
+                .map(String)
                 .indexOf(propertyId);
 
             if (index === -1) {
@@ -4197,11 +4198,11 @@ function activateSaveButtons() {
         button.addEventListener("click", event => {
             event.stopPropagation();
 
-            const id = Number(button.dataset.compareId);
+            const id = String(button.dataset.compareId);
             const selected = getComparedProperties();
 
-            if (selected.includes(id)) {
-                saveComparedProperties(selected.filter(propertyId => propertyId !== id));
+            if (selected.map(String).includes(id)) {
+                saveComparedProperties(selected.filter(propertyId => String(propertyId) !== id));
                 button.classList.remove("selected");
             } else if (selected.length < 3) {
                 saveComparedProperties([...selected, id]);
@@ -4220,7 +4221,7 @@ function activateSaveButtons() {
 
 function openProperty(id) {
 
-    const propertyId = Number(id);
+    const propertyId = String(id);
 
     if (!Array.isArray(properties)) {
         console.error("Properties data was not loaded.");
@@ -4228,7 +4229,7 @@ function openProperty(id) {
     }
 
     const property = properties.find(
-        item => Number(item.id) === propertyId
+        item => String(item.id) === propertyId
     );
 
     if (!property) {
@@ -4699,6 +4700,10 @@ document.addEventListener("DOMContentLoaded", () => {
        ===================================================== */
 
     renderMarketplace();
+
+    if (window.loadLeaseHubPropertyCatalog) {
+        window.loadLeaseHubPropertyCatalog().then(renderMarketplace).catch(() => {});
+    }
 
     renderRecentlyViewed();
 

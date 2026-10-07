@@ -27,7 +27,7 @@ begin
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', ''),
     coalesce(new.raw_user_meta_data->>'phone', ''),
-    coalesce(new.raw_user_meta_data->>'account_type', 'tenant')
+    case when new.raw_user_meta_data->>'account_type' = 'owner' then 'owner' else 'tenant' end
   )
   on conflict (id) do nothing;
   return new;
@@ -55,8 +55,10 @@ create table if not exists public.properties (
   description text default '',
   bedrooms int default 0,
   bathrooms int default 0,
-  listing_status text not null default 'pending'
-    check (listing_status in ('draft', 'pending', 'live', 'rejected')),
+    owner_name text not null default 'Property Owner',
+    image text not null default '',
+    verification_status text not null default 'pending'
+      check (verification_status in ('pending', 'approved', 'rejected')),
   images jsonb not null default '[]'::jsonb,
   cover_image text,
   created_at timestamptz not null default now(),
@@ -64,8 +66,36 @@ create table if not exists public.properties (
 );
 
 create index if not exists properties_owner_idx on public.properties(owner_id);
-create index if not exists properties_status_idx on public.properties(listing_status);
 create index if not exists properties_city_idx on public.properties(city);
+
+alter table public.properties add column if not exists owner_name text not null default 'Property Owner';
+alter table public.properties add column if not exists image text not null default '';
+alter table public.properties add column if not exists verification_status text;
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'properties' and column_name = 'listing_status'
+  ) then
+    execute $migration$
+      update public.properties
+      set verification_status = case listing_status
+        when 'live' then 'approved'
+        when 'approved' then 'approved'
+        when 'rejected' then 'rejected'
+        else 'pending'
+      end
+      where verification_status is null
+    $migration$;
+  end if;
+end;
+$$;
+
+update public.properties set verification_status = 'pending' where verification_status is null;
+alter table public.properties alter column verification_status set default 'pending';
+alter table public.properties alter column verification_status set not null;
+create index if not exists properties_status_idx on public.properties(verification_status);
 
 -- 3) Viewings
 create table if not exists public.viewings (
@@ -76,7 +106,10 @@ create table if not exists public.viewings (
   status text not null default 'requested'
     check (status in ('requested', 'accepted', 'declined', 'completed', 'cancelled')),
   viewing_date date,
+    preferred_date date,
+    preferred_time text,
   message text,
+    notes text,
   status_history jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -84,6 +117,9 @@ create table if not exists public.viewings (
 
 create index if not exists viewings_owner_idx on public.viewings(owner_id);
 create index if not exists viewings_tenant_idx on public.viewings(tenant_id);
+alter table public.viewings add column if not exists preferred_date date;
+alter table public.viewings add column if not exists preferred_time text;
+alter table public.viewings add column if not exists notes text;
 
 -- 4) Applications
 create table if not exists public.applications (
@@ -97,7 +133,15 @@ create table if not exists public.applications (
   applicant_email text,
   applicant_phone text,
   move_in_date date,
+    property_title text not null default 'Property',
+    property_image text not null default '',
+    property_location text not null default 'Nigeria',
+    property_price numeric,
+    property_period text not null default 'year',
+    owner_name text not null default 'Property Owner',
   message text,
+    employment_status text,
+    monthly_income numeric check (monthly_income is null or monthly_income >= 0),
   status_history jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -105,6 +149,14 @@ create table if not exists public.applications (
 
 create index if not exists applications_owner_idx on public.applications(owner_id);
 create index if not exists applications_tenant_idx on public.applications(tenant_id);
+alter table public.applications add column if not exists property_title text not null default 'Property';
+alter table public.applications add column if not exists property_image text not null default '';
+alter table public.applications add column if not exists property_location text not null default 'Nigeria';
+alter table public.applications add column if not exists property_price numeric;
+alter table public.applications add column if not exists property_period text not null default 'year';
+alter table public.applications add column if not exists owner_name text not null default 'Property Owner';
+alter table public.applications add column if not exists employment_status text;
+alter table public.applications add column if not exists monthly_income numeric;
 
 -- 5) Conversations + messages
 create table if not exists public.conversations (
@@ -143,6 +195,41 @@ create table if not exists public.owner_verifications (
   reviewed_by uuid references public.profiles(id)
 );
 
+  create table if not exists public.saved_properties (
+    user_id uuid not null references public.profiles(id) on delete cascade,
+    property_id uuid not null references public.properties(id) on delete cascade,
+    created_at timestamptz not null default now(),
+    primary key (user_id, property_id)
+  );
+
+  create table if not exists public.agreements (
+    id uuid primary key default gen_random_uuid(),
+    property_id uuid not null references public.properties(id) on delete cascade,
+    tenant_id uuid not null references public.profiles(id) on delete cascade,
+    owner_id uuid not null references public.profiles(id) on delete cascade,
+    title text not null,
+    term_months integer not null check (term_months > 0),
+    monthly_rent numeric not null check (monthly_rent > 0),
+    deposit_amount numeric check (deposit_amount is null or deposit_amount >= 0),
+    start_date date,
+    notes text,
+    status text not null default 'draft'
+      check (status in ('draft', 'pending', 'signed', 'cancelled')),
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+  );
+
+  create table if not exists public.notifications (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references public.profiles(id) on delete cascade,
+    title text not null,
+    message text not null,
+    type text not null default 'info',
+    link text,
+    read boolean not null default false,
+    created_at timestamptz not null default now()
+  );
+
 -- 7) RLS
 alter table public.profiles enable row level security;
 alter table public.properties enable row level security;
@@ -151,23 +238,50 @@ alter table public.applications enable row level security;
 alter table public.conversations enable row level security;
 alter table public.messages enable row level security;
 alter table public.owner_verifications enable row level security;
+alter table public.saved_properties enable row level security;
+alter table public.agreements enable row level security;
+alter table public.notifications enable row level security;
+
+create or replace function public.prevent_profile_privilege_escalation()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if (new.account_type is distinct from old.account_type
+      or new.verification_status is distinct from old.verification_status)
+     and auth.role() <> 'service_role'
+     and coalesce(auth.jwt()->'app_metadata'->>'role', '') <> 'admin'
+     and current_user not in ('postgres', 'supabase_admin') then
+    raise exception 'Only trusted administrators can change profile roles or verification status';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_protect_privileges on public.profiles;
+create trigger profiles_protect_privileges
+  before update on public.profiles
+  for each row execute function public.prevent_profile_privilege_escalation();
 
 -- Profiles: users read all basic profiles; update own
 drop policy if exists "profiles_select" on public.profiles;
-create policy "profiles_select" on public.profiles for select using (true);
+create policy "profiles_select" on public.profiles for select using (auth.uid() = id);
 drop policy if exists "profiles_update_own" on public.profiles;
-create policy "profiles_update_own" on public.profiles for update using (auth.uid() = id);
+create policy "profiles_update_own" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
 
 -- Properties: public can read LIVE only; owners manage own
 drop policy if exists "properties_public_live" on public.properties;
 create policy "properties_public_live" on public.properties
-  for select using (listing_status = 'live' or owner_id = auth.uid());
+  for select using (verification_status = 'approved' or owner_id = auth.uid()
+    or coalesce(auth.jwt()->'app_metadata'->>'role', '') = 'admin');
 drop policy if exists "properties_owner_insert" on public.properties;
 create policy "properties_owner_insert" on public.properties
-  for insert with check (owner_id = auth.uid());
-drop policy if exists "properties_owner_update" on public.properties;
-create policy "properties_owner_update" on public.properties
-  for update using (owner_id = auth.uid());
+  for insert with check (owner_id = auth.uid() and verification_status = 'pending');
+drop policy if exists "properties_admin_update" on public.properties;
+create policy "properties_admin_update" on public.properties
+  for update using (coalesce(auth.jwt()->'app_metadata'->>'role', '') = 'admin')
+  with check (coalesce(auth.jwt()->'app_metadata'->>'role', '') = 'admin');
 
 -- Viewings: participants only
 drop policy if exists "viewings_participants" on public.viewings;
@@ -175,10 +289,17 @@ create policy "viewings_participants" on public.viewings
   for select using (tenant_id = auth.uid() or owner_id = auth.uid());
 drop policy if exists "viewings_tenant_insert" on public.viewings;
 create policy "viewings_tenant_insert" on public.viewings
-  for insert with check (tenant_id = auth.uid());
+  for insert with check (
+    tenant_id = auth.uid()
+    and exists (
+      select 1 from public.properties p
+      where p.id = property_id
+        and p.owner_id = owner_id
+        and p.verification_status = 'approved'
+    )
+  );
 drop policy if exists "viewings_participants_update" on public.viewings;
-create policy "viewings_participants_update" on public.viewings
-  for update using (tenant_id = auth.uid() or owner_id = auth.uid());
+drop policy if exists "viewings_participants_update" on public.viewings;
 
 -- Applications: participants only
 drop policy if exists "applications_participants" on public.applications;
@@ -186,10 +307,17 @@ create policy "applications_participants" on public.applications
   for select using (tenant_id = auth.uid() or owner_id = auth.uid());
 drop policy if exists "applications_tenant_insert" on public.applications;
 create policy "applications_tenant_insert" on public.applications
-  for insert with check (tenant_id = auth.uid());
+  for insert with check (
+    tenant_id = auth.uid()
+    and exists (
+      select 1 from public.properties p
+      where p.id = property_id
+        and p.owner_id = owner_id
+        and p.verification_status = 'approved'
+    )
+  );
 drop policy if exists "applications_participants_update" on public.applications;
-create policy "applications_participants_update" on public.applications
-  for update using (tenant_id = auth.uid() or owner_id = auth.uid());
+drop policy if exists "applications_participants_update" on public.applications;
 
 -- Conversations / messages
 drop policy if exists "conversations_participants" on public.conversations;
@@ -226,6 +354,24 @@ create policy "owner_verifications_own" on public.owner_verifications
 drop policy if exists "owner_verifications_insert" on public.owner_verifications;
 create policy "owner_verifications_insert" on public.owner_verifications
   for insert with check (owner_id = auth.uid());
+
+drop policy if exists "saved_properties_own" on public.saved_properties;
+create policy "saved_properties_own" on public.saved_properties
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists "agreements_participants" on public.agreements;
+create policy "agreements_participants" on public.agreements
+  for select using (tenant_id = auth.uid() or owner_id = auth.uid());
+drop policy if exists "agreements_owner_insert" on public.agreements;
+create policy "agreements_owner_insert" on public.agreements
+  for insert with check (owner_id = auth.uid());
+
+drop policy if exists "notifications_own" on public.notifications;
+create policy "notifications_own" on public.notifications
+  for select using (user_id = auth.uid());
+drop policy if exists "notifications_update_own" on public.notifications;
+create policy "notifications_update_own" on public.notifications
+  for update using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- Storage bucket for property images (run once)
 -- insert into storage.buckets (id, name, public) values ('property-images', 'property-images', true)

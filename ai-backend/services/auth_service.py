@@ -18,9 +18,12 @@ class AuthService:
 
     def __init__(self) -> None:
         self.client: Optional[Client] = None
+        self.profile_client: Optional[Client] = None
 
         if settings.SUPABASE_URL and settings.SUPABASE_ANON_KEY:
             self.client = create_client(settings.SUPABASE_URL, settings.SUPABASE_ANON_KEY)
+        if settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY:
+            self.profile_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
     @classmethod
     def _demo_user(cls, token: str) -> Optional[Dict[str, str]]:
@@ -32,9 +35,10 @@ class AuthService:
         if not authorization:
             return None
 
-        token = authorization.replace("Bearer ", "", 1).strip()
-        if not token:
+        scheme, _, token = authorization.strip().partition(" ")
+        if scheme.lower() != "bearer" or not token.strip():
             return None
+        token = token.strip()
 
         if self.client is None:
             return self._demo_user(token)
@@ -48,12 +52,23 @@ class AuthService:
             return None
 
         app_metadata = getattr(user, "app_metadata", None) or {}
-        user_metadata = getattr(user, "user_metadata", None) or {}
         if app_metadata.get("role") == "admin":
-            role = "admin"
-        else:
-            role = user_metadata.get("account_type")
-            if role not in {"tenant", "owner"}:
-                role = "user"
+            return {"id": user.id, "email": user.email, "role": "admin"}
+
+        role = "user"
+        if self.profile_client:
+            try:
+                response = (
+                    self.profile_client.table("profiles")
+                    .select("account_type")
+                    .eq("id", user.id)
+                    .maybe_single()
+                    .execute()
+                )
+                profile = response.data or {}
+                if profile.get("account_type") in {"tenant", "owner"}:
+                    role = profile["account_type"]
+            except Exception:
+                pass
 
         return {"id": user.id, "email": user.email, "role": role}

@@ -65,7 +65,7 @@
       const { data, error } = await global.leasehubSupabase
         .from("properties")
         .select("*")
-        .eq("listing_status", "live")
+        .eq("verification_status", "approved")
         .order("updated_at", { ascending: false });
       if (error) {
         console.warn("LeaseHub properties:", error.message);
@@ -93,9 +93,9 @@
       description: row.description || "",
       bedrooms: row.bedrooms,
       bathrooms: row.bathrooms,
-      listingStatus: row.listing_status,
-      verificationStatus: row.listing_status === "live" ? "approved" : row.listing_status,
-      verified: row.listing_status === "live",
+      listingStatus: row.verification_status === "approved" ? "live" : row.verification_status,
+      verificationStatus: row.verification_status,
+      verified: row.verification_status === "approved",
       ownerVerified: true,
       image: row.cover_image || images[0] || "",
       images: images,

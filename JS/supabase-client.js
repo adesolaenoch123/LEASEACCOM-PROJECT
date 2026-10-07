@@ -273,8 +273,7 @@ async function toggleSave(propertyId) {
   }
 
 
-  const id =
-    Number(propertyId);
+  const id = String(propertyId);
 
 
   const {

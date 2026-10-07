@@ -2,7 +2,7 @@
    LEASEHUB - PROPERTY DETAILS
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
     const detailsContainer =
         document.getElementById("propertyDetails");
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         new URLSearchParams(window.location.search);
 
     const propertyId =
-        Number(urlParams.get("id"));
+        String(urlParams.get("id") || "");
 
 
     /* =====================================================
@@ -49,6 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    if (window.loadLeaseHubPropertyCatalog) {
+        await window.loadLeaseHubPropertyCatalog();
+    }
+
 
     /* =====================================================
        FIND PROPERTY
@@ -56,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const property =
         properties.find(
-            item => Number(item.id) === propertyId
+            item => String(item.id) === propertyId
         );
 
 

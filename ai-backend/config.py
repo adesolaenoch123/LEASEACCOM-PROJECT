@@ -16,7 +16,10 @@ def _split_csv(value: str | None) -> List[str]:
 class Settings:
     APP_NAME: str = os.getenv("APP_NAME", "LeaseHub AI")
     APP_ENV: str = os.getenv("APP_ENV", "development")
-    ALLOW_DEMO_AUTH: bool = os.getenv("ALLOW_DEMO_AUTH", "false").strip().lower() in {"1", "true", "yes"}
+    ALLOW_DEMO_AUTH: bool = (
+        os.getenv("ALLOW_DEMO_AUTH", "false").strip().lower() in {"1", "true", "yes"}
+        and APP_ENV.strip().lower() != "production"
+    )
 
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
