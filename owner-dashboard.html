@@ -9,6 +9,74 @@
   <link rel="stylesheet" href="CSS/style.css">
   <link rel="stylesheet" href="CSS/notifications.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
+  <style>
+    .owner-featured-video {
+      display: block;
+      width: 100%;
+      max-height: 320px;
+      border-radius: 18px;
+      background: #0b1220;
+      object-fit: cover;
+    }
+
+    #ownerPlanOptions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .owner-plan-option {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 18px 16px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.34);
+    }
+
+    .owner-plan-option.is-featured {
+      border-color: rgba(96, 165, 250, 0.8);
+      box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.5);
+    }
+
+    .owner-plan-name {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #8aa3c8;
+    }
+
+    .owner-plan-price {
+      font-size: clamp(1.6rem, 2vw, 2.2rem);
+      line-height: 1.1;
+      color: #f8fafc;
+    }
+
+    .owner-plan-button {
+      margin-top: auto;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      font-weight: 700;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    .owner-plan-notice {
+      margin-top: 14px;
+      color: #c7d2fe;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 640px) {
+      #ownerPlanOptions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body class="owner-lounge-body" data-owner-page="dashboard">
 
@@ -289,6 +357,18 @@
         </div>
       </section>
 
+      <section class="owner-panel">
+        <div class="owner-panel-head">
+          <div>
+            <span>HOUSE TOUR</span>
+            <h3 class="owner-panel-title">Property showcase</h3>
+          </div>
+        </div>
+        <video class="owner-featured-video" controls muted playsinline preload="auto" poster="https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80">
+          <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
+        </video>
+      </section>
+
       <section class="owner-panel" id="ownerPlan">
         <div class="owner-panel-head">
           <div>
@@ -303,6 +383,30 @@
           </div>
           <button type="button" class="owner-ghost-btn" id="ownerManagePlanBtn">Manage</button>
         </div>
+        <div id="ownerPlanOptions" class="owner-plan-options">
+          <article class="owner-plan-option is-featured">
+            <span class="owner-plan-name">Starter</span>
+            <strong class="owner-plan-price">₦20,000</strong>
+            <small>per month</small>
+            <p>Higher exposure and automatic lead capture.</p>
+            <button type="button" class="owner-plan-button" onclick="document.getElementById('ownerPlanNotice').textContent='checkout is not connected yet';">Subscribe now</button>
+          </article>
+          <article class="owner-plan-option">
+            <span class="owner-plan-name">Boost</span>
+            <strong class="owner-plan-price">₦35,000</strong>
+            <small>per month</small>
+            <p>Featured placement and analytics for active listings.</p>
+            <button type="button" class="owner-plan-button" onclick="document.getElementById('ownerPlanNotice').textContent='checkout is not connected yet';">Choose Boost</button>
+          </article>
+          <article class="owner-plan-option">
+            <span class="owner-plan-name">Premium</span>
+            <strong class="owner-plan-price">₦60,000</strong>
+            <small>per month</small>
+            <p>Full storefront management and premium support.</p>
+            <button type="button" class="owner-plan-button" onclick="document.getElementById('ownerPlanNotice').textContent='checkout is not connected yet';">Choose Premium</button>
+          </article>
+        </div>
+        <div id="ownerPlanNotice" class="owner-plan-notice" aria-live="polite">Choose a plan to unlock more visibility.</div>
       </section>
     </main>
   </div>
