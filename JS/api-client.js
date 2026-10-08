@@ -1,16 +1,34 @@
+/**
+ * LeaseHub API client — talks to FastAPI (ai-backend) when LEASEHUB_API_URL is set.
+ */
 (function () {
   const localHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-  const apiBaseUrl = String(
-    window.LEASEHUB_API_URL || (localHost ? "http://127.0.0.1:8000" : "")
-  ).replace(/\/$/, "");
+
+  function resolveApiBase() {
+    const fromWindow = String(window.LEASEHUB_API_URL || "").trim().replace(/\/$/, "");
+    if (fromWindow) return fromWindow;
+    if (localHost) return "http://127.0.0.1:8000";
+    return "";
+  }
 
   window.LeaseHubApi = {
+    isConfigured() {
+      return Boolean(resolveApiBase());
+    },
+
+    getBaseUrl() {
+      return resolveApiBase();
+    },
+
     async request(path, options = {}) {
+      const apiBaseUrl = resolveApiBase();
       if (!apiBaseUrl) {
-        throw new Error("LeaseHub services are not configured for this app build.");
+        throw new Error(
+          "LeaseHub API is not configured. Deploy ai-backend and set window.LEASEHUB_API_URL in JS/config.js."
+        );
       }
 
-      const token = await window.LeaseHubAuth?.getAccessToken();
+      const token = await window.LeaseHubAuth?.getAccessToken?.();
       if (!token) {
         throw new Error("Please log in again to continue.");
       }
@@ -24,9 +42,10 @@
       const response = await fetch(`${apiBaseUrl}${path}`, {
         ...options,
         headers,
-        body: options.body && typeof options.body !== "string"
-          ? JSON.stringify(options.body)
-          : options.body
+        body:
+          options.body && typeof options.body !== "string"
+            ? JSON.stringify(options.body)
+            : options.body
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -35,10 +54,21 @@
       return payload;
     },
 
-    async createApplication(payload) {
-      const token = await window.LeaseHubAuth?.getAccessToken();
-      if (!token) return null;
+    async health() {
+      const base = resolveApiBase();
+      if (!base) return { ok: false, configured: false };
+      try {
+        const res = await fetch(`${base}/health`);
+        const data = await res.json().catch(() => ({}));
+        return { ok: res.ok, configured: true, data };
+      } catch (e) {
+        return { ok: false, configured: true, error: e.message };
+      }
+    },
 
+    async createApplication(payload) {
+      const token = await window.LeaseHubAuth?.getAccessToken?.();
+      if (!token) return null;
       return this.request("/applications", {
         method: "POST",
         body: payload
@@ -46,9 +76,8 @@
     },
 
     async createViewingRequest(payload) {
-      const token = await window.LeaseHubAuth?.getAccessToken();
+      const token = await window.LeaseHubAuth?.getAccessToken?.();
       if (!token) return null;
-
       return this.request("/viewing-requests", {
         method: "POST",
         body: payload
