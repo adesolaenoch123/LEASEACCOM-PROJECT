@@ -43,6 +43,19 @@
             </a>
         </div>
 
+        <div class="leasehub-header-notifications">
+            <div class="leasehub-notification-panel" data-notifications-panel>
+                <button class="notification-toggle" type="button" data-notifications-toggle aria-label="Open notifications" aria-expanded="false">
+                    <i class="bx bx-bell" aria-hidden="true"></i>
+                    <span class="notification-badge" data-notifications-badge hidden>0</span>
+                </button>
+                <section class="leasehub-notification-panel__dropdown" role="dialog" aria-label="Notifications">
+                    <div class="leasehub-notification-panel__header"><span>Notifications</span><button class="notification-close" type="button" data-notifications-close aria-label="Close notifications">×</button></div>
+                    <div class="leasehub-notification-list" data-notifications-list></div>
+                </section>
+            </div>
+        </div>
+
         <button class="menu-btn" id="menuBtn" type="button" aria-label="Open navigation" aria-expanded="false"><i class="bx bx-menu" aria-hidden="true"></i></button>
 
     </header>
@@ -684,7 +697,8 @@
     <script src="JS/supabase-client.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="JS/app.js"></script>
-    <script src="JS/api-client.js"></script>
+    <script src="JS/config.js"></script>
+<script src="JS/api-client.js"></script>
     <script src="JS/notifications-ui.js"></script>
 
     <script src="JS/cms-public.js"></script>
