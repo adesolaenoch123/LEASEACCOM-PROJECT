@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
         imageInput.value = "";
     });
 
-    form.addEventListener("submit", event => {
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const title = document.getElementById("propertyTitle")?.value.trim();
         const type = document.getElementById("propertyType")?.value;
@@ -182,6 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let storedProperties = [];
         try { const parsed = JSON.parse(localStorage.getItem("leasehubProperties") || "[]"); storedProperties = Array.isArray(parsed) ? parsed : []; } catch {}
         storedProperties.push(newProperty);
+        // Always keep local copy (fallback / offline)
         localStorage.setItem("leasehubProperties", JSON.stringify(storedProperties));
         const currentUserProperties = Array.isArray(currentUser.properties) ? currentUser.properties : [];
         if (!currentUserProperties.some(id => String(id) === String(newProperty.id))) currentUserProperties.push(newProperty.id);
@@ -194,8 +195,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (index !== -1) { users[index] = currentUser; localStorage.setItem("leasehubUsers", JSON.stringify(users)); }
             }
         } catch {}
-        showFormStatus("Property submitted successfully. Your listing is now pending verification.", "success");
-        window.setTimeout(() => { window.location.href = "owner-dashboard.html"; }, 700);
+
+        // Cloud save (Supabase) so listings work across devices
+        showFormStatus("Submitting listing…", "success");
+        try {
+            if (window.LeaseHubData && typeof window.LeaseHubData.createProperty === "function") {
+                const cloud = await window.LeaseHubData.createProperty(newProperty);
+                if (cloud && cloud.ok) {
+                    if (cloud.mapped && cloud.mapped.id) {
+                        newProperty.id = cloud.mapped.id;
+                    }
+                    showFormStatus("Property saved to LeaseHub cloud. Pending review before it goes live.", "success");
+                } else if (cloud && cloud.offline) {
+                    showFormStatus("Saved on this device only (offline). Sign in again to sync to the cloud.", "success");
+                } else {
+                    console.warn("Supabase createProperty:", cloud && cloud.error);
+                    showFormStatus("Saved on this device. Cloud sync failed: " + ((cloud && cloud.error) || "unknown") + ". Check Supabase RLS/columns.", "error");
+                    // still redirect so owner sees local pending
+                }
+            } else {
+                showFormStatus("Property submitted on this device (Supabase client not loaded). Pending verification.", "success");
+            }
+        } catch (err) {
+            console.warn(err);
+            showFormStatus("Saved locally. Cloud error: " + (err && err.message ? err.message : "failed"), "error");
+        }
+        window.setTimeout(() => { window.location.href = "owner-dashboard.html"; }, 900);
     });
 
 

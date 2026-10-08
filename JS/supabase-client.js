@@ -122,7 +122,7 @@ async function fetchProperties(filters = {}) {
     leasehubSupabase
       .from('properties')
       .select('*')
-      .eq('verification_status', 'approved')
+      .or('listing_status.eq.live,verification_status.eq.approved')
       .order('created_at', {
         ascending: false
       });
