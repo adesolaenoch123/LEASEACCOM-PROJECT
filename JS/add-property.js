@@ -31,6 +31,32 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    // Subscription unit limit
+    function enforceUnitLimit() {
+        if (!window.LeaseHubPlans || typeof window.LeaseHubPlans.canAddUnit !== "function") {
+            return true;
+        }
+        const gate = window.LeaseHubPlans.canAddUnit(currentUser);
+        if (!gate.ok) {
+            showFormStatus(
+                gate.message + " Open Payments / Plans to upgrade (Basic ₦5k · Standard ₦10k · Premium ₦20k).",
+                "error"
+            );
+            const upgrade = document.createElement("p");
+            upgrade.className = "plan-upgrade-hint";
+            upgrade.innerHTML = '<a href="owner-payments.html#plans" class="owner-btn">View plans &amp; upgrade</a>';
+            if (formStatus && formStatus.parentNode && !document.getElementById("planUpgradeHint")) {
+                upgrade.id = "planUpgradeHint";
+                formStatus.parentNode.insertBefore(upgrade, formStatus.nextSibling);
+            }
+            return false;
+        }
+        return true;
+    }
+    if (!enforceUnitLimit()) {
+        // Still show the form locked messaging; block submit
+    }
+
     function compressImage(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -121,6 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (typeof enforceUnitLimit === "function" && !enforceUnitLimit()) return;
         const title = document.getElementById("propertyTitle")?.value.trim();
         const type = document.getElementById("propertyType")?.value;
         const purpose = document.getElementById("listingPurpose")?.value;

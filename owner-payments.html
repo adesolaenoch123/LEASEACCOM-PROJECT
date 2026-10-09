@@ -238,5 +238,42 @@
 
 <script src="JS/owner-shell.js"></script>
 <script src="JS/owner-payments.js"></script>
+
+<section id="plans" class="owner-plans-section">
+  <h2>Subscription plans</h2>
+  <p class="owner-muted">Paystack checkout comes next. For now you can switch plans on this device to test limits.</p>
+  <div class="owner-plans-grid" id="ownerPlansGrid"></div>
+</section>
+<script src="JS/plans.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  if (!window.LeaseHubPlans) return;
+  const grid = document.getElementById("ownerPlansGrid");
+  if (!grid) return;
+  const current = window.LeaseHubPlans.getCurrentPlan();
+  grid.innerHTML = window.LeaseHubPlans.listPlans().map(function (p) {
+    const active = p.id === current.id ? " is-active" : "";
+    return (
+      '<article class="owner-plan-option' + active + '" data-plan-pick="' + p.id + '">' +
+      "<h3>" + p.name + "</h3>" +
+      "<p class=\"price\">" + p.priceLabel + (p.billing === "month" ? "/mo" : "") + "</p>" +
+      "<p>" + p.blurb + "</p>" +
+      "<p><strong>" + p.maxUnits + "</strong> units max</p>" +
+      '<button type="button" class="owner-btn plan-select-btn" data-plan="' + p.id + '">' +
+      (p.id === current.id ? "Current plan" : "Select " + p.name) +
+      "</button></article>"
+    );
+  }).join("");
+  grid.addEventListener("click", function (e) {
+    const btn = e.target.closest("[data-plan]");
+    if (!btn) return;
+    const id = btn.getAttribute("data-plan");
+    window.LeaseHubPlans.setPlan(id);
+    alert("Plan set to " + id + " on this device. Paystack will replace this demo switch.");
+    location.reload();
+  });
+});
+</script>
+
 </body>
 </html>

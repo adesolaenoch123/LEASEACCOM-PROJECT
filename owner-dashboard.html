@@ -7,6 +7,7 @@
   <title>Owner Lounge — LeaseHub</title>
   <meta name="description" content="Manage LeaseHub property listings, viewing requests, rental applications and owner activity.">
   <link rel="stylesheet" href="CSS/style.css">
+<link rel="stylesheet" href="CSS/plans.css">
   <link rel="stylesheet" href="CSS/notifications.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
@@ -293,10 +294,25 @@
         <div class="owner-panel-head">
           <div>
             <span>PLAN</span>
-            <h3 class="owner-panel-title">Subscription</h3>
+            
+      <section class="owner-grid-2" id="ownerPlanFeatures">
+        <article class="owner-panel" id="ownerAnalyticsPanel" data-plan-feature="analytics">
+          <div class="owner-panel-head"><span>ANALYTICS</span></div>
+          <p class="owner-muted">Views, saves and engagement trends for your listings.</p>
+          <p><strong id="ownerAnalyticsHint">Available on Standard+</strong></p>
+        </article>
+        <article class="owner-panel" id="ownerViewerTracking" data-plan-feature="viewerTracking">
+          <div class="owner-panel-head"><span>VIEWER TRACKING</span></div>
+          <p class="owner-muted">See who viewed your listings (Premium).</p>
+        </article>
+      </section>
+
+<h3 class="owner-panel-title">Subscription</h3>
           </div>
         </div>
         <div class="owner-plan-card">
+          <!-- filled by plans.js / owner-lounge -->
+
           <div>
             <strong>Free</strong>
             <p class="owner-muted">List properties, receive viewings and applications. Premium payout tools can be added later.</p>
@@ -331,6 +347,7 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="JS/supabase-client.js"></script>
+<script src="JS/plans.js"></script>
 <script src="JS/owner-shell.js"></script>
 <script src="JS/data.js"></script>
 <script src="JS/leasehub-status.js"></script>

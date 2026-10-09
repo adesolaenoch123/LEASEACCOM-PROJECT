@@ -157,7 +157,7 @@
     });
 
     document.getElementById("ownerManagePlanBtn")?.addEventListener("click", () => {
-      alert("Plan management is demo-only for now. Free plan is active.");
+      window.location.href = "owner-payments.html#plans";
     });
 
     document.getElementById("ownerRefreshBtn")?.addEventListener("click", () => {
@@ -253,3 +253,82 @@
     window.setTimeout(syncCountsToStorefront, 800);
   });
 })();
+
+
+/* ===== Subscription plan UI ===== */
+function refreshOwnerPlanUI() {
+  if (!window.LeaseHubPlans) return;
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem("leasehubCurrentUser") || "null");
+  } catch (e) {}
+  if (!user) return;
+  window.LeaseHubPlans.ensureUserPlan(user);
+  const plan = window.LeaseHubPlans.getCurrentPlan(user);
+  const limits = window.LeaseHubPlans.getPlanLimits(user);
+  const used = window.LeaseHubPlans.countOwnerUnits(user);
+
+  const pill = document.getElementById("ownerPlanPill");
+  if (pill) {
+    pill.textContent = plan.name.toUpperCase();
+    pill.dataset.plan = plan.id;
+    pill.title = `${used}/${limits.maxUnits} units · ${plan.priceLabel}/${plan.billing === "forever" ? "free" : "mo"}`;
+  }
+
+  // Subscription panel summary
+  let box = document.getElementById("ownerPlanSummary");
+  const panel = document.querySelector(".owner-plan-card");
+  if (panel && !box) {
+    box = document.createElement("div");
+    box.id = "ownerPlanSummary";
+    box.className = "owner-plan-summary";
+    panel.appendChild(box);
+  }
+  if (box) {
+    box.innerHTML = `
+      <p><strong>${plan.name}</strong> · ${plan.priceLabel}${plan.billing === "month" ? "/mo" : ""}</p>
+      <p class="owner-muted">${used} / ${limits.maxUnits} units used</p>
+      <p class="owner-muted">${plan.blurb}</p>
+      <div class="owner-plan-meter"><span style="width:${Math.min(100, (used / limits.maxUnits) * 100)}%"></span></div>
+      <a class="owner-btn owner-btn-small" href="owner-payments.html#plans">Manage plan</a>
+    `;
+  }
+
+  // Gate premium / standard features
+  document.querySelectorAll("[data-plan-feature]").forEach((el) => {
+    const key = el.getAttribute("data-plan-feature");
+    const ok = window.LeaseHubPlans.canAccessFeature(key, user);
+    el.classList.toggle("is-plan-locked", !ok);
+    if (!ok) {
+      el.setAttribute("aria-disabled", "true");
+      if (!el.querySelector(".plan-lock-msg")) {
+        const msg = document.createElement("div");
+        msg.className = "plan-lock-msg";
+        msg.innerHTML = `<span>🔒 ${key} needs a higher plan.</span> <a href="owner-payments.html#plans">Upgrade</a>`;
+        el.appendChild(msg);
+      }
+    }
+  });
+
+  // Analytics / viewer tracking placeholders
+  const analytics = document.getElementById("ownerAnalyticsPanel");
+  if (analytics) {
+    const level = limits.features.analytics;
+    analytics.classList.toggle("is-plan-locked", level === "none");
+    if (level === "none") {
+      analytics.innerHTML = `<div class="plan-lock-msg"><p>Analytics unlock on <strong>Standard</strong> and <strong>Premium</strong>.</p><a href="owner-payments.html#plans">Upgrade</a></div>`;
+    }
+  }
+  const tracking = document.getElementById("ownerViewerTracking");
+  if (tracking) {
+    const ok = limits.features.viewerTracking;
+    tracking.classList.toggle("is-plan-locked", !ok);
+    if (!ok) {
+      tracking.innerHTML = `<div class="plan-lock-msg"><p>Viewer tracking is a <strong>Premium</strong> feature.</p><a href="owner-payments.html#plans">Upgrade to Premium</a></div>`;
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  try { refreshOwnerPlanUI(); } catch (e) { console.warn(e); }
+});

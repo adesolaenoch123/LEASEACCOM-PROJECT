@@ -1,0 +1,22 @@
+
+.owner-plan-pill { text-transform: uppercase; font-weight: 700; }
+.owner-plan-summary { margin-top: 10px; font-size: 13px; }
+.owner-plan-meter {
+  height: 8px; background: #e8eee9; border-radius: 99px; overflow: hidden; margin: 8px 0 12px;
+}
+.owner-plan-meter span { display: block; height: 100%; background: #1a7f4b; }
+.is-plan-locked { position: relative; opacity: 0.92; }
+.plan-lock-msg {
+  margin-top: 10px; padding: 10px 12px; border-radius: 10px;
+  background: #fff8e6; border: 1px solid #f0d78c; font-size: 13px;
+}
+.plan-upgrade-hint { margin-top: 8px; }
+.owner-plans-section { padding: 24px 16px 48px; max-width: 960px; margin: 0 auto; }
+.owner-plans-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 16px;
+}
+.owner-plan-option {
+  border: 1px solid #dfe7e1; border-radius: 14px; padding: 16px; background: #fff;
+}
+.owner-plan-option.is-active { border-color: #1a7f4b; box-shadow: 0 0 0 2px rgba(26,127,75,.2); }
+.owner-plan-option .price { font-size: 1.25rem; font-weight: 700; color: #1a7f4b; }
