@@ -1,1 +1,1 @@
-window.LEASEHUB_API_URL = "https://leasehub-api.onrender.com";
+window.LEASEACCOM_API_URL = "https://leaseaccom-api.onrender.com";

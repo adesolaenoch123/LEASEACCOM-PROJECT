@@ -26,7 +26,7 @@ class AuthServiceTests(unittest.IsolatedAsyncioTestCase):
             service = AuthService()
             self.assertEqual(
                 await service.get_session_user("Bearer demo-owner-token"),
-                {"id": "demo-owner", "email": "owner@leasehub.local", "role": "owner"},
+                {"id": "demo-owner", "email": "owner@leaseaccom.local", "role": "owner"},
             )
             self.assertIsNone(await service.get_session_user("Bearer made-up-admin-token"))
 

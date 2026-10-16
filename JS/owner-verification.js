@@ -1,218 +1,381 @@
 /**
- * Owner identity verification — required before listing properties.
- * Stores application on user + leasehubOwnerVerifications queue for admin.
+ * LeaseAccom — landlord verification & documentation
+ * Stores queue in localStorage (leaseaccomOwnerVerifications).
+ * Ready to swap uploads to Supabase Storage later.
  */
 (function () {
-  const USERS_KEY = "leasehubUsers";
-  const CURRENT_KEY = "leasehubCurrentUser";
-  const QUEUE_KEY = "leasehubOwnerVerifications";
+  "use strict";
+
+  var QUEUE_KEY = "leaseaccomOwnerVerifications";
+  var CURRENT_KEYS = ["leaseaccomCurrentUser", "leaseaccomCurrentUser", "currentUser"];
+  var MAX_BYTES = 5 * 1024 * 1024;
+
+  var step = 1;
+  var idFileMeta = null;
+  var proofFileMeta = null;
 
   function readJSON(key, fallback) {
     try {
-      const v = JSON.parse(localStorage.getItem(key) || "null");
+      var v = JSON.parse(localStorage.getItem(key) || "null");
       return v == null ? fallback : v;
-    } catch {
+    } catch (e) {
       return fallback;
     }
   }
-
   function writeJSON(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
   }
-
   function getCurrentUser() {
-    return readJSON(CURRENT_KEY, null) || readJSON("leaseHubCurrentUser", null);
+    for (var i = 0; i < CURRENT_KEYS.length; i++) {
+      var u = readJSON(CURRENT_KEYS[i], null);
+      if (u) return u;
+    }
+    return null;
   }
-
   function saveCurrentUser(user) {
-    const payload = JSON.stringify(user);
-    localStorage.setItem(CURRENT_KEY, payload);
-    localStorage.setItem("leaseHubCurrentUser", payload);
-    localStorage.setItem("currentUser", payload);
-    const users = readJSON(USERS_KEY, []);
-    if (Array.isArray(users)) {
-      const idx = users.findIndex(
-        (u) => Number(u.id) === Number(user.id) || String(u.email || "").toLowerCase() === String(user.email || "").toLowerCase()
-      );
-      if (idx >= 0) {
-        users[idx] = { ...users[idx], ...user };
-        writeJSON(USERS_KEY, users);
-      }
-    }
-  }
-
-  function statusOf(user) {
-    return String(user?.verificationStatus || user?.ownerVerificationStatus || "unverified").toLowerCase();
-  }
-
-  function renderBanner(user) {
-    const el = document.getElementById("ovStatusBanner");
-    if (!el) return;
-    const st = statusOf(user);
-    el.hidden = false;
-    el.classList.remove("pending", "verified", "rejected");
-    if (st === "verified") {
-      el.classList.add("verified");
-      el.innerHTML = `<i class="bx bx-badge-check"></i><div><strong>You are verified</strong><p>You can publish property listings. Keep your details up to date.</p></div>`;
-    } else if (st === "pending") {
-      el.classList.add("pending");
-      el.innerHTML = `<i class="bx bx-time-five"></i><div><strong>Verification pending</strong><p>We are reviewing your details. You cannot publish listings until approved.</p></div>`;
-    } else if (st === "rejected") {
-      el.classList.add("rejected");
-      el.innerHTML = `<i class="bx bx-x-circle"></i><div><strong>Verification rejected</strong><p>${user.verificationNote || "Please correct your details and submit again."}</p></div>`;
-    } else {
-      el.innerHTML = `<i class="bx bx-shield"></i><div><strong>Not verified yet</strong><p>Complete the form below. Listing stays locked until you are verified.</p></div>`;
-    }
-  }
-
-  function lockFormIfNeeded(user) {
-    const form = document.getElementById("ownerVerificationForm");
-    const page = document.getElementById("ownerVerificationPage");
-    const st = statusOf(user);
-    if (!form) return;
-    if (st === "pending" || st === "verified") {
-      page && page.classList.add("ov-locked");
-      form.querySelectorAll("input, select, textarea, button[type=submit]").forEach((n) => {
-        if (n.id === "ovSubmitBtn") {
-          n.disabled = true;
-          n.textContent = st === "verified" ? "Already verified" : "Submitted — pending review";
-        } else if (n.type !== "checkbox") {
-          n.disabled = true;
-        }
+    var payload = JSON.stringify(user);
+    CURRENT_KEYS.forEach(function (k) {
+      try {
+        localStorage.setItem(k, payload);
+      } catch (e) {}
+    });
+    var users = readJSON("leaseaccomUsers", []);
+    if (Array.isArray(users) && user.id) {
+      var idx = users.findIndex(function (x) {
+        return String(x.id) === String(user.id);
       });
+      if (idx >= 0) users[idx] = Object.assign({}, users[idx], user);
+      else users.push(user);
+      writeJSON("leaseaccomUsers", users);
     }
   }
 
-  function fillFromUser(user) {
-    const v = user.ownerVerification || {};
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      if (el && val != null) el.value = val;
-    };
-    set("ovFullName", v.fullName || user.name || "");
-    set("ovPhone", v.phone || user.phone || "");
-    set("ovEmail", v.email || user.email || "");
-    set("ovCity", v.city || "");
-    set("ovAddress", v.address || "");
-    set("ovState", v.state || "");
-    set("ovIdType", v.idType || "");
-    set("ovIdNumber", v.idNumber || "");
-    set("ovRole", v.listingRole || "");
-    set("ovBusiness", v.businessName || "");
-    set("ovProofNote", v.proofNote || "");
+  function showStep(n) {
+    step = n;
+    document.querySelectorAll(".ov-panel").forEach(function (p) {
+      p.classList.toggle("is-active", Number(p.getAttribute("data-panel")) === n);
+    });
+    document.querySelectorAll("[data-step-indicator]").forEach(function (el) {
+      var s = Number(el.getAttribute("data-step-indicator"));
+      el.classList.toggle("is-active", s === n);
+      el.classList.toggle("is-done", s < n);
+    });
+    if (n === 4) buildReview();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function fileToDataUrl(file) {
-    return new Promise((resolve, reject) => {
-      if (!file) return resolve("");
-      if (file.size > 2.5 * 1024 * 1024) {
-        reject(new Error("File is too large (max ~2.5MB in demo)."));
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ""));
-      reader.onerror = () => reject(new Error("Could not read file."));
+  function validateStep(n) {
+    if (n === 1) {
+      if (!document.getElementById("ovFullName").value.trim()) return "Enter your full legal name.";
+      if (!document.getElementById("ovPhone").value.trim()) return "Enter your phone number.";
+      if (!document.getElementById("ovEmail").value.trim()) return "Enter your email.";
+      if (!document.getElementById("ovRole").value) return "Select your listing role.";
+      if (!document.getElementById("ovCity").value.trim()) return "Enter your city.";
+      if (!document.getElementById("ovState").value) return "Select your state.";
+      if (!document.getElementById("ovAddress").value.trim()) return "Enter your address.";
+    }
+    if (n === 2) {
+      if (!document.getElementById("ovIdType").value) return "Select an ID type.";
+      if (!document.getElementById("ovIdNumber").value.trim()) return "Enter the ID number.";
+      if (!idFileMeta) return "Upload your government ID document.";
+    }
+    if (n === 3) {
+      if (!document.getElementById("ovProofType").value) return "Select proof document type.";
+      if (!proofFileMeta) return "Upload proof of ownership or authority.";
+    }
+    return null;
+  }
+
+  function setMsg(text, type) {
+    var el = document.getElementById("ovMsg");
+    if (!el) return;
+    el.textContent = text || "";
+    el.className = "ov-msg" + (type === "error" ? " err" : type === "success" ? " ok" : "");
+  }
+
+  function readFile(file) {
+    return new Promise(function (resolve, reject) {
+      if (!file) return reject(new Error("No file"));
+      if (file.size > MAX_BYTES) return reject(new Error("File must be under 5MB."));
+      var ok = /image\/|application\/pdf/.test(file.type) || /\.pdf$/i.test(file.name);
+      if (!ok) return reject(new Error("Use JPG, PNG or PDF only."));
+      var reader = new FileReader();
+      reader.onload = function () {
+        resolve({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          dataUrl: reader.result
+        });
+      };
+      reader.onerror = function () {
+        reject(new Error("Could not read file."));
+      };
       reader.readAsDataURL(file);
     });
   }
 
-  function showStatus(msg, type) {
-    const el = document.getElementById("ovFormStatus");
-    if (!el) return;
-    el.textContent = msg;
-    el.className = `form-status is-visible is-${type || "error"}`;
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const user = getCurrentUser();
-    if (!user || String(user.accountType || "").toLowerCase() !== "owner") {
-      window.location.replace("login.html");
+  function renderPreview(targetId, meta, clearFn) {
+    var box = document.getElementById(targetId);
+    if (!box || !meta) {
+      if (box) box.innerHTML = "";
       return;
     }
-
-    // Ensure default status
-    if (!user.verificationStatus && !user.ownerVerificationStatus) {
-      user.verificationStatus = "unverified";
-      saveCurrentUser(user);
+    var isImg = String(meta.type).indexOf("image/") === 0;
+    box.innerHTML =
+      '<div class="ov-preview">' +
+      (isImg
+        ? '<img src="' + meta.dataUrl + '" alt="Preview">'
+        : '<i class="bx bx-file" style="font-size:28px;color:#0d7547"></i>') +
+      "<div><strong>" +
+      escapeHtml(meta.name) +
+      "</strong><div style=\"font-size:11px;color:#66706a\">" +
+      Math.round(meta.size / 1024) +
+      " KB</div></div>" +
+      '<button type="button" class="rm" data-clear="' +
+      targetId +
+      '">Remove</button></div>';
+    var btn = box.querySelector("[data-clear]");
+    if (btn) {
+      btn.onclick = function () {
+        clearFn();
+        box.innerHTML = "";
+      };
     }
+  }
 
-    renderBanner(user);
-    fillFromUser(user);
-    lockFormIfNeeded(user);
+  function escapeHtml(s) {
+    return String(s || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
 
-    const form = document.getElementById("ownerVerificationForm");
-    if (!form) return;
-
-    form.addEventListener("submit", async (e) => {
+  function setupUpload(dropId, inputId, kind) {
+    var drop = document.getElementById(dropId);
+    var input = document.getElementById(inputId);
+    if (!drop || !input) return;
+    drop.addEventListener("click", function () {
+      input.click();
+    });
+    drop.addEventListener("dragover", function (e) {
       e.preventDefault();
-      const st = statusOf(getCurrentUser());
-      if (st === "verified" || st === "pending") {
-        showStatus("Your verification is already " + st + ".", "success");
+      drop.classList.add("is-drag");
+    });
+    drop.addEventListener("dragleave", function () {
+      drop.classList.remove("is-drag");
+    });
+    drop.addEventListener("drop", function (e) {
+      e.preventDefault();
+      drop.classList.remove("is-drag");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0], kind);
+    });
+    input.addEventListener("change", function () {
+      if (input.files && input.files[0]) handleFile(input.files[0], kind);
+    });
+  }
+
+  function handleFile(file, kind) {
+    readFile(file)
+      .then(function (meta) {
+        if (kind === "id") {
+          idFileMeta = meta;
+          renderPreview("ovIdPreview", meta, function () {
+            idFileMeta = null;
+            document.getElementById("ovIdFile").value = "";
+          });
+        } else {
+          proofFileMeta = meta;
+          renderPreview("ovProofPreview", meta, function () {
+            proofFileMeta = null;
+            document.getElementById("ovProofFile").value = "";
+          });
+        }
+        setMsg("");
+      })
+      .catch(function (err) {
+        setMsg(err.message || "Upload failed", "error");
+      });
+  }
+
+  function buildReview() {
+    var list = document.getElementById("ovReviewList");
+    if (!list) return;
+    var rows = [
+      ["Name", document.getElementById("ovFullName").value],
+      ["Phone", document.getElementById("ovPhone").value],
+      ["Email", document.getElementById("ovEmail").value],
+      ["Role", document.getElementById("ovRole").value],
+      ["Business", document.getElementById("ovBusiness").value || "—"],
+      ["Location", document.getElementById("ovCity").value + ", " + document.getElementById("ovState").value],
+      ["Address", document.getElementById("ovAddress").value],
+      ["ID type", document.getElementById("ovIdType").value],
+      ["ID number", document.getElementById("ovIdNumber").value],
+      ["ID file", idFileMeta ? idFileMeta.name : "Missing"],
+      ["Proof type", document.getElementById("ovProofType").value],
+      ["Proof file", proofFileMeta ? proofFileMeta.name : "Missing"],
+      ["Note", document.getElementById("ovProofNote").value || "—"]
+    ];
+    list.innerHTML = rows
+      .map(function (r) {
+        return "<li><i class=\"bx bx-check\"></i><div><strong>" + escapeHtml(r[0]) + ":</strong> " + escapeHtml(r[1]) + "</div></li>";
+      })
+      .join("");
+  }
+
+  function renderBanner(user) {
+    var banner = document.getElementById("ovBanner");
+    if (!banner || !user) return;
+    var status = String(user.ownerVerificationStatus || user.verificationStatus || "unverified").toLowerCase();
+    if (status === "unverified" || !status) {
+      banner.hidden = true;
+      return;
+    }
+    banner.hidden = false;
+    banner.className = "ov-banner " + (status === "pending" ? "pending" : status === "rejected" ? "rejected" : "verified");
+    var icon = status === "verified" ? "bx-check-shield" : status === "rejected" ? "bx-error-circle" : "bx-time-five";
+    var title =
+      status === "verified"
+        ? "You are verified"
+        : status === "rejected"
+          ? "Verification rejected"
+          : "Verification pending";
+    var body =
+      status === "verified"
+        ? "You can publish listings (each property still needs listing approval)."
+        : status === "rejected"
+          ? user.verificationNote || "Please correct your documents and resubmit."
+          : "Our team is reviewing your documents. You will be notified when a decision is made.";
+    banner.innerHTML = "<i class=\"bx " + icon + "\"></i><div><strong>" + title + "</strong><p>" + escapeHtml(body) + "</p></div>";
+
+    if (status === "pending" || status === "verified") {
+      document.getElementById("ovSubmitBtn").disabled = status === "pending";
+      if (status === "verified") {
+        document.getElementById("ovSubmitBtn").textContent = "Already verified";
+        document.getElementById("ovSubmitBtn").disabled = true;
+      }
+    }
+  }
+
+  function prefill(user) {
+    if (!user) return;
+    if (user.name) document.getElementById("ovFullName").value = user.name;
+    if (user.phone) document.getElementById("ovPhone").value = user.phone;
+    if (user.email) document.getElementById("ovEmail").value = user.email;
+    var app = user.ownerVerification;
+    if (!app) return;
+    if (app.fullName) document.getElementById("ovFullName").value = app.fullName;
+    if (app.phone) document.getElementById("ovPhone").value = app.phone;
+    if (app.email) document.getElementById("ovEmail").value = app.email;
+    if (app.listingRole) document.getElementById("ovRole").value = app.listingRole;
+    if (app.businessName) document.getElementById("ovBusiness").value = app.businessName;
+    if (app.city) document.getElementById("ovCity").value = app.city;
+    if (app.state) document.getElementById("ovState").value = app.state;
+    if (app.address) document.getElementById("ovAddress").value = app.address;
+    if (app.idType) document.getElementById("ovIdType").value = app.idType;
+    if (app.idNumber) document.getElementById("ovIdNumber").value = app.idNumber;
+    if (app.proofType) document.getElementById("ovProofType").value = app.proofType;
+    if (app.proofNote) document.getElementById("ovProofNote").value = app.proofNote;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var user = getCurrentUser();
+    if (!user) {
+      // allow demo fill but encourage login
+    }
+    prefill(user);
+    renderBanner(user);
+    setupUpload("ovIdDrop", "ovIdFile", "id");
+    setupUpload("ovProofDrop", "ovProofFile", "proof");
+
+    document.querySelectorAll("[data-next]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var next = Number(btn.getAttribute("data-next"));
+        var err = validateStep(step);
+        if (err) {
+          setMsg(err, "error");
+          return;
+        }
+        setMsg("");
+        showStep(next);
+      });
+    });
+    document.querySelectorAll("[data-prev]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        showStep(Number(btn.getAttribute("data-prev")));
+      });
+    });
+
+    document.getElementById("ovForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var err = validateStep(1) || validateStep(2) || validateStep(3);
+      if (err) {
+        setMsg(err, "error");
+        return;
+      }
+      if (!document.getElementById("ovConsent").checked) {
+        setMsg("Please confirm the consent checkbox.", "error");
         return;
       }
 
-      try {
-        const idFile = document.getElementById("ovIdFile")?.files?.[0];
-        const proofFile = document.getElementById("ovProofFile")?.files?.[0];
-        const idData = await fileToDataUrl(idFile);
-        const proofData = await fileToDataUrl(proofFile);
+      var application = {
+        fullName: document.getElementById("ovFullName").value.trim(),
+        phone: document.getElementById("ovPhone").value.trim(),
+        email: document.getElementById("ovEmail").value.trim().toLowerCase(),
+        city: document.getElementById("ovCity").value.trim(),
+        address: document.getElementById("ovAddress").value.trim(),
+        state: document.getElementById("ovState").value,
+        idType: document.getElementById("ovIdType").value,
+        idNumber: document.getElementById("ovIdNumber").value.trim(),
+        listingRole: document.getElementById("ovRole").value,
+        businessName: document.getElementById("ovBusiness").value.trim(),
+        proofType: document.getElementById("ovProofType").value,
+        proofNote: document.getElementById("ovProofNote").value.trim(),
+        idFileName: idFileMeta ? idFileMeta.name : "",
+        proofFileName: proofFileMeta ? proofFileMeta.name : "",
+        hasIdUpload: Boolean(idFileMeta),
+        hasProofUpload: Boolean(proofFileMeta),
+        // Keep small preview only in queue for admin (truncated for storage safety)
+        idPreview: idFileMeta && String(idFileMeta.type).indexOf("image/") === 0 ? idFileMeta.dataUrl : "",
+        proofPreview: proofFileMeta && String(proofFileMeta.type).indexOf("image/") === 0 ? proofFileMeta.dataUrl : "",
+        submittedAt: new Date().toISOString()
+      };
 
-        const application = {
-          fullName: document.getElementById("ovFullName").value.trim(),
-          phone: document.getElementById("ovPhone").value.trim(),
-          email: document.getElementById("ovEmail").value.trim().toLowerCase(),
-          city: document.getElementById("ovCity").value.trim(),
-          address: document.getElementById("ovAddress").value.trim(),
-          state: document.getElementById("ovState").value,
-          idType: document.getElementById("ovIdType").value,
-          idNumber: document.getElementById("ovIdNumber").value.trim(),
-          listingRole: document.getElementById("ovRole").value,
-          businessName: document.getElementById("ovBusiness").value.trim(),
-          proofNote: document.getElementById("ovProofNote").value.trim(),
-          idFileName: idFile ? idFile.name : "",
-          proofFileName: proofFile ? proofFile.name : "",
-          idData: idData ? idData.slice(0, 200) + "…" : "", // avoid huge storage; flag presence
-          hasIdUpload: Boolean(idData),
-          hasProofUpload: Boolean(proofData),
-          submittedAt: new Date().toISOString()
-        };
+      var current = getCurrentUser() || {
+        id: "owner-" + Date.now(),
+        accountType: "owner"
+      };
+      current.name = application.fullName;
+      current.phone = application.phone;
+      current.email = application.email || current.email;
+      current.accountType = current.accountType || "owner";
+      current.verificationStatus = "pending";
+      current.ownerVerificationStatus = "pending";
+      current.ownerVerification = application;
+      current.verificationSubmittedAt = application.submittedAt;
+      current.verificationNote = "";
+      saveCurrentUser(current);
 
-        if (!application.fullName || !application.phone || !application.idNumber) {
-          showStatus("Please complete all required fields.", "error");
-          return;
-        }
+      var queue = readJSON(QUEUE_KEY, []);
+      var entry = {
+        id: "ov-" + Date.now(),
+        userId: current.id,
+        email: current.email,
+        status: "pending",
+        application: application,
+        createdAt: application.submittedAt
+      };
+      queue = (Array.isArray(queue) ? queue : []).filter(function (q) {
+        return String(q.userId) !== String(current.id) && String(q.email) !== String(current.email);
+      });
+      queue.unshift(entry);
+      writeJSON(QUEUE_KEY, queue.slice(0, 100));
 
-        const current = getCurrentUser();
-        current.name = application.fullName;
-        current.phone = application.phone;
-        current.email = application.email || current.email;
-        current.verificationStatus = "pending";
-        current.ownerVerificationStatus = "pending";
-        current.ownerVerification = application;
-        current.verificationSubmittedAt = application.submittedAt;
-        saveCurrentUser(current);
-
-        const queue = readJSON(QUEUE_KEY, []);
-        const entry = {
-          id: "ov-" + Date.now(),
-          userId: current.id,
-          email: current.email,
-          status: "pending",
-          application,
-          createdAt: application.submittedAt
-        };
-        const withoutDup = Array.isArray(queue)
-          ? queue.filter((q) => String(q.userId) !== String(current.id) && String(q.email) !== String(current.email))
-          : [];
-        withoutDup.unshift(entry);
-        writeJSON(QUEUE_KEY, withoutDup.slice(0, 100));
-
-        showStatus("Submitted. Status is Pending — you can list only after approval.", "success");
-        renderBanner(current);
-        lockFormIfNeeded(current);
-      } catch (err) {
-        showStatus(err.message || "Could not submit verification.", "error");
-      }
+      setMsg("Submitted successfully. Status: Pending review.", "success");
+      renderBanner(current);
+      document.getElementById("ovSubmitBtn").disabled = true;
+      document.getElementById("ovSubmitBtn").textContent = "Submitted — pending";
     });
   });
 })();

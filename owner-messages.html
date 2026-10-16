@@ -9,8 +9,8 @@
     rel="stylesheet"
 >
 
-    <title>Messages — LeaseHub</title>
-<meta name="description" content="Manage tenant conversations and property enquiries on LeaseHub.">
+    <title>Messages — LeaseAccom</title>
+<meta name="description" content="Manage tenant conversations and property enquiries on LeaseAccom.">
 
     <link rel="stylesheet" href="CSS/style.css">
 
@@ -112,7 +112,7 @@
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            object-fit: cover;
+            object-fit: contain;
             background: #d8dedb;
         }
 
@@ -216,7 +216,7 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            object-fit: cover;
+            object-fit: contain;
             background: #dfe6e2;
             flex-shrink: 0;
         }
@@ -344,7 +344,7 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         .chat-person-name {
@@ -438,7 +438,7 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            object-fit: cover;
+            object-fit: contain;
             flex-shrink: 0;
         }
 
@@ -588,7 +588,7 @@
         .profile-picture {
             width: 130px;
             height: 130px;
-            object-fit: cover;
+            object-fit: contain;
             border-radius: 50%;
             background: #dfe5e2;
             border: 5px solid white;
@@ -743,7 +743,7 @@
         }
 
         /* =========================================================
-   LEASEHUB MESSAGES — CHAT HEADER FIX
+   LEASEACCOM MESSAGES — CHAT HEADER FIX
    ========================================================= */
 
 .chat-content {
@@ -795,7 +795,7 @@
     flex: 0 0 50px;
 
     border-radius: 50%;
-    object-fit: cover;
+    object-fit: contain;
 
     background: #dfe6e2;
 }
@@ -1130,7 +1130,7 @@
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 
-<body data-leasehub-page="owner-messages">
+<body data-leaseaccom-page="owner-messages">
 
 <header class="messages-topbar">
 
@@ -1174,7 +1174,7 @@
 
         <div class="sidebar-header">
 
-            <small>LEASEHUB</small>
+            <small>LEASEACCOM</small>
 
             <h1>Messages</h1>
 
@@ -1231,7 +1231,7 @@
             <h2>Select a conversation</h2>
 
             <p>
-                Your LeaseHub conversations will appear here.
+                Your LeaseAccom conversations will appear here.
             </p>
 
         </div>
@@ -1320,7 +1320,7 @@
 
 
             <div class="chat-protection">
-                <i class="bx bx-lock" aria-hidden="true"></i> Messages are protected by LeaseHub.
+                <i class="bx bx-lock" aria-hidden="true"></i> Messages are protected by LeaseAccom.
             </div>
 
 
@@ -1483,9 +1483,9 @@
 <script src="JS/app.js"></script>
 <script src="JS/owner-messages.js"></script>
 
-<script src="JS/leasehub-polish.js"></script>
+<script src="JS/leaseaccom-polish.js"></script>
 
-<footer class="site-footer leasehub-standard-footer"><div class="footer-bottom"><span>© 2026 LeaseHub. All rights reserved.</span><span>Built for Nigeria</span></div></footer>
+<footer class="site-footer leaseaccom-standard-footer"><div class="footer-bottom"><span>© 2026 LeaseAccom. All rights reserved.</span><span>Built for Nigeria</span></div></footer>
 
 <script src="JS/owner-shell.js"></script>
 <script>
@@ -1497,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', function () {
   strip.innerHTML = `
     <a href="owner-dashboard.html"><i class="bx bx-grid-alt"></i> Dashboard</a>
     <a href="add-property.html"><i class="bx bx-plus-circle"></i> Add property</a>
-    <a href="owner-dashboard.html#ownerStore"><i class="bx bx-store"></i> My Store</a>
+    <a href="owner-dashboard.html#ownerProperties"><i class="bx bx-buildings"></i> store</a>
     <a href="owner-storefront.html"><i class="bx bx-store-alt"></i> Storefront</a>
     <a href="properties.html"><i class="bx bx-log-out"></i> Marketplace</a>`;
   document.body.insertBefore(strip, document.body.firstChild);
@@ -1546,5 +1546,11 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 
+<script src="JS/role-walls.js"></script>
+<script src="JS/role-nav.js"></script>
+<script id="leaseaccom-role-gate">
+(function(){ if (window.LeaseAccomRoles) window.LeaseAccomRoles.enforce(); })();
+</script>
+<script src="JS/owner-mobile-nav.js"></script>
 </body>
 </html>

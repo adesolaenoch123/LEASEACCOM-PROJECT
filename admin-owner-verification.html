@@ -3,36 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin — Owner verification | LeaseHub</title>
-  <link rel="stylesheet" href="CSS/style.css">
+  <title>Admin — Owner verification | LeaseAccom</title>
+  <link rel="stylesheet" href="CSS/verification.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
-  <style>
-    body { background: #f4f7f5; margin: 0; font-family: system-ui, sans-serif; }
-    .adm { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; }
-    .adm h1 { margin: 0 0 8px; font-size: 24px; }
-    .adm-sub { color: #5f6b64; margin: 0 0 20px; font-size: 14px; }
-    .adm-card {
-      background: #fff; border: 1px solid #e0e8e3; border-radius: 14px;
-      padding: 16px; margin-bottom: 12px;
-    }
-    .adm-card h3 { margin: 0 0 6px; font-size: 16px; }
-    .adm-meta { font-size: 13px; color: #5f6b64; line-height: 1.5; }
-    .adm-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-    .adm-actions button {
-      border: 0; border-radius: 10px; padding: 10px 14px; font-weight: 700; cursor: pointer;
-    }
-    .adm-approve { background: #15945c; color: #fff; }
-    .adm-reject { background: #fde8e8; color: #a33; }
-    .adm-empty { padding: 24px; text-align: center; color: #6b746e; }
-    .adm-nav { margin-bottom: 16px; }
-    .adm-nav a { color: #15945c; font-weight: 700; text-decoration: none; }
-  </style>
 </head>
-<body>
-  <div class="adm">
-    <div class="adm-nav"><a href="owner-dashboard.html">← Owner dashboard</a> · <a href="admin-verification.html">Listing verification</a></div>
-    <h1>Owner verification queue</h1>
-    <p class="adm-sub">Approve landlords before they can publish listings. Demo admin — anyone with this page can approve in this browser.</p>
+<body style="background:#f4f7f5;margin:0;font-family:system-ui,sans-serif">
+  <div class="ov-adm">
+    <div style="margin-bottom:14px;font-size:13px">
+      <a href="admin/admin.html" style="color:#0d7547;font-weight:700;text-decoration:none">← Command Centre</a>
+      ·
+      <a href="owner-verification.html" style="color:#0d7547;font-weight:700;text-decoration:none">Owner form</a>
+    </div>
+    <h1>Landlord verification queue</h1>
+    <p class="ov-adm-sub">Review identity and ownership documents. Approve only when documents look genuine and match the applicant.</p>
+
+    <div class="ov-adm-filters">
+      <button type="button" data-filter="pending" class="is-active">Pending</button>
+      <button type="button" data-filter="verified">Verified</button>
+      <button type="button" data-filter="rejected">Rejected</button>
+      <button type="button" data-filter="all">All</button>
+    </div>
+
+    <div id="ovAdmStats" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-size:13px;font-weight:700"></div>
     <div id="admOwnerQueue"></div>
   </div>
   <script src="JS/admin-owner-verification.js"></script>

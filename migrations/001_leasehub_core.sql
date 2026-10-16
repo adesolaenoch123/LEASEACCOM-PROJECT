@@ -1,4 +1,4 @@
--- LeaseHub Phase 2 — core schema (run in Supabase SQL Editor)
+-- leaseaccom Phase 2 — core schema (run in Supabase SQL Editor)
 -- Safe to re-run pieces carefully; review if you already have tables.
 
 -- 1) Profiles (extends auth.users)

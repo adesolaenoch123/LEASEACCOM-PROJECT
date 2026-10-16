@@ -11,14 +11,15 @@ from services.agreement_service import AgreementService
 from services.ai_service import AIService
 from services.application_service import ApplicationService
 from services.auth_service import AuthService
+from services.message_service import MessageService
 from services.notification_service import NotificationService
 from services.property_service import PropertyService
 from services.viewing_service import ViewingService
 
 app = FastAPI(
-    title="LeaseHub Backend",
+    title="LeaseAccom Backend",
     version="0.1.0",
-    description="Main backend foundation for LeaseHub property operations, user access, AI workflows, and future admin tools.",
+    description="Main backend foundation for LeaseAccom property operations, user access, AI workflows, and future admin tools.",
 )
 
 app.add_middleware(
@@ -37,6 +38,7 @@ application_service = ApplicationService()
 viewing_service = ViewingService()
 agreement_service = AgreementService()
 notification_service = NotificationService()
+message_service = MessageService()
 logger = logging.getLogger(__name__)
 
 
@@ -51,7 +53,7 @@ async def _notify_user(user_id: str, title: str, message: str, link: str) -> Non
             "read": False,
         })
     except Exception:
-        logger.exception("Unable to create a LeaseHub notification.")
+        logger.exception("Unable to create a LeaseAccom notification.")
 
 
 class ChatRequest(BaseModel):
@@ -128,11 +130,19 @@ class NotificationCreateRequest(BaseModel):
     read: bool = False
 
 
+class ConversationCreateRequest(BaseModel):
+    property_id: str = Field(..., min_length=1)
+
+
+class MessageCreateRequest(BaseModel):
+    body: str = Field(..., min_length=1, max_length=4000)
+
+
 @app.get("/")
 async def root() -> dict:
     return {
         "status": "ok",
-        "service": "leasehub-backend",
+        "service": "leaseaccom-backend",
         "environment": settings.APP_ENV,
     }
 
@@ -141,7 +151,7 @@ async def root() -> dict:
 async def health() -> dict:
     return {
         "status": "ok",
-        "service": "leasehub-backend",
+        "service": "leaseaccom-backend",
         "environment": settings.APP_ENV,
     }
 
@@ -648,6 +658,123 @@ async def mark_notification_read(notification_id: str, authorization: Optional[s
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail="Unable to update notification.") from exc
+
+
+@app.get("/conversations")
+async def list_conversations(authorization: Optional[str] = Header(default=None, alias="Authorization")) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") not in {"tenant", "owner"}:
+        raise HTTPException(status_code=403, detail="Tenant or owner access required.")
+
+    conversations = await message_service.list_conversations(user["id"], user["role"])
+    return {"conversations": conversations, "count": len(conversations)}
+
+
+@app.post("/conversations")
+async def create_conversation(
+    payload: ConversationCreateRequest,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") != "tenant":
+        raise HTTPException(status_code=403, detail="Only tenants can start a property conversation.")
+
+    if not property_service.client:
+        raise HTTPException(status_code=503, detail="Supabase backend is not configured.")
+
+    try:
+        property_data = await property_service.get_property(payload.property_id)
+        if not property_data:
+            raise HTTPException(status_code=404, detail="Property not found.")
+
+        listing_status = str(property_data.get("listing_status") or "").lower()
+        verification_status = str(property_data.get("verification_status") or "").lower()
+        if listing_status != "live" and verification_status != "approved":
+            raise HTTPException(status_code=409, detail="The property is not available for messaging.")
+
+        owner_id = str(property_data.get("owner_id") or "")
+        if not owner_id or owner_id == str(user["id"]):
+            raise HTTPException(status_code=409, detail="A conversation cannot be started for this property.")
+
+        conversation = await message_service.get_or_create_conversation(
+            payload.property_id,
+            str(user["id"]),
+            owner_id,
+        )
+        return {"conversation": conversation}
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=500, detail="Unable to start conversation.") from exc
+
+
+@app.get("/conversations/{conversation_id}/messages")
+async def list_conversation_messages(
+    conversation_id: str,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") not in {"tenant", "owner"}:
+        raise HTTPException(status_code=403, detail="Tenant or owner access required.")
+
+    conversation = await message_service.get_conversation(conversation_id, user["id"], user["role"])
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    messages = await message_service.list_messages(conversation_id)
+    return {"messages": messages, "count": len(messages)}
+
+
+@app.post("/conversations/{conversation_id}/messages")
+async def create_conversation_message(
+    conversation_id: str,
+    payload: MessageCreateRequest,
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") not in {"tenant", "owner"}:
+        raise HTTPException(status_code=403, detail="Tenant or owner access required.")
+
+    body = payload.body.strip()
+    if not body:
+        raise HTTPException(status_code=422, detail="Message cannot be empty.")
+
+    try:
+        result = await message_service.create_message(
+            conversation_id,
+            user["id"],
+            user["role"],
+            body,
+        )
+        if not result:
+            raise HTTPException(status_code=404, detail="Conversation not found.")
+
+        recipient_id = result["conversation"]["owner_id"]
+        if user["role"] == "owner":
+            recipient_id = result["conversation"]["tenant_id"]
+        await _notify_user(
+            str(recipient_id),
+            "New message",
+            body[:180],
+            "owner-messages.html" if user["role"] == "tenant" else "messages.html",
+        )
+        return {"message": result["message"]}
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=500, detail="Unable to send message.") from exc
 
 
 @app.post("/chat")

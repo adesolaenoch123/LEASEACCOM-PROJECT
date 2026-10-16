@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Progress bar
   const bar = document.createElement('div');
-  bar.className = 'leasehub-wizard-bar';
+  bar.className = 'leaseaccom-wizard-bar';
   bar.innerHTML = sections
     .map((_, i) => `<button type="button" data-step="${i}">${i + 1}</button>`)
     .join('');
@@ -39,9 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const controls = document.createElement('div');
-  controls.className = 'leasehub-wizard-controls';
+  controls.className = 'leaseaccom-wizard-controls';
   controls.innerHTML = `
-    <button type="button" class="leasehub-secondary-btn" id="wizardBack"><i class="bx bx-arrow-back"></i> Back</button>
+    <button type="button" class="leaseaccom-secondary-btn" id="wizardBack"><i class="bx bx-arrow-back"></i> Back</button>
     <span id="wizardStepLabel">Step 1 of ${sections.length}</span>
     <button type="button" class="primary-btn" id="wizardNext">Next <i class="bx bx-arrow-right"></i></button>`;
   form.appendChild(controls);

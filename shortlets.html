@@ -3,26 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shortlets — LeaseHub</title>
+<title>Shortlets — LeaseAccom</title>
 <meta name="description" content="Discover shortlets across Nigeria with clear pricing, useful amenities and a smoother booking journey.">
 <link rel="stylesheet" href="CSS/style.css">
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 <body>
 <header class="navbar">
-<a href="index.html" class="logo"><img src="IMAGES/Lease Hub logo.png" alt="LeaseHub"></a>
+<a href="index.html" class="logo"><img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom"></a>
 <nav class="nav-links">
 <a href="properties.html">Rent</a><a href="shortlets.html">Shortlets</a><a href="hotels.html">Hotels &amp; Lodges</a><a href="student-housing.html">Student Housing</a><a href="commercial.html">Commercial</a>
 </nav>
 <div class="nav-actions"><a href="login.html" class="login-btn">Log in</a><a href="register.html" class="owner-btn">List a Property</a></div>
 <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false"></button>
 </header>
-<main class="leasehub-catalog-page">
-<section class="leasehub-catalog-hero">
+<main class="leaseaccom-catalog-page">
+<section class="leaseaccom-catalog-hero">
 <span class="section-label">SHORTLETS</span>
 <h1>Stay for a night, week or longer.</h1>
 <p>Discover shortlets across Nigeria with clear pricing, useful amenities and a smoother booking journey.</p>
-<div class="leasehub-search-panel">
+<div class="leaseaccom-search-panel">
 <input id="catalogSearch" type="search" placeholder="Search location, city or listing..." aria-label="Search listings">
 <select id="catalogType" aria-label="Listing type"><option value="all">All types</option><option value="Shortlet">Shortlet</option></select>
 <select id="catalogPrice" aria-label="Maximum price"><option value="0">Any price</option><option value="100000">Up to ₦100k/night</option><option value="250000">Up to ₦250k/night</option><option value="500000">Up to ₦500k/night</option></select>
@@ -30,30 +30,34 @@
 </div>
 </section>
 
-<div class="leasehub-filter-row">
+<div class="leaseaccom-filter-row">
 <label><input id="catalogVerified" type="checkbox"> Verified only</label>
 <select id="catalogSort" aria-label="Sort listings"><option value="recommended">Recommended</option><option value="low">Price: Low to High</option><option value="high">Price: High to Low</option><option value="newest">Newest</option></select>
-<button id="catalogClearBtn" type="button" class="leasehub-secondary-btn" style="padding:0 14px">Clear filters</button>
+<button id="catalogClearBtn" type="button" class="leaseaccom-secondary-btn" style="padding:0 14px">Clear filters</button>
 </div>
 <section>
-<div class="leasehub-catalog-heading"><div><span class="section-label">SHORTLETS</span><h2>Explore listings</h2><p id="catalogCount">Loading listings...</p></div></div>
+<div class="leaseaccom-catalog-heading"><div><span class="section-label">SHORTLETS</span><h2>Explore listings</h2><p id="catalogCount">Loading listings...</p></div></div>
 <div id="catalogGrid" class="property-grid"></div>
 </section>
-<section class="leasehub-steps"><div class="leasehub-step"><span>01</span><h3>Choose dates</h3><p>Set your check-in and check-out dates.</p></div><div class="leasehub-step"><span>02</span><h3>Compare</h3><p>Save or compare up to three stays.</p></div><div class="leasehub-step"><span>03</span><h3>Confirm</h3><p>Booking and protected payment connect to the future backend.</p></div><div class="leasehub-step"><span>04</span><h3>Stay</h3><p>Review the property after your stay.</p></div></section>
-<section id="catalogDetail" class="leasehub-catalog-detail" hidden style="margin-top:30px"></section>
+<section class="leaseaccom-steps"><div class="leaseaccom-step"><span>01</span><h3>Choose dates</h3><p>Set your check-in and check-out dates.</p></div><div class="leaseaccom-step"><span>02</span><h3>Compare</h3><p>Save or compare up to three stays.</p></div><div class="leaseaccom-step"><span>03</span><h3>Confirm</h3><p>Booking and protected payment connect to the future backend.</p></div><div class="leaseaccom-step"><span>04</span><h3>Stay</h3><p>Review the property after your stay.</p></div></section>
+<section id="catalogDetail" class="leaseaccom-catalog-detail" hidden style="margin-top:30px"></section>
 </main>
-<footer><div class="footer-bottom"><span>© 2026 LeaseHub</span><span>Find your place without unnecessary agent fees.</span></div></footer>
+<footer><div class="footer-bottom"><span>© 2026 LeaseAccom</span><span>Find your place without the unnecessary stress.</span></div></footer>
 <script src="JS/data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="JS/supabase-client.js"></script>
+<script src="JS/leaseaccom-data.js"></script>
 <script src="JS/app.js"></script>
-<script src="JS/leasehub-polish.js"></script>
+<script src="JS/leaseaccom-polish.js"></script>
+<script src="JS/leaseaccom-mobile-nav.js"></script>
 <script>
-window.LEASEHUB_CATALOG = {
+window.LEASEACCOM_CATALOG = {
  match: p => String(p.type||"").toLowerCase() === "shortlet",
  viewLabel: "Shortlet",
  actionLabel: "Request shortlet",
  actionMessage: "Shortlet request recorded. Real booking and payment will be connected to the backend.",
  cardExtra: p => p.amenities?.length ? `<p style="margin:10px 0 0;color:#66706a;font-size:11px"><i class="bx bx-bolt-circle"></i> ${p.amenities.slice(0,3).map(x=>String(x).replace(/[&<>"']/g,'' )).join(" · ")}</p>` : "",
- detailExtra: p => `<div class="leasehub-detail-meta"><div><small>Check-in</small><strong>Flexible</strong></div><div><small>Guests</small><strong>Up to ${p.occupants||2}</strong></div><div><small>Power</small><strong>Backup available</strong></div><div><small>Payment</small><strong>Protected payment planned</strong></div></div>`
+ detailExtra: p => `<div class="leaseaccom-detail-meta"><div><small>Check-in</small><strong>Flexible</strong></div><div><small>Guests</small><strong>Up to ${p.occupants||2}</strong></div><div><small>Power</small><strong>Backup available</strong></div><div><small>Payment</small><strong>Protected payment planned</strong></div></div>`
 };
 </script>
 <script src="JS/catalog.js"></script>

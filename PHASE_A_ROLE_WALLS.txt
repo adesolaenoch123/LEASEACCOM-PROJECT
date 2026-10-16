@@ -1,0 +1,15 @@
+
+Phase A — Role walls
+====================
+Files:
+  JS/role-walls.js  — enforce owner vs tenant
+  JS/role-nav.js    — hide owner CTAs for tenants
+  owner-*.html, add-property.html, tenant-dashboard.html — load gates early
+  JS/app.js — redirectAfterAuth uses LeaseAccomRoles
+
+Test:
+1. Register/login as tenant → must land on tenant-dashboard.html
+2. Open owner-dashboard.html as tenant → redirected to tenant-dashboard
+3. Login as owner → owner-dashboard.html
+4. Open tenant-dashboard as owner → redirected to owner-dashboard
+5. Tenant cannot stay on add-property.html

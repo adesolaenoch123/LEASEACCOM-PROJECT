@@ -1,5 +1,5 @@
 /* =========================================================
-   LEASEHUB - PROPERTY DETAILS EXPERIENCE
+   LEASEACCOM - PROPERTY DETAILS EXPERIENCE
    Styles for gallery, trust, cost breakdown, discovery,
    save states and mobile layout.
    ========================================================= */
@@ -53,7 +53,7 @@
         rgba(0, 0, 0, 0.03) 70%
     );
     background-size: 200% 100%;
-    animation: leasehubShimmer 1.4s infinite linear;
+    animation: leaseaccomShimmer 1.4s infinite linear;
     z-index: 0;
 }
 
@@ -67,7 +67,7 @@
     z-index: 1;
 }
 
-@keyframes leasehubShimmer {
+@keyframes leaseaccomShimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
@@ -133,7 +133,7 @@
 }
 
 
-/* ================= LEASEHUB TRUST ================= */
+/* ================= LEASEACCOM TRUST ================= */
 
 .trust-grid {
     display: grid;
@@ -340,7 +340,7 @@
 }
 
 /* =====================================================
-   LEASEHUB TRUST - FINAL LAYOUT FIX
+   LEASEACCOM TRUST - FINAL LAYOUT FIX
    ===================================================== */
 
 .details-section.trust-section {

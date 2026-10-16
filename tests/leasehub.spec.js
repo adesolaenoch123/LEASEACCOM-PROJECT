@@ -15,14 +15,14 @@ const pendingProperty = {
     image: "https://example.com/test-property.jpg"
 };
 
-test("admin approval updates the shared public property store", async ({ page }) => {
+test("admin approval updates the shared public property Property Page ", async ({ page }) => {
     await page.addInitScript((property) => {
-        localStorage.setItem("leasehubProperties", JSON.stringify([property]));
-        localStorage.removeItem("leasehubAdminProperties");
+        localStorage.setItem("leaseaccomProperties", JSON.stringify([property]));
+        localStorage.removeItem("leaseaccomAdminProperties");
     }, pendingProperty);
 
     await page.goto("/admin/admin.html");
-    await page.getByLabel("Email").fill("admin@leasehub.ng");
+    await page.getByLabel("Email").fill("admin@leaseaccom.ng");
     await page.getByLabel("Access code").fill("CHANGE-ME");
     await page.getByRole("button", { name: /Enter staff portal/i }).click();
     await page.getByRole("link", { name: "Properties" }).click();
@@ -31,13 +31,13 @@ test("admin approval updates the shared public property store", async ({ page })
     await page.locator('#propertiesTable [data-prop="9001"][data-prop-action="approve"]').click();
 
     await expect.poll(() => page.evaluate(() => {
-        const properties = JSON.parse(localStorage.getItem("leasehubProperties"));
+        const properties = JSON.parse(localStorage.getItem("leaseaccomProperties"));
         return properties[0].verificationStatus;
     })).toBe("approved");
-    await expect.poll(() => page.evaluate(() => localStorage.getItem("leasehubAdminProperties"))).toBeNull();
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("leaseaccomAdminProperties"))).toBeNull();
 });
 
-test("tenant dashboard reads saved properties from the shared saved store", async ({ page }) => {
+test("tenant dashboard reads saved properties from the shared saved Property Page ", async ({ page }) => {
     await page.addInitScript(() => {
         const user = {
             id: "tenant-test",
@@ -46,14 +46,14 @@ test("tenant dashboard reads saved properties from the shared saved store", asyn
             accountType: "tenant",
             savedProperties: [1]
         };
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify(user));
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(user));
         localStorage.removeItem("savedProperties");
     });
 
     await page.goto("/tenant-dashboard.html");
     await expect(page.locator("#savedCount")).toHaveText("1");
     await expect.poll(() => page.evaluate(() => {
-        const user = JSON.parse(localStorage.getItem("leasehubCurrentUser"));
+        const user = JSON.parse(localStorage.getItem("leaseaccomCurrentUser"));
         return user.savedProperties;
     })).toEqual([1]);
 });
@@ -81,7 +81,7 @@ test("tenant application dashboard loads applications from the backend", async (
         });
     });
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "tenant-test",
             name: "Test Tenant",
             accountType: "tenant"
@@ -101,7 +101,7 @@ test("apply form posts the tenant application and rental details to the backend"
             getSession: async () => ({ data: { session: { access_token: "application-test-token" } }, error: null })
         } }) };`
     }));
-    await page.route("http://127.0.0.1:8000/**", async route => {
+    await page.route("http://127.0.0.1:8000/applications", async route => {
         const request = route.request();
         const headers = {
             "Access-Control-Allow-Origin": "*",
@@ -133,7 +133,7 @@ test("apply form posts the tenant application and rental details to the backend"
         });
     });
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "tenant-test",
             name: "Test Tenant",
             email: "tenant@example.com",
@@ -167,7 +167,7 @@ test("apply form posts the tenant application and rental details to the backend"
 
 test("notification panels are accessible on mobile app screens", async ({ page }) => {
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "tenant-mobile-test",
             name: "Mobile Tenant",
             accountType: "tenant"
@@ -181,9 +181,9 @@ test("notification panels are accessible on mobile app screens", async ({ page }
         await expect(bell).toBeVisible();
         await bell.click();
 
-        const panel = page.locator(".leasehub-notification-panel");
+        const panel = page.locator(".leaseaccom-notification-panel");
         await expect(panel).toHaveClass(/is-open/);
-        await expect.poll(() => panel.locator(".leasehub-notification-panel__dropdown").evaluate((element) =>
+        await expect.poll(() => panel.locator(".leaseaccom-notification-panel__dropdown").evaluate((element) =>
             getComputedStyle(element).position
         )).toBe("fixed");
         await expect.poll(() => page.evaluate(() =>
@@ -192,7 +192,7 @@ test("notification panels are accessible on mobile app screens", async ({ page }
     }
 
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "owner-mobile-test",
             name: "Mobile Owner",
             accountType: "owner"
@@ -245,7 +245,7 @@ test("tenant notification panel loads and marks backend notifications read", asy
         });
     });
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "tenant-notification-test",
             accountType: "tenant"
         }));
@@ -280,15 +280,15 @@ test("login uses Supabase Auth without caching the password", async ({ page }) =
 
     await page.goto("/login.html");
     await page.locator("#loginEmail").fill("tenant@example.com");
-    await page.locator("#loginPassword").fill("do-not-store-this-password");
+    await page.locator("#loginPassword").fill("do-not-Property Page -this-password");
     await page.getByRole("button", { name: "Log In" }).click();
     await expect(page).toHaveURL(/tenant-dashboard\.html$/);
 
-    const cachedUser = await page.evaluate(() => JSON.parse(localStorage.getItem("leasehubCurrentUser")));
+    const cachedUser = await page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomCurrentUser")));
     expect(cachedUser.id).toBe("auth-tenant-1");
     expect(cachedUser.password).toBeUndefined();
-    expect(await page.evaluate(() => localStorage.getItem("leasehub_session_token"))).toBe("signed-test-access-token");
-    expect(await page.evaluate(() => localStorage.getItem("leasehubUsers"))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem("leaseaccom_session_token"))).toBe("signed-test-access-token");
+    expect(await page.evaluate(() => localStorage.getItem("leaseaccomUsers"))).toBeNull();
 });
 
 test("property search filters the public catalog", async ({ page }) => {
@@ -324,7 +324,7 @@ test("approved Supabase UUID listings render and open their details", async ({ p
         ],
         bedrooms: 2,
         bathrooms: 2,
-        description: "Approved live test listing for the LeaseHub marketplace."
+        description: "Approved live test listing for the LeaseAccom marketplace."
     };
     await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
         contentType: "application/javascript",
@@ -414,7 +414,7 @@ test("property details rental modal submits applications to the backend", async 
         });
     });
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "tenant-modal-test",
             name: "Modal Tenant",
             email: "modal@example.com",
@@ -517,7 +517,7 @@ test("tenant viewing request is created and loaded from the backend", async ({ p
         });
     });
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "tenant-viewing-test",
             name: "Viewing Tenant",
             email: "viewing@example.com",
@@ -585,7 +585,7 @@ test("owner viewing action updates status through the backend", async ({ page })
         });
     });
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "owner-viewing-test",
             name: "Test Owner",
             accountType: "owner"
@@ -616,7 +616,7 @@ test("accepted application creates and signs a backend rental agreement", async 
         stay_length: "1 year",
         status: "accepted"
     };
-    let storedAgreement = null;
+    let Property Page dAgreement = null;
     await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
         contentType: "application/javascript",
         body: `window.supabase = { createClient: () => ({ auth: {
@@ -644,12 +644,12 @@ test("accepted application creates and signs a backend rental agreement", async 
             await route.fulfill({
                 contentType: "application/json",
                 headers,
-                body: JSON.stringify({ agreements: storedAgreement ? [storedAgreement] : [] })
+                body: JSON.stringify({ agreements: Property Page dAgreement ? [Property Page dAgreement] : [] })
             });
             return;
         }
         if (url.pathname === "/agreements" && request.method() === "POST") {
-            storedAgreement = {
+            Property Page dAgreement = {
                 id: "agreement-backend-test",
                 application_id: application.id,
                 property_id: application.property_id,
@@ -667,23 +667,23 @@ test("accepted application creates and signs a backend rental agreement", async 
                 status: 201,
                 contentType: "application/json",
                 headers,
-                body: JSON.stringify({ agreement: storedAgreement })
+                body: JSON.stringify({ agreement: Property Page dAgreement })
             });
             return;
         }
         if (url.pathname === "/agreements/agreement-backend-test/sign") {
-            storedAgreement = { ...storedAgreement, tenant_agreed: true, status: "pending" };
+            Property Page dAgreement = { ...Property Page dAgreement, tenant_agreed: true, status: "pending" };
             await route.fulfill({
                 contentType: "application/json",
                 headers,
-                body: JSON.stringify({ agreement: storedAgreement })
+                body: JSON.stringify({ agreement: Property Page dAgreement })
             });
             return;
         }
         throw new Error(`Unexpected agreement API request: ${request.method()} ${url.pathname}`);
     });
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "tenant-agreement-test",
             name: "Agreement Tenant",
             email: "tenant@example.com",
@@ -697,12 +697,12 @@ test("accepted application creates and signs a backend rental agreement", async 
     await expect(page.locator("#ownerAgreeBtn")).toBeHidden();
     await page.getByRole("button", { name: "Tenant Agrees" }).click();
     await expect(page.getByRole("button", { name: "Tenant Agreed" })).toBeDisabled();
-    expect(storedAgreement.tenant_agreed).toBe(true);
+    expect(Property Page dAgreement.tenant_agreed).toBe(true);
 });
 
 test("owner dashboard shows the house tour and subscription plans", async ({ page }) => {
     await page.addInitScript(() => {
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify({
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "owner-test",
             name: "Test Owner",
             email: "owner@example.com",

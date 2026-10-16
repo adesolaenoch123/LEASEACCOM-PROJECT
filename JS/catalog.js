@@ -1,8 +1,8 @@
 
-/* LeaseHub catalog engine: shortlets, commercial, student housing, hotels */
+/* LeaseAccom catalog engine: shortlets, commercial, student housing, hotels */
 (function () {
     "use strict";
-    const cfg = window.LEASEHUB_CATALOG;
+    const cfg = window.LEASEACCOM_CATALOG;
     if (!cfg) return;
 
     const byId = id => document.getElementById(id);
@@ -17,15 +17,16 @@
     let detailRoot = byId("catalogDetail");
 
     function card(p) {
-        const saved = (typeof getSavedProperties === "function" ? getSavedProperties() : []).map(Number).includes(Number(p.id));
+        const pid = String(p.id);
+        const saved = (typeof getSavedProperties === "function" ? getSavedProperties() : []).map(String).includes(pid);
         const verified = typeof isPropertyVerified === "function" ? isPropertyVerified(p) : p.verified === true;
         const img = p.image || (p.images && p.images[0]) || "";
         const extra = cfg.cardExtra ? cfg.cardExtra(p) : "";
-        return `<article class="property-card leasehub-enhanced-card" data-id="${Number(p.id)}">
+        return `<article class="property-card leaseaccom-enhanced-card" data-id="${safe(pid)}">
             <div class="property-image">
                 <img src="${safe(img)}" alt="${safe(p.title || "Listing")}" loading="lazy">
                 <span class="badge ${verified ? "" : "pending-badge"}"><i class="bx ${verified ? "bx-check-circle" : "bx-time-five"}"></i>${verified ? "Verified" : "Pending Verification"}</span>
-                <button type="button" class="save-btn ${saved ? "saved":""}" data-id="${Number(p.id)}" aria-label="${saved ? "Remove saved listing":"Save listing"}"><i class="bx bx-heart"></i></button>
+                <button type="button" class="save-btn ${saved ? "saved":""}" data-id="${safe(pid)}" aria-label="${saved ? "Remove saved listing":"Save listing"}"><i class="bx bx-heart"></i></button>
             </div>
             <div class="property-info">
                 <div class="property-type">${safe(p.type || "Listing")}</div>
@@ -38,7 +39,7 @@
                     ${p.size ? `<span><i class="bx bx-area"></i>${safe(p.size)}</span>`:""}
                 </div>
                 ${extra}
-                <button type="button" class="view-property-btn" data-view-id="${Number(p.id)}">View ${cfg.viewLabel || "Listing"} <i class="bx bx-arrow-right"></i></button>
+                <button type="button" class="view-property-btn" data-view-id="${safe(pid)}">View ${cfg.viewLabel || "Listing"} <i class="bx bx-arrow-right"></i></button>
             </div>
         </article>`;
     }
@@ -65,28 +66,29 @@
         const count = byId("catalogCount");
         if (count) count.textContent = `${list.length} ${list.length === 1 ? "listing" : "listings"} found`;
         if (!list.length) {
-            grid.innerHTML = `<div class="leasehub-empty"><i class="bx bx-search-alt-2"></i><h3>No listings found</h3><p>Try changing your search or filters.</p><button type="button" class="primary-btn" id="catalogClearEmpty">Clear filters</button></div>`;
+            grid.innerHTML = `<div class="leaseaccom-empty"><i class="bx bx-search-alt-2"></i><h3>No listings found</h3><p>Try changing your search or filters.</p><button type="button" class="primary-btn" id="catalogClearEmpty">Clear filters</button></div>`;
             byId("catalogClearEmpty")?.addEventListener("click", clear);
             return;
         }
         grid.innerHTML = list.map(card).join("");
-        grid.classList.add("leasehub-stagger");
+        grid.classList.add("leaseaccom-stagger");
         grid.querySelectorAll(".save-btn").forEach(btn => {
             btn.addEventListener("click", e => {
                 e.stopPropagation();
-                const id=Number(btn.dataset.id);
+                const id=String(btn.dataset.id);
                 let saved=typeof getSavedProperties==="function"?getSavedProperties():[];
-                const has=saved.map(Number).includes(id);
-                saved=has?saved.filter(x=>Number(x)!==id):[...saved,id];
+                const has=saved.map(String).includes(id);
+                saved=has?saved.filter(x=>String(x)!==id):[...saved,id];
                 if(typeof saveSavedProperties==="function")saveSavedProperties(saved);
+                if(typeof window.persistSavedProperty==="function")window.persistSavedProperty(id,!has).catch(()=>{});
                 btn.classList.toggle("saved",!has);
-                leaseHubToast(has?"Removed from saved":"Saved");
+                leaseaccomToast(has?"Removed from saved":"Saved");
             });
         });
         grid.querySelectorAll("[data-view-id]").forEach(btn => btn.addEventListener("click", e => {
-            e.stopPropagation(); openDetail(Number(btn.dataset.viewId));
+            e.stopPropagation(); openDetail(btn.dataset.viewId);
         }));
-        grid.querySelectorAll(".property-card").forEach(c => c.addEventListener("click", () => openDetail(Number(c.dataset.id))));
+        grid.querySelectorAll(".property-card").forEach(c => c.addEventListener("click", () => openDetail(c.dataset.id)));
     }
 
     function clear() {
@@ -98,7 +100,7 @@
     }
 
     function openDetail(id) {
-        selected = getList().find(p=>Number(p.id)===Number(id));
+        selected = getList().find(p=>String(p.id)===String(id));
         if(!selected) return;
         if(typeof addRecentlyViewed==="function") addRecentlyViewed(id);
         detailRoot = byId("catalogDetail");
@@ -107,29 +109,29 @@
         let idx=0;
         detailRoot.hidden=false;
         detailRoot.innerHTML=`
-            <div class="leasehub-detail-card">
-                <div class="leasehub-gallery">
-                    <div class="leasehub-gallery-main">
+            <div class="leaseaccom-detail-card">
+                <div class="leaseaccom-gallery">
+                    <div class="leaseaccom-gallery-main">
                         <img id="catalogMainImage" src="${safe(images[0]||"")}" alt="${safe(selected.title)}">
-                        <span class="leasehub-gallery-counter" id="catalogCounter">1 / ${images.length||1}</span>
+                        <span class="leaseaccom-gallery-counter" id="catalogCounter">1 / ${images.length||1}</span>
                     </div>
-                    <div class="leasehub-gallery-thumbs" id="catalogThumbs"></div>
+                    <div class="leaseaccom-gallery-thumbs" id="catalogThumbs"></div>
                 </div>
-                <div class="leasehub-detail-info">
+                <div class="leaseaccom-detail-info">
                     <span class="badge ${selected.verified?"":"pending-badge"}"><i class="bx ${selected.verified?"bx-check-circle":"bx-time-five"}"></i>${selected.verified?"Verified":"Pending Verification"}</span>
                     <h1>${safe(selected.title)}</h1>
                     <p><i class="bx bx-map"></i> ${safe(selected.location || selected.city || "Nigeria")}</p>
-                    <div class="leasehub-detail-price">${money(selected.price)} <span>/ ${safe(selected.period||"year")}</span></div>
-                    <div class="leasehub-detail-meta">
+                    <div class="leaseaccom-detail-price">${money(selected.price)} <span>/ ${safe(selected.period||"year")}</span></div>
+                    <div class="leaseaccom-detail-meta">
                         <div><small>Type</small><strong>${safe(selected.accommodationType||selected.type||"Listing")}</strong></div>
                         <div><small>Bedrooms</small><strong>${selected.bedrooms||"N/A"}</strong></div>
                         <div><small>Bathrooms</small><strong>${selected.bathrooms||"N/A"}</strong></div>
                         <div><small>Availability</small><strong>Available</strong></div>
                     </div>
                     ${cfg.detailExtra ? cfg.detailExtra(selected) : ""}
-                    <div class="leasehub-action-stack">
+                    <div class="leaseaccom-action-stack">
                         <button class="primary-btn" id="catalogActionBtn">${cfg.actionLabel||"Request viewing"}</button>
-                        <button class="leasehub-secondary-btn" id="catalogCloseBtn"><i class="bx bx-arrow-back"></i> Back to listings</button>
+                        <button class="leaseaccom-secondary-btn" id="catalogCloseBtn"><i class="bx bx-arrow-back"></i> Back to listings</button>
                     </div>
                 </div>
             </div>`;
@@ -137,7 +139,7 @@
         images.forEach((src,i)=>{const b=document.createElement("button");b.type="button";b.className=i===0?"active":"";b.innerHTML=`<img src="${safe(src)}" alt="">`;b.onclick=()=>{idx=i;update();};thumbs.appendChild(b);});
         function update(){byId("catalogMainImage").src=images[idx]||"";byId("catalogCounter").textContent=`${idx+1} / ${images.length||1}`;thumbs.querySelectorAll("button").forEach((b,i)=>b.classList.toggle("active",i===idx));}
         byId("catalogCloseBtn").onclick=()=>{detailRoot.hidden=true; window.scrollTo({top:0,behavior:"smooth"});};
-        byId("catalogActionBtn").onclick=()=>leaseHubToast(cfg.actionMessage||"Request recorded for this frontend demo.");
+        byId("catalogActionBtn").onclick=()=>leaseaccomToast(cfg.actionMessage||"Request recorded for this frontend demo.");
         detailRoot.scrollIntoView({behavior:"smooth",block:"start"});
     }
 
@@ -148,5 +150,19 @@
     byId("catalogSort")?.addEventListener("change",render);
     byId("catalogSearchBtn")?.addEventListener("click",render);
     byId("catalogClearBtn")?.addEventListener("click",clear);
-    render();
+    const grid = byId("catalogGrid");
+    if (window.loadLeaseAccomPropertyCatalog) {
+        if (grid) {
+            grid.setAttribute("aria-busy", "true");
+            grid.innerHTML = '<p role="status">Loading listings...</p>';
+        }
+        window.loadLeaseAccomPropertyCatalog()
+            .catch(() => [])
+            .then(() => {
+                if (grid) grid.removeAttribute("aria-busy");
+                render();
+            });
+    } else {
+        render();
+    }
 })();

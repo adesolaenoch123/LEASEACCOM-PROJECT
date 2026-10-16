@@ -3,26 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Commercial Property — LeaseHub</title>
+<title>Commercial Property — LeaseAccom</title>
 <meta name="description" content="Explore offices, shops and other commercial spaces with practical filters for Nigerian businesses.">
 <link rel="stylesheet" href="CSS/style.css">
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 <body>
 <header class="navbar">
-<a href="index.html" class="logo"><img src="IMAGES/Lease Hub logo.png" alt="LeaseHub"></a>
+<a href="index.html" class="logo"><img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom"></a>
 <nav class="nav-links">
 <a href="properties.html">Rent</a><a href="shortlets.html">Shortlets</a><a href="hotels.html">Hotels &amp; Lodges</a><a href="student-housing.html">Student Housing</a><a href="commercial.html">Commercial</a>
 </nav>
 <div class="nav-actions"><a href="login.html" class="login-btn">Log in</a><a href="register.html" class="owner-btn">List a Property</a></div>
 <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false"></button>
 </header>
-<main class="leasehub-catalog-page">
-<section class="leasehub-catalog-hero">
+<main class="leaseaccom-catalog-page">
+<section class="leaseaccom-catalog-hero">
 <span class="section-label">COMMERCIAL</span>
 <h1>Find space for your next business move.</h1>
 <p>Explore offices, shops and other commercial spaces with practical filters for Nigerian businesses.</p>
-<div class="leasehub-search-panel">
+<div class="leaseaccom-search-panel">
 <input id="catalogSearch" type="search" placeholder="Search location, city or listing..." aria-label="Search listings">
 <select id="catalogType" aria-label="Listing type"><option value="all">All types</option><option value="Office">Office</option><option value="Shop">Shop</option><option value="Warehouse">Warehouse</option></select>
 <select id="catalogPrice" aria-label="Maximum price"><option value="0">Any price</option><option value="3000000">Up to ₦3m/year</option><option value="5000000">Up to ₦5m/year</option><option value="10000000">Up to ₦10m/year</option></select>
@@ -30,30 +30,34 @@
 </div>
 </section>
 
-<div class="leasehub-filter-row">
+<div class="leaseaccom-filter-row">
 <label><input id="catalogVerified" type="checkbox"> Verified only</label>
 <select id="catalogSort" aria-label="Sort listings"><option value="recommended">Recommended</option><option value="low">Price: Low to High</option><option value="high">Price: High to Low</option><option value="newest">Newest</option></select>
-<button id="catalogClearBtn" type="button" class="leasehub-secondary-btn" style="padding:0 14px">Clear filters</button>
+<button id="catalogClearBtn" type="button" class="leaseaccom-secondary-btn" style="padding:0 14px">Clear filters</button>
 </div>
 <section>
-<div class="leasehub-catalog-heading"><div><span class="section-label">COMMERCIAL</span><h2>Explore listings</h2><p id="catalogCount">Loading listings...</p></div></div>
+<div class="leaseaccom-catalog-heading"><div><span class="section-label">COMMERCIAL</span><h2>Explore listings</h2><p id="catalogCount">Loading listings...</p></div></div>
 <div id="catalogGrid" class="property-grid"></div>
 </section>
 <section class="details-section" style="margin:42px 0"><span class="section-label">BUSINESS SEARCH</span><h2>Built for practical decisions</h2><p style="max-width:720px;color:#66706a;line-height:1.7">Check size, location, facilities, power, parking and transport access before arranging a viewing. Commercial enquiries can later connect to company profiles and document workflows.</p></section>
-<section id="catalogDetail" class="leasehub-catalog-detail" hidden style="margin-top:30px"></section>
+<section id="catalogDetail" class="leaseaccom-catalog-detail" hidden style="margin-top:30px"></section>
 </main>
-<footer><div class="footer-bottom"><span>© 2026 LeaseHub</span><span>Find your place without unnecessary agent fees.</span></div></footer>
+<footer><div class="footer-bottom"><span>© 2026 LeaseAccom</span><span>Find your place without the unnecessary stress.</span></div></footer>
 <script src="JS/data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="JS/supabase-client.js"></script>
+<script src="JS/leaseaccom-data.js"></script>
 <script src="JS/app.js"></script>
-<script src="JS/leasehub-polish.js"></script>
+<script src="JS/leaseaccom-polish.js"></script>
+<script src="JS/leaseaccom-mobile-nav.js"></script>
 <script>
-window.LEASEHUB_CATALOG = {
+window.LEASEACCOM_CATALOG = {
  match: p => ["office","shop","warehouse","retail space","commercial","company space","business premises"].includes(String(p.type||"").toLowerCase()) || String(p.purpose||"").toLowerCase()==="commercial",
  viewLabel: "Space",
  actionLabel: "Request viewing",
- actionMessage: "Viewing request ready. Real scheduling is connected through the existing LeaseHub frontend flow.",
+ actionMessage: "Viewing request ready. Real scheduling is connected through the existing LeaseAccom frontend flow.",
  cardExtra: p => p.size ? `<p style="margin:10px 0 0;color:#66706a;font-size:11px"><i class="bx bx-area"></i> ${p.size}</p>` : "",
- detailExtra: p => `<div class="leasehub-detail-meta"><div><small>Power</small><strong>Ask owner</strong></div><div><small>Parking</small><strong>Ask owner</strong></div><div><small>Security</small><strong>Ask owner</strong></div><div><small>Accessibility</small><strong>Check listing</strong></div></div>`
+ detailExtra: p => `<div class="leaseaccom-detail-meta"><div><small>Power</small><strong>Ask owner</strong></div><div><small>Parking</small><strong>Ask owner</strong></div><div><small>Security</small><strong>Ask owner</strong></div><div><small>Accessibility</small><strong>Check listing</strong></div></div>`
 };
 </script>
 <script src="JS/catalog.js"></script>

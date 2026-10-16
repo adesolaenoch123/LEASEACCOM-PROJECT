@@ -9,7 +9,7 @@ from config import settings
 
 
 class AgreementService:
-    """Rental agreement workflow for LeaseHub."""
+    """Rental agreement workflow for leaseaccom."""
 
     def __init__(self) -> None:
         self.client: Optional[Client] = None

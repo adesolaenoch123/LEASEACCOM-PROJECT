@@ -15,7 +15,7 @@ const properties = [
         ownerVerified: true,
         verificationStatus: "approved",
         listingStatus: "live",
-        description: "Bright 2-bedroom apartment in Lekki Phase 1 with reliable power backup, fitted kitchen, and secured estate access. Ideal for professionals who want a clear, transparent rental process on LeaseHub.",
+        description: "Bright 2-bedroom apartment in Lekki Phase 1 with reliable power backup, fitted kitchen, and secured estate access. Ideal for professionals who want a clear, transparent rental process on LeaseAccom.",
         bedrooms: 2,
         bathrooms: 2,
         verified: true,
@@ -346,8 +346,8 @@ function countPropertyPhotos(property) {
     return property?.image ? 1 : 0;
 }
 
-const LEASEHUB_MIN_PUBLIC_PHOTOS = 4;
-const LEASEHUB_MIN_DESCRIPTION = 40;
+const LEASEACCOM_MIN_PUBLIC_PHOTOS = 4;
+const LEASEACCOM_MIN_DESCRIPTION = 40;
 
 /**
  * Public marketplace rules:
@@ -361,7 +361,7 @@ function isPropertyPublic(property) {
     if (getListingStatus(property) !== "live") return false;
 
     const photos = countPropertyPhotos(property);
-    if (photos < LEASEHUB_MIN_PUBLIC_PHOTOS) return false;
+    if (photos < LEASEACCOM_MIN_PUBLIC_PHOTOS) return false;
 
     const title = String(property.title || "").trim();
     const location = String(property.location || property.city || "").trim();
@@ -375,8 +375,8 @@ function getListingQualityReport(property) {
     const photos = countPropertyPhotos(property);
     const desc = String(property.description || "").trim();
     const checks = [
-        { ok: photos >= LEASEHUB_MIN_PUBLIC_PHOTOS, label: `At least ${LEASEHUB_MIN_PUBLIC_PHOTOS} photos`, detail: photos + " uploaded" },
-        { ok: desc.length >= LEASEHUB_MIN_DESCRIPTION, label: "Clear description", detail: desc.length + " characters" },
+        { ok: photos >= LEASEACCOM_MIN_PUBLIC_PHOTOS, label: `At least ${LEASEACCOM_MIN_PUBLIC_PHOTOS} photos`, detail: photos + " uploaded" },
+        { ok: desc.length >= LEASEACCOM_MIN_DESCRIPTION, label: "Clear description", detail: desc.length + " characters" },
         { ok: (Number(property.price) || 0) > 0, label: "Rent price set", detail: "" },
         { ok: Boolean(String(property.location || property.city || "").trim()), label: "Location set", detail: "" },
         { ok: Boolean(String(property.title || "").trim()), label: "Title set", detail: "" },
@@ -388,21 +388,21 @@ function getListingQualityReport(property) {
 
 /* ================= LOCAL PROPERTIES ================= */
 
-let savedLeaseHubProperties = [];
+let savedLeaseAccomProperties = [];
 
 try {
-    const storedProperties = JSON.parse(
-        localStorage.getItem("leasehubProperties") || "[]"
+    const savedProperties = JSON.parse(
+        localStorage.getItem("leaseaccomProperties") || "[]"
     );
 
-    savedLeaseHubProperties = Array.isArray(storedProperties)
-        ? storedProperties
+    savedLeaseAccomProperties = Array.isArray(savedProperties)
+        ? savedProperties
         : [];
 } catch (error) {
-    console.warn("LeaseHub property data could not be read.", error);
+    console.warn("LeaseAccom property data could not be read.", error);
 }
 
-savedLeaseHubProperties.forEach(savedProperty => {
+savedLeaseAccomProperties.forEach(savedProperty => {
     const existingIndex = properties.findIndex(property =>
         String(property.id) === String(savedProperty.id)
     );
@@ -457,3 +457,8 @@ properties.sort((a, b) => {
       if(p.image&&!p.images)p.images=[p.image];
     });}
 })();
+
+// Ensure global access for hybrid catalog loader
+if (typeof window !== "undefined" && Array.isArray(properties)) {
+    window.properties = properties;
+}

@@ -1,9 +1,9 @@
-# LeaseHub Backend Setup
+# LeaseAccom Backend Setup
 
 ## Supabase
 
 1. Use the same Supabase project configured in `JS/supabase-client.js` for the frontend and backend.
-2. For the current unified schema, review and apply the root `migrations/001_leasehub_core.sql` in the Supabase SQL Editor. It creates the tables used by the current API and frontend and keeps property IDs as text to match the existing schema.
+2. For the current unified schema, review and apply the root `migrations/001_leaseaccom_core.sql` in the Supabase SQL Editor. It creates the tables used by the current API and frontend and keeps property IDs as text to match the existing schema.
 3. Do not apply `ai-backend/migrations/001_applications.sql`, `002_properties.sql`, or `003_property_images.sql` on top of that schema. They are an older split schema with overlapping tables and an incompatible `images` column type. If any of them have already been applied, inspect and reconcile the existing schema before proceeding; do not blindly run the root migration.
 	 If the root migration was already applied to pre-existing tables, run this additive update for columns the original table definitions may have skipped:
 
@@ -68,7 +68,7 @@ Serve the frontend on `localhost` or `127.0.0.1` during local development. The A
 Deploy the FastAPI service at an HTTPS URL. Set `CORS_ORIGINS` to the exact frontend origins. Before loading `JS/api-client.js`, configure the production API URL:
 
 ```html
-<script>window.LEASEHUB_API_URL = "https://your-api.example.com";</script>
+<script>window.LEASEACCOM_API_URL = "https://your-api.example.com";</script>
 <script src="JS/api-client.js"></script>
 ```
 

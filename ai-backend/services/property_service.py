@@ -8,7 +8,7 @@ from config import settings
 
 
 class PropertyService:
-    """Server-side property access layer for LeaseHub."""
+    """Server-side property access layer for leaseaccom."""
 
     def __init__(self) -> None:
         self.client: Optional[Client] = None

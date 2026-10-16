@@ -1,0 +1,64 @@
+.lh-owner-journey {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.lh-owner-journey li {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e3e8e5;
+  background: #fff;
+  align-items: flex-start;
+}
+.lh-owner-journey li.is-done {
+  border-color: #b9d7c5;
+  background: #e9f7ef;
+}
+.lh-owner-journey li.is-active {
+  border-color: #15945c;
+  box-shadow: 0 0 0 2px rgba(21, 148, 92, 0.12);
+}
+.lh-step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #101311;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lh-owner-journey li.is-done .lh-step-num { background: #15945c; }
+.lh-owner-journey li p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #66706a;
+}
+.lh-owner-journey a {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0d7547;
+}
+.lh-listing-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+  margin-bottom: 6px;
+}
+.lh-badge-live { background: #e9f7ef; color: #0d7547; }
+.lh-badge-pending { background: #fff8e6; color: #a97c1f; }
+.lh-badge-rejected { background: #fdecec; color: #b42318; }
+.lh-owner-loop-note {
+  font-size: 13px;
+  color: #66706a;
+  margin: 8px 0 0;
+}

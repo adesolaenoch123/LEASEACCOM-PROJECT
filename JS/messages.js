@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let tenantProfile = {
         name: "Tenant",
         accountType: "tenant",
-        bio: "LeaseHub tenant",
+        bio: "LeaseAccom tenant",
         avatar: DEFAULT_TENANT_AVATAR
     };
 
@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const savedProfile =
             JSON.parse(
                 localStorage.getItem(
-                    "leasehubTenantProfile"
+                    "leaseaccomTenantProfile"
                 )
             );
 
@@ -316,7 +316,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         accountType || "tenant",
 
                     bio:
-                        bio || "LeaseHub tenant",
+                        bio || "LeaseAccom tenant",
 
                     avatar:
                         tenantProfile.avatar ||
@@ -324,7 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 };
 
                 localStorage.setItem(
-                    "leasehubTenantProfile",
+                    "leaseaccomTenantProfile",
                     JSON.stringify(
                         tenantProfile
                     )
@@ -365,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const saved =
                 localStorage.getItem(
-                    "leasehubMessages"
+                    "leaseaccomMessages"
                 );
 
             if (!saved) return [];
@@ -390,17 +390,80 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function canUseLocalFallback() {
+        const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+        const apiConfigured = Boolean(
+            window.LeaseAccomApi &&
+            typeof window.LeaseAccomApi.isConfigured === "function" &&
+            window.LeaseAccomApi.isConfigured()
+        );
+        return isLocalHost || !apiConfigured;
+    }
+
 
     function saveConversations(
         conversations
     ) {
 
         localStorage.setItem(
-            "leasehubMessages",
+            "leaseaccomMessages",
             JSON.stringify(
                 conversations
             )
         );
+    }
+
+
+    async function syncRemoteConversations() {
+        const remote = await window.LeaseAccomChatApi?.listConversations?.();
+        if (!Array.isArray(remote)) {
+            if (!canUseLocalFallback()) saveConversations([]);
+            return;
+        }
+
+        const local = getConversations();
+        const used = new Set();
+        const merged = remote.map((conversation) => {
+            const previous = local.find((item) =>
+                !used.has(String(item.id)) &&
+                (String(item.id) === String(conversation.id) ||
+                    String(item.propertyId) === String(conversation.propertyId))
+            );
+            if (previous) used.add(String(previous.id));
+            if (previous && String(previous.id) === localStorage.getItem("activeConversationId")) {
+                localStorage.setItem("activeConversationId", conversation.id);
+            }
+            return {
+                ...previous,
+                ...conversation,
+                messages: previous?.messages || [],
+                serverBacked: true
+            };
+        });
+
+        saveConversations(merged);
+    }
+
+
+    async function refreshRemoteMessages(conversation) {
+        if (!conversation.serverBacked) return;
+        const remote = await window.LeaseAccomChatApi?.listMessages?.(conversation);
+        if (!Array.isArray(remote)) {
+            if (canUseLocalFallback()) return;
+            conversation.messages = [];
+        } else {
+            conversation.messages = remote.sort(
+            (left, right) => new Date(left.createdAt) - new Date(right.createdAt)
+            );
+        }
+        const conversations = getConversations();
+        const index = conversations.findIndex((item) => String(item.id) === String(conversation.id));
+        if (index >= 0) conversations[index] = conversation;
+        saveConversations(conversations);
+        if (localStorage.getItem("activeConversationId") === String(conversation.id)) {
+            renderMessages(conversation);
+            renderConversations();
+        }
     }
 
 
@@ -674,6 +737,8 @@ document.addEventListener("DOMContentLoaded", () => {
             conversation
         );
 
+        refreshRemoteMessages(conversation);
+
 
         document
             .querySelectorAll(
@@ -924,7 +989,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         messageForm.addEventListener(
             "submit",
-            (event) => {
+            async (event) => {
 
                 event.preventDefault();
 
@@ -977,6 +1042,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
+                if (!conversation.serverBacked && conversation.propertyId) {
+                    const remoteConversation = await window.LeaseAccomChatApi?.createConversation?.(
+                        conversation.propertyId
+                    );
+                    if (remoteConversation) {
+                        const oldId = String(conversation.id);
+                        Object.assign(conversation, remoteConversation, {
+                            messages: conversation.messages || [],
+                            serverBacked: true
+                        });
+                        localStorage.setItem("activeConversationId", conversation.id);
+                        const oldIndex = conversations.findIndex((item) => String(item.id) === oldId);
+                        if (oldIndex >= 0) conversations[oldIndex] = conversation;
+                    }
+                }
+
+                if (!conversation.serverBacked && !canUseLocalFallback()) {
+                    alert("This conversation is not connected to the messaging service.");
+                    return;
+                }
+
 
                 if (
                     !Array.isArray(
@@ -988,7 +1074,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
 
-                const newMessage = {
+                const remoteMessage = conversation.serverBacked
+                    ? await window.LeaseAccomChatApi?.sendMessage?.(conversation, text)
+                    : null;
+
+                if (conversation.serverBacked && !remoteMessage && !canUseLocalFallback()) {
+                    alert("Message could not be sent. Please try again.");
+                    return;
+                }
+
+                const newMessage = remoteMessage || {
 
                     id:
                         Date.now(),
@@ -1211,21 +1306,13 @@ document.addEventListener("DOMContentLoaded", () => {
        START
     ========================================= */
 
-    renderConversations();
+    (async () => {
+        await syncRemoteConversations();
+        renderConversations();
 
-
-    const activeConversationId =
-        localStorage.getItem(
-            "activeConversationId"
-        );
-
-
-    if (activeConversationId) {
-
-        openConversation(
-            activeConversationId
-        );
-    }
+        const activeConversationId = localStorage.getItem("activeConversationId");
+        if (activeConversationId) openConversation(activeConversationId);
+    })();
 
 
     /* =========================================
@@ -1281,7 +1368,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* =========================================================
-   LEASEHUB OWNER PROFILE + CHAT ACTION CONTROLS
+   LEASEACCOM OWNER PROFILE + CHAT ACTION CONTROLS
 ========================================================= */
 
 document.addEventListener(
@@ -1337,7 +1424,7 @@ document.addEventListener(
 
             const data =
                 read(
-                    "leasehubMessages",
+                    "leaseaccomMessages",
                     []
                 );
 
@@ -1402,7 +1489,7 @@ document.addEventListener(
                 )
                     ? window.properties
                     : read(
-                        "leasehubProperties",
+                        "leaseaccomProperties",
                         []
                     );
 
@@ -1530,7 +1617,7 @@ document.addEventListener(
                                     aria-hidden="true"
                                 ></i>
 
-                                LeaseHub property owner
+                                LeaseAccom property owner
 
                             </p>
 
@@ -1544,7 +1631,7 @@ document.addEventListener(
                         ${esc(
                             conversation.ownerBio ||
                             ownerProperties[0]?.ownerBio ||
-                            "Property owner on LeaseHub. Contact them through LeaseHub before sharing personal details."
+                            "Property owner on LeaseAccom. Contact them through LeaseAccom before sharing personal details."
                         )}
 
                     </div>
@@ -1579,7 +1666,7 @@ document.addEventListener(
                                                 src="${esc(
                                                     property.image ||
                                                     property.images?.[0] ||
-                                                    "IMAGES/Lease Hub logo.png"
+                                                    "IMAGES/leaseaccom-logo-horizontal.svg"
                                                 )}"
                                                 alt=""
                                             >
@@ -1815,11 +1902,11 @@ document.addEventListener(
                 } else {
 
                     if (
-                        typeof window.leaseHubToast ===
+                        typeof window.leaseaccomToast ===
                         "function"
                     ) {
 
-                        window.leaseHubToast(
+                        window.leaseaccomToast(
                             "Calling is available after the owner shares a contact number.",
                             "info"
                         );
@@ -1848,11 +1935,11 @@ document.addEventListener(
 
 
                 if (
-                    typeof window.leaseHubToast ===
+                    typeof window.leaseaccomToast ===
                     "function"
                 ) {
 
-                    window.leaseHubToast(
+                    window.leaseaccomToast(
                         message,
                         "info"
                     );

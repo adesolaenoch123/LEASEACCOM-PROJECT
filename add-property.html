@@ -10,7 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Add Property — LeaseHub</title>
+    <title>Add Property — LeaseAccom</title>
 
     <link
         rel="stylesheet"
@@ -21,7 +21,7 @@
 </head>
 
 
-<body class="owner-lounge-body" data-leasehub-page="add-property" data-owner-page="add" data-owner-title="Add property">
+<body class="owner-lounge-body" data-leaseaccom-page="add-property" data-owner-page="add" data-owner-title="Add property">
 
 
 
@@ -642,7 +642,7 @@
                     </h2>
 
                     <p>
-                        Add 8–20 clear photos of your property. More complete listings are easier for tenants to understand.
+                        Add at least 3 clear photos (up to 20) of your property. More complete listings are easier for tenants to understand.
                     </p>
 
                 </div>
@@ -661,7 +661,7 @@
                 </strong>
 
                 <small>
-                    JPG, PNG or WEBP · 8–20 photos
+                    JPG, PNG or WEBP · 3–20 photos
                 </small>
 
                 <span class="upload-cta" aria-hidden="true">Choose Files</span>
@@ -677,7 +677,18 @@
             </label>
 
 
-            <small id="propertyImageHelp" class="leasehub-upload-help">Minimum 8 photos · Maximum 20 photos. You can remove, reorder and choose a cover photo before submitting.</small>
+            <small id="propertyImageHelp" class="leaseaccom-upload-help">Minimum 3 photos · Maximum 20 photos. You can remove, reorder and choose a cover photo before submitting.</small>
+            <div class="leaseaccom-upload-block" style="margin-top:16px">
+                <label class="leaseaccom-upload-label" for="propertyVideo">
+                    <strong>Property video (optional)</strong>
+                    <span>Show rooms, walkthroughs or exterior. MP4/WEBM/MOV · max 3 · under 40MB each</span>
+                </label>
+                <label class="leaseaccom-file-btn" for="propertyVideo">
+                    <i class="bx bx-video"></i> Choose property videos
+                </label>
+                <input type="file" id="propertyVideo" accept="video/*,.mp4,.webm,.mov" multiple hidden>
+            </div>
+
 
             <div
                 id="imagePreview"
@@ -698,12 +709,12 @@
             <div>
 
                 <strong>
-                    LeaseHub verification
+                    LeaseAccom verification
                 </strong>
 
                 <p>
                     New listings will initially appear as
-                    <b>Pending Verification</b>. LeaseHub
+                    <b>Pending Verification</b>. LeaseAccom
                     will verify the available information
                     before giving the property a verified
                     badge.
@@ -741,16 +752,18 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="JS/supabase-client.js"></script>
-<script src="JS/leasehub-data.js"></script>
+<script src="JS/leaseaccom-cloud.js"></script>
+<script src="JS/leaseaccom-data.js"></script>
 <script src="JS/owner-shell.js"></script>
 <script src="JS/data.js"></script>
 <script src="JS/app.js"></script>
-<script src="JS/plans.js"></script>
 <script src="JS/add-property.js"></script>
 <script src="JS/add-property-wizard.js"></script>
 
-<script src="JS/leasehub-polish.js"></script>
+<script src="JS/leaseaccom-polish.js"></script>
 
+<script src="JS/owner-loop.js"></script>
+<script src="JS/owner-mobile-nav.js"></script>
 </body>
 
 </html>

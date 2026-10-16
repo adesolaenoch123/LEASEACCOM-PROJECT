@@ -1,6 +1,6 @@
-# LeaseHub — Frontend Public Beta Polish
+# LeaseAccom — Frontend Public Beta Polish
 
-This build is a frontend-only enhancement of the existing LeaseHub project.
+This build is a frontend-only enhancement of the existing LeaseAccom project.
 
 ## Main user journey
 Search → Verify → Chat → View → Apply → Agree → Pay → Move in → Review
@@ -10,7 +10,7 @@ Search → Verify → Chat → View → Apply → Agree → Pay → Move in → 
 - Property gallery with thumbnails, fullscreen lightbox and mobile swipe.
 - Saved properties page using the existing `savedProperties` localStorage key.
 - Compare page using the existing `compareProperties` key, limited to 3.
-- Recently viewed compatibility preserved through `leasehubRecentlyViewed`.
+- Recently viewed compatibility preserved through `leaseaccomRecentlyViewed`.
 - Shortlets page.
 - Commercial page.
 - Student Housing page.
@@ -51,7 +51,7 @@ The current localStorage architecture remains so the frontend can be migrated la
 10. Test mobile widths around 390px and 360px.
 
 ## Private Admin Portal
-A new `admin/` folder contains the LeaseHub staff portal. It includes dashboard, users, properties, verification, applications, viewings, payments, reports, messages, staff roles, audit log and settings views. `admin/index.html` is the entry point and links back to the public app. The included staff access list is FRONTEND DEMO ONLY: do not treat it as secure authentication. Before public deployment, move credentials and role enforcement to Supabase/Firebase/backend authentication and never ship real secrets in JavaScript.
+A new `admin/` folder contains the LeaseAccom staff portal. It includes dashboard, users, properties, verification, applications, viewings, payments, reports, messages, staff roles, audit log and settings views. `admin/index.html` is the entry point and links back to the public app. The included staff access list is FRONTEND DEMO ONLY: do not treat it as secure authentication. Before public deployment, move credentials and role enforcement to Supabase/Firebase/backend authentication and never ship real secrets in JavaScript.
 
 ## Latest UI Fix Pass
 - Restored the original homepage hero headline markup; no per-word splitting is used.

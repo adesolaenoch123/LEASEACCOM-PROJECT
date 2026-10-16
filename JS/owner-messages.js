@@ -13,10 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("ownerChatContent");
 
     const chatTenantName =
-        document.getElementById("ownerChatTenantName");
+        document.getElementById("chatPersonName");
 
     const chatPropertyName =
-        document.getElementById("ownerChatPropertyName");
+        document.getElementById("chatPropertyName");
 
     const chatMessages =
         document.getElementById("ownerChatMessages");
@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("ownerMessageInput");
 
     const tenantAvatar =
-        document.getElementById("ownerChatTenantAvatar");
+        document.getElementById("tenantChatOwnerAvatar");
 
     const topProfileAvatar =
         document.getElementById("topProfileAvatar");
@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
 
             return JSON.parse(
-                localStorage.getItem("leasehubOwnerProfile")
+                localStorage.getItem("leaseaccomOwnerProfile")
             ) || {
                 name: "Property Owner",
                 accountType: "owner",
@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function saveOwnerProfile(profile) {
 
         localStorage.setItem(
-            "leasehubOwnerProfile",
+            "leaseaccomOwnerProfile",
             JSON.stringify(profile)
         );
 
@@ -147,13 +147,13 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
 
             return JSON.parse(
-                localStorage.getItem("leasehubMessages")
+                localStorage.getItem("leaseaccomMessages")
             ) || [];
 
         } catch (error) {
 
             console.error(
-                "Unable to load LeaseHub messages.",
+                "Unable to load LeaseAccom messages.",
                 error
             );
 
@@ -163,14 +163,84 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
+    function canUseLocalFallback() {
+        const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+        const apiConfigured = Boolean(
+            window.LeaseAccomApi &&
+            typeof window.LeaseAccomApi.isConfigured === "function" &&
+            window.LeaseAccomApi.isConfigured()
+        );
+        return isLocalHost || !apiConfigured;
+    }
+
 
     function saveConversations(conversations) {
 
         localStorage.setItem(
-            "leasehubMessages",
+            "leaseaccomMessages",
             JSON.stringify(conversations)
         );
 
+    }
+
+
+    async function syncRemoteConversations() {
+        const remote = await window.LeaseAccomChatApi?.listConversations?.();
+        if (!Array.isArray(remote)) {
+            if (!canUseLocalFallback()) {
+                conversations = [];
+                saveConversations(conversations);
+            }
+            return;
+        }
+
+        const local = getConversations();
+        const used = new Set();
+        const merged = remote.map((conversation) => {
+            const previous = local.find((item) =>
+                !used.has(String(item.id)) &&
+                (String(item.id) === String(conversation.id) ||
+                    String(item.propertyId) === String(conversation.propertyId))
+            );
+            if (previous) used.add(String(previous.id));
+            if (previous && String(previous.id) === String(activeConversationId)) {
+                activeConversationId = conversation.id;
+                localStorage.setItem("activeConversationId", conversation.id);
+                localStorage.setItem("ownerActiveConversationId", conversation.id);
+            }
+            return {
+                ...previous,
+                ...conversation,
+                messages: previous?.messages || [],
+                serverBacked: true
+            };
+        });
+
+        conversations = merged;
+        saveConversations(conversations);
+    }
+
+
+    async function refreshRemoteMessages(conversation) {
+        if (!conversation.serverBacked) return;
+        const remote = await window.LeaseAccomChatApi?.listMessages?.(conversation);
+        if (!Array.isArray(remote)) {
+            if (canUseLocalFallback()) return;
+            conversation.messages = [];
+        } else {
+            conversation.messages = remote.sort(
+            (left, right) => new Date(left.createdAt) - new Date(right.createdAt)
+            );
+        }
+        const current = getConversations();
+        const index = current.findIndex((item) => String(item.id) === String(conversation.id));
+        if (index >= 0) current[index] = conversation;
+        conversations = current;
+        saveConversations(conversations);
+        if (String(activeConversationId) === String(conversation.id)) {
+            renderMessages(conversation);
+            renderConversations();
+        }
     }
 
 
@@ -232,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             return JSON.parse(
                 localStorage.getItem(
-                    "leasehubTenantProfile"
+                    "leaseaccomTenantProfile"
                 )
             ) || {
                 name: "Tenant",
@@ -346,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="conversation-property">
                         ${escapeHTML(
                             conversation.propertyTitle ||
-                            "LeaseHub Property"
+                            "LeaseAccom Property"
                         )}
                     </div>
 
@@ -456,7 +526,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         chatPropertyName.textContent =
             conversation.propertyTitle ||
-            "LeaseHub Property";
+            "LeaseAccom Property";
 
 
         tenantAvatar.src =
@@ -468,6 +538,8 @@ document.addEventListener("DOMContentLoaded", () => {
         renderMessages(
             conversation
         );
+
+        refreshRemoteMessages(conversation);
 
 
         renderConversations();
@@ -611,7 +683,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     messageForm.addEventListener(
         "submit",
-        event => {
+        async event => {
 
             event.preventDefault();
 
@@ -641,6 +713,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            if (!conversation.serverBacked && !canUseLocalFallback()) {
+                alert("This conversation is not connected to the messaging service.");
+                return;
+            }
+
 
             if (!conversation.messages) {
 
@@ -649,7 +726,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            conversation.messages.push({
+            const remoteMessage = conversation.serverBacked
+                ? await window.LeaseAccomChatApi?.sendMessage?.(conversation, text)
+                : null;
+
+            if (conversation.serverBacked && !remoteMessage && !canUseLocalFallback()) {
+                alert("Message could not be sent. Please try again.");
+                return;
+            }
+
+            conversation.messages.push(remoteMessage || {
 
                 id: Date.now(),
 
@@ -713,11 +799,11 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
-    openProfileBtn.addEventListener(
+    openProfileBtn?.addEventListener(
         "click",
         () => {
 
-            profileDrawer.classList.add(
+            profileDrawer?.classList.add(
                 "open"
             );
 
@@ -725,11 +811,11 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
 
-    closeProfileBtn.addEventListener(
+    closeProfileBtn?.addEventListener(
         "click",
         () => {
 
-            profileDrawer.classList.remove(
+            profileDrawer?.classList.remove(
                 "open"
             );
 
@@ -1032,17 +1118,13 @@ document.addEventListener("DOMContentLoaded", () => {
        AUTO OPEN ACTIVE CHAT
     ========================================== */
 
-    if (activeConversationId) {
-
-        openConversation(
-            activeConversationId
-        );
-
-    } else {
-
-        renderConversations();
-
-    }
+    (async () => {
+        await syncRemoteConversations();
+        activeConversationId = localStorage.getItem("ownerActiveConversationId") ||
+            localStorage.getItem("activeConversationId");
+        if (activeConversationId) openConversation(activeConversationId);
+        else renderConversations();
+    })();
 
 
     /* ==========================================
@@ -1086,7 +1168,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 document.addEventListener("DOMContentLoaded",()=>{
  const read=k=>{try{return JSON.parse(localStorage.getItem(k)||"[]")}catch{return[]}};
- const active=()=>{const id=localStorage.getItem("ownerActiveConversationId")||localStorage.getItem("activeConversationId");return read("leasehubMessages").find(c=>String(c.id)===String(id));};
- document.getElementById("ownerChatCallBtn")?.addEventListener("click",()=>{const c=active();const phone=c?.tenantPhone;if(phone){const clean=String(phone).replace(/\D/g,"");location.href=`tel:${clean.startsWith("0")?"+234"+clean.slice(1):"+"+clean}`;}else if(typeof leaseHubToast==="function")leaseHubToast("Calling is available after the tenant shares a contact number.","info");});
- document.getElementById("ownerChatVideoBtn")?.addEventListener("click",()=>{if(typeof leaseHubToast==="function")leaseHubToast("Video calling is not connected yet. It will be enabled with the real-time backend.","info");});
+ const active=()=>{const id=localStorage.getItem("ownerActiveConversationId")||localStorage.getItem("activeConversationId");return read("leaseaccomMessages").find(c=>String(c.id)===String(id));};
+ document.getElementById("ownerChatCallBtn")?.addEventListener("click",()=>{const c=active();const phone=c?.tenantPhone;if(phone){const clean=String(phone).replace(/\D/g,"");location.href=`tel:${clean.startsWith("0")?"+234"+clean.slice(1):"+"+clean}`;}else if(typeof leaseaccomToast==="function")leaseaccomToast("Calling is available after the tenant shares a contact number.","info");});
+ document.getElementById("ownerChatVideoBtn")?.addEventListener("click",()=>{if(typeof leaseaccomToast==="function")leaseaccomToast("Video calling is not connected yet. It will be enabled with the real-time backend.","info");});
 });

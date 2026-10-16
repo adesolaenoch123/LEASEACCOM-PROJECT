@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner Plans — LeaseAccom</title>
+  <link rel="stylesheet" href="CSS/style.css">
+  <link rel="stylesheet" href="CSS/plans.css">
+  <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
+  <style>
+    body { margin: 0; background: #f5f7f6; font-family: system-ui, -apple-system, sans-serif; }
+    .op-top {
+      position: sticky; top: 0; z-index: 40; background: #fff;
+      border-bottom: 1px solid #e3e8e5; padding: 10px 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .op-top a.brand { display:flex; align-items:center; gap:8px; text-decoration:none; font-weight:800; color:#101311; }
+    .op-top a.brand span.g { color:#0d7547; }
+    .op-top nav { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; font-weight:600; }
+    .op-top nav a { color:#66706a; text-decoration:none; }
+    .op-top nav a:hover { color:#0d7547; }
+    .op-hero {
+      background: linear-gradient(135deg, #0b3d2e 0%, #0d7547 55%, #15945c 100%);
+      color: #fff; padding: 48px 20px 56px; position: relative; overflow: hidden;
+    }
+    .op-hero .inner { max-width: 1100px; margin: 0 auto; display:grid; grid-template-columns: 1.2fr .8fr; gap: 24px; align-items:center; }
+    @media (max-width: 900px) { .op-hero .inner { grid-template-columns: 1fr; } .op-top nav { display:none; } }
+    .op-hero .badge {
+      display:inline-block; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25);
+      padding:6px 12px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; margin-bottom:14px;
+    }
+    .op-hero h1 { margin:0 0 12px; font-size:clamp(1.6rem, 4vw, 2.5rem); line-height:1.15; }
+    .op-hero h1 em { font-style:normal; color:#8ce0b2; }
+    .op-hero p { margin:0; opacity:.92; max-width:520px; line-height:1.55; font-size:15px; }
+    .op-hero-pills { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+    .op-hero-pills span { background:rgba(255,255,255,.12); padding:8px 12px; border-radius:10px; font-size:12px; font-weight:600; }
+    .op-hero-art {
+      border-radius: 18px; overflow:hidden; min-height: 200px;
+      background: linear-gradient(160deg, rgba(255,255,255,.12), rgba(0,0,0,.15)),
+        url("https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80") center/cover;
+      box-shadow: 0 20px 50px rgba(0,0,0,.25);
+    }
+    .op-wrap { max-width: 1100px; margin: -28px auto 0; padding: 0 16px 100px; position: relative; z-index: 2; }
+    .op-heading { text-align:center; margin: 36px 0 8px; }
+    .op-heading h2 { margin:0 0 8px; font-size:clamp(1.35rem,3vw,1.85rem); }
+    .op-heading p { margin:0; color:#66706a; font-size:14px; }
+    .op-toggle { display:flex; justify-content:center; gap:8px; margin:18px 0 28px; }
+    .op-toggle button {
+      border:1px solid #e3e8e5; background:#fff; padding:10px 18px; border-radius:999px;
+      font-weight:700; font-size:13px; cursor:pointer; color:#66706a;
+    }
+    .op-toggle button.is-active { background:#0d7547; color:#fff; border-color:#0d7547; }
+    .op-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+    @media (max-width:900px){ .op-grid { grid-template-columns:1fr; max-width:420px; margin:0 auto; } }
+    .op-card {
+      background:#fff; border:1px solid #e3e8e5; border-radius:18px; padding:22px 20px;
+      display:flex; flex-direction:column; position:relative; box-shadow:0 8px 24px rgba(16,19,17,.04);
+    }
+    .op-card.is-popular { border-color:#0d7547; box-shadow:0 12px 36px rgba(13,117,71,.15); transform:translateY(-4px); }
+    .op-card .tag {
+      position:absolute; top:-11px; left:50%; transform:translateX(-50%);
+      background:#0d7547; color:#fff; font-size:11px; font-weight:800; padding:4px 12px; border-radius:999px;
+    }
+    .op-card .ico {
+      width:44px; height:44px; border-radius:12px; display:grid; place-items:center;
+      background:#e9f7ef; color:#0d7547; font-size:22px; margin-bottom:12px;
+    }
+    .op-card.is-ent .ico { background:#f0eefc; color:#5b4fc7; }
+    .op-card h3 { margin:0 0 4px; font-size:1.25rem; }
+    .op-card .aud { margin:0 0 14px; font-size:13px; color:#66706a; }
+    .op-card .price { font-size:2rem; font-weight:800; letter-spacing:-.03em; }
+    .op-card .period { font-size:13px; color:#66706a; font-weight:600; }
+    .op-card .annual { font-size:12px; font-weight:700; color:#0d7547; margin:4px 0 14px; }
+    .op-card .cta {
+      display:block; text-align:center; width:100%; border:0; border-radius:12px;
+      padding:12px 16px; font-weight:800; font-size:14px; cursor:pointer; margin-bottom:16px;
+      background:#0d7547; color:#fff; text-decoration:none;
+    }
+    .op-card.is-ent .cta { background:#5b4fc7; }
+    .op-card ul { list-style:none; margin:0; padding:0; flex:1; }
+    .op-card li { display:flex; gap:8px; font-size:13px; padding:6px 0; border-bottom:1px solid #f0f3f1; line-height:1.4; }
+    .op-card li:last-child { border-bottom:0; }
+    .op-card li i { color:#0d7547; flex-shrink:0; }
+    .op-card.is-ent li i { color:#5b4fc7; }
+    .op-card .foot {
+      margin-top:14px; padding:10px 12px; border-radius:10px; background:#e9f7ef;
+      font-size:12px; color:#0d7547; font-weight:600;
+    }
+    .op-card.is-ent .foot { background:#f0eefc; color:#5b4fc7; }
+    .op-extras { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:28px; }
+    @media (max-width:700px){ .op-extras { grid-template-columns:1fr; } }
+    .op-extras .ex { background:#fff; border:1px solid #e3e8e5; border-radius:14px; padding:16px; font-size:13px; color:#66706a; }
+    .op-extras .ex strong { display:block; color:#101311; margin-bottom:4px; }
+    .op-cta-bar {
+      margin-top:32px; background:linear-gradient(135deg,#0b3d2e,#0d7547); color:#fff;
+      border-radius:16px; padding:20px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+    }
+    .op-cta-bar a {
+      background:#fff; color:#0d7547; font-weight:800; text-decoration:none;
+      padding:12px 18px; border-radius:12px;
+    }
+  </style>
+</head>
+<body class="la-has-bottom-nav">
+  <header class="op-top">
+    <a class="brand" href="owner-dashboard.html">
+      <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="" style="height:32px" onerror="this.style.display='none'">
+      <span>Lease<span class="g">Accom</span></span>
+    </a>
+    <nav>
+      <a href="owner-dashboard.html">Dashboard</a>
+      <a href="owner-dashboard.html#myProperties">Properties</a>
+      <a href="owner-messages.html">Messages</a>
+      <a href="owner-plans.html" style="color:#0d7547">Plans</a>
+      <a href="owner-payments.html">Payments</a>
+    </nav>
+  </header>
+
+  <section class="op-hero">
+    <div class="inner">
+      <div>
+        <span class="badge">Owner subscription plans</span>
+        <h1>Power your property business with LeaseAccom <em>Premium Plans</em></h1>
+        <p>More listings. More visibility. More tenants. Choose the plan that fits your goals and unlock tools to grow your property business.</p>
+        <div class="op-hero-pills">
+          <span>✓ More visibility</span>
+          <span>✓ Serious tenants</span>
+          <span>✓ Secure &amp; trusted</span>
+          <span>✓ More bookings</span>
+        </div>
+      </div>
+      <div class="op-hero-art" role="img" aria-label="Modern property"></div>
+    </div>
+  </section>
+
+  <div class="op-wrap">
+    <div class="op-heading">
+      <h2>Simple, transparent pricing</h2>
+      <p>All plans include a 10% discount when you choose annual billing.</p>
+    </div>
+    <div class="op-toggle">
+      <button type="button" data-billing="monthly" class="is-active">Monthly</button>
+      <button type="button" data-billing="annual">Annual · Save 10%</button>
+    </div>
+
+    <div class="op-grid">
+      <article class="op-card">
+        <div class="ico"><i class="bx bx-home-alt"></i></div>
+        <h3>Professional</h3>
+        <p class="aud">For individual landlords and small property owners.</p>
+        <div><span class="price" data-price-for="professional">₦5,000</span> <span class="period">/ month</span></div>
+        <div class="annual" data-annual-note="professional">Annual: ₦54,000 (10% off)</div>
+        <button type="button" class="cta" data-select-plan="professional">Get started →</button>
+        <ul>
+          <li><i class="bx bx-check"></i> Up to 5 active listings</li>
+          <li><i class="bx bx-check"></i> Up to 15 photos per listing</li>
+          <li><i class="bx bx-check"></i> 1 video per listing</li>
+          <li><i class="bx bx-check"></i> Property verification eligibility</li>
+          <li><i class="bx bx-check"></i> Standard search placement</li>
+          <li><i class="bx bx-check"></i> Tenant enquiries &amp; in-app chat</li>
+          <li><i class="bx bx-check"></i> Viewing &amp; application tracking</li>
+          <li><i class="bx bx-check"></i> Basic dashboard &amp; analytics</li>
+          <li><i class="bx bx-check"></i> Email support · 5% fee discount</li>
+        </ul>
+        <div class="foot">Perfect for getting started — list, attract tenants, manage enquiries.</div>
+      </article>
+
+      <article class="op-card is-popular">
+        <span class="tag">Most Popular</span>
+        <div class="ico"><i class="bx bx-buildings"></i></div>
+        <h3>Business</h3>
+        <p class="aud">For growing landlords and property managers.</p>
+        <div><span class="price" data-price-for="business">₦10,000</span> <span class="period">/ month</span></div>
+        <div class="annual" data-annual-note="business">Annual: ₦108,000 (10% off)</div>
+        <button type="button" class="cta" data-select-plan="business">Get started →</button>
+        <ul>
+          <li><i class="bx bx-check"></i> Up to 10 active listings</li>
+          <li><i class="bx bx-check"></i> Up to 20 photos · 3 videos per listing</li>
+          <li><i class="bx bx-check"></i> Priority search placement</li>
+          <li><i class="bx bx-check"></i> Everything in Professional</li>
+          <li><i class="bx bx-check"></i> Advanced analytics &amp; lead tracking</li>
+          <li><i class="bx bx-check"></i> Bulk listing management</li>
+          <li><i class="bx bx-check"></i> Dedicated account support</li>
+          <li><i class="bx bx-check"></i> Ad-free · 10% fee discount</li>
+        </ul>
+        <div class="foot">For growing businesses — more visibility, insights, and portfolio control.</div>
+      </article>
+
+      <article class="op-card is-ent">
+        <div class="ico"><i class="bx bx-building-house"></i></div>
+        <h3>Enterprise</h3>
+        <p class="aud">For agencies, hotels and large property businesses.</p>
+        <div><span class="price" data-price-for="enterprise">₦20,000</span> <span class="period">/ month</span></div>
+        <div class="annual" data-annual-note="enterprise">Annual: ₦216,000 (10% off)</div>
+        <button type="button" class="cta" data-select-plan="enterprise">Get started →</button>
+        <ul>
+          <li><i class="bx bx-check"></i> Up to 30 active listings</li>
+          <li><i class="bx bx-check"></i> Everything in Business</li>
+          <li><i class="bx bx-check"></i> AI assistant (100 requests / month)</li>
+          <li><i class="bx bx-check"></i> Dedicated company storefront</li>
+          <li><i class="bx bx-check"></i> Branded profile · featured placement</li>
+          <li><i class="bx bx-check"></i> Advanced portfolio analytics</li>
+          <li><i class="bx bx-check"></i> Priority support · 15% fee discount</li>
+        </ul>
+        <div class="foot">Built for bigger ambitions — brand, scale, and manage in one place.</div>
+      </article>
+    </div>
+
+    <div class="op-extras">
+      <div class="ex"><strong>Transaction fee discounts</strong>Professional 5% · Business 10% · Enterprise 15%</div>
+      <div class="ex"><strong>Annual savings</strong>Save 10% when you pay yearly on any paid plan.</div>
+      <div class="ex"><strong>Ad policy</strong>Business &amp; Enterprise are ad-free. Professional includes standard platform ads.</div>
+    </div>
+
+    <div class="op-cta-bar">
+      <div>
+        <strong>Ready to get started?</strong>
+        <div style="opacity:.9;font-size:13px;margin-top:4px">Upgrade your plan and take your listings to the next level.</div>
+      </div>
+      <a href="owner-dashboard.html#myProperties">View my listings →</a>
+    </div>
+  </div>
+
+  <script src="JS/plans.js"></script>
+  <script src="JS/owner-mobile-nav.js"></script>
+</body>
+</html>

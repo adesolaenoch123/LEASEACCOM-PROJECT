@@ -1,5 +1,5 @@
-/* LeaseHub rental application data helper — frontend only */
-window.LeaseHubApplicationStore = {
+/* LeaseAccom rental application data helper — frontend only */
+window.LeaseAccomApplicationProperty Page  = {
     key: "rentalApplications",
     all() {
         try { const v=JSON.parse(localStorage.getItem(this.key)||"[]"); return Array.isArray(v)?v:[]; }

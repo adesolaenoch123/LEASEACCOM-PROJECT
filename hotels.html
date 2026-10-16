@@ -3,26 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hotels &amp; Lodges — LeaseHub</title>
+<title>Hotels &amp; Lodges — LeaseAccom</title>
 <meta name="description" content="Explore hotels and lodges with room information, amenities, clear nightly pricing and a future-ready booking flow.">
 <link rel="stylesheet" href="CSS/style.css">
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 <body>
 <header class="navbar">
-<a href="index.html" class="logo"><img src="IMAGES/Lease Hub logo.png" alt="LeaseHub"></a>
+<a href="index.html" class="logo"><img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom"></a>
 <nav class="nav-links">
 <a href="properties.html">Rent</a><a href="shortlets.html">Shortlets</a><a href="hotels.html">Hotels &amp; Lodges</a><a href="student-housing.html">Student Housing</a><a href="commercial.html">Commercial</a>
 </nav>
 <div class="nav-actions"><a href="login.html" class="login-btn">Log in</a><a href="register.html" class="owner-btn">List a Property</a></div>
 <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false"></button>
 </header>
-<main class="leasehub-catalog-page">
-<section class="leasehub-catalog-hero">
+<main class="leaseaccom-catalog-page">
+<section class="leaseaccom-catalog-hero">
 <span class="section-label">HOTELS &amp; LODGES</span>
 <h1>Book a stay that fits your trip.</h1>
 <p>Explore hotels and lodges with room information, amenities, clear nightly pricing and a future-ready booking flow.</p>
-<div class="leasehub-search-panel">
+<div class="leaseaccom-search-panel">
 <input id="catalogSearch" type="search" placeholder="Search location, city or listing..." aria-label="Search listings">
 <select id="catalogType" aria-label="Listing type"><option value="all">All types</option><option value="Hotel">Hotel</option></select>
 <select id="catalogPrice" aria-label="Maximum price"><option value="0">Any price</option><option value="100000">Up to ₦100k/night</option><option value="200000">Up to ₦200k/night</option><option value="500000">Up to ₦500k/night</option></select>
@@ -30,30 +30,34 @@
 </div>
 </section>
 
-<div class="leasehub-filter-row">
+<div class="leaseaccom-filter-row">
 <label><input id="catalogVerified" type="checkbox"> Verified only</label>
 <select id="catalogSort" aria-label="Sort listings"><option value="recommended">Recommended</option><option value="low">Price: Low to High</option><option value="high">Price: High to Low</option><option value="newest">Newest</option></select>
-<button id="catalogClearBtn" type="button" class="leasehub-secondary-btn" style="padding:0 14px">Clear filters</button>
+<button id="catalogClearBtn" type="button" class="leaseaccom-secondary-btn" style="padding:0 14px">Clear filters</button>
 </div>
 <section>
-<div class="leasehub-catalog-heading"><div><span class="section-label">HOTELS &amp; LODGES</span><h2>Explore listings</h2><p id="catalogCount">Loading listings...</p></div></div>
+<div class="leaseaccom-catalog-heading"><div><span class="section-label">HOTELS &amp; LODGES</span><h2>Explore listings</h2><p id="catalogCount">Loading listings...</p></div></div>
 <div id="catalogGrid" class="property-grid"></div>
 </section>
-<section class="leasehub-steps"><div class="leasehub-step"><span>01</span><h3>Choose dates</h3><p>Search by city and stay dates.</p></div><div class="leasehub-step"><span>02</span><h3>Review rooms</h3><p>Compare room types and amenities.</p></div><div class="leasehub-step"><span>03</span><h3>Request</h3><p>Send a booking request from the listing.</p></div><div class="leasehub-step"><span>04</span><h3>Stay &amp; review</h3><p>Reviews can be connected after the backend is live.</p></div></section>
-<section id="catalogDetail" class="leasehub-catalog-detail" hidden style="margin-top:30px"></section>
+<section class="leaseaccom-steps"><div class="leaseaccom-step"><span>01</span><h3>Choose dates</h3><p>Search by city and stay dates.</p></div><div class="leaseaccom-step"><span>02</span><h3>Review rooms</h3><p>Compare room types and amenities.</p></div><div class="leaseaccom-step"><span>03</span><h3>Request</h3><p>Send a booking request from the listing.</p></div><div class="leaseaccom-step"><span>04</span><h3>Stay &amp; review</h3><p>Reviews can be connected after the backend is live.</p></div></section>
+<section id="catalogDetail" class="leaseaccom-catalog-detail" hidden style="margin-top:30px"></section>
 </main>
-<footer><div class="footer-bottom"><span>© 2026 LeaseHub</span><span>Find your place without unnecessary agent fees.</span></div></footer>
+<footer><div class="footer-bottom"><span>© 2026 LeaseAccom</span><span>Find your place without the unnecessary stress.</span></div></footer>
 <script src="JS/data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="JS/supabase-client.js"></script>
+<script src="JS/leaseaccom-data.js"></script>
 <script src="JS/app.js"></script>
-<script src="JS/leasehub-polish.js"></script>
+<script src="JS/leaseaccom-polish.js"></script>
+<script src="JS/leaseaccom-mobile-nav.js"></script>
 <script>
-window.LEASEHUB_CATALOG = {
+window.LEASEACCOM_CATALOG = {
  match: p => String(p.type||"").toLowerCase() === "hotel",
  viewLabel: "Hotel",
  actionLabel: "Request booking",
  actionMessage: "Hotel booking request recorded. Real room inventory and payment require the backend.",
  cardExtra: p => `<p style="margin:10px 0 0;color:#66706a;font-size:11px"><i class="bx bx-star"></i> ${p.rating||"New"} rating · ${p.accommodationType||"Room"}</p>`,
- detailExtra: p => `<div class="leasehub-detail-meta"><div><small>Room</small><strong>${p.accommodationType||"Room type"}</strong></div><div><small>Rating</small><strong>${p.rating||"New"}</strong></div><div><small>Amenities</small><strong>${(p.amenities||[]).slice(0,2).join(", ")||"Ask hotel"}</strong></div><div><small>Booking</small><strong>Backend-ready request</strong></div></div>`
+ detailExtra: p => `<div class="leaseaccom-detail-meta"><div><small>Room</small><strong>${p.accommodationType||"Room type"}</strong></div><div><small>Rating</small><strong>${p.rating||"New"}</strong></div><div><small>Amenities</small><strong>${(p.amenities||[]).slice(0,2).join(", ")||"Ask hotel"}</strong></div><div><small>Booking</small><strong>Backend-ready request</strong></div></div>`
 };
 </script>
 <script src="JS/catalog.js"></script>

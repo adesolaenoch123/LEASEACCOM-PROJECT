@@ -11,8 +11,8 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Messages — LeaseHub</title>
-<meta name="description" content="Chat with property owners through LeaseHub.">
+    <title>Messages — LeaseAccom</title>
+<meta name="description" content="Chat with property owners through LeaseAccom.">
 
     <link
         rel="stylesheet"
@@ -146,7 +146,7 @@
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            object-fit: cover;
+            object-fit: contain;
             background: #d8dedb;
         }
 
@@ -268,7 +268,7 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            object-fit: cover;
+            object-fit: contain;
             background: #dfe6e2;
             flex-shrink: 0;
         }
@@ -413,7 +413,7 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            object-fit: cover;
+            object-fit: contain;
             background: #dfe6e2;
         }
 
@@ -425,19 +425,12 @@
 
 
         .online-status {
-            color: var(--lh-green);
-            font-size: 12px;
-            margin-top: 4px;
+            display: none !important;
         }
 
 
         .online-dot {
-            width: 8px;
-            height: 8px;
-            background: #18a957;
-            display: inline-block;
-            border-radius: 50%;
-            margin-right: 5px;
+            display: none !important;
         }
 
 
@@ -525,7 +518,7 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            object-fit: cover;
+            object-fit: contain;
             flex-shrink: 0;
         }
 
@@ -702,7 +695,7 @@
         .profile-picture {
             width: 130px;
             height: 130px;
-            object-fit: cover;
+            object-fit: contain;
             border-radius: 50%;
             background: #dfe5e2;
             border: 5px solid white;
@@ -952,7 +945,7 @@
         .top-landlord[hidden] { display: none !important; }
         .top-landlord-avatar {
             width: 36px; height: 36px; border-radius: 50%;
-            object-fit: cover; background: rgba(255,255,255,.2);
+            object-fit: contain; background: rgba(255,255,255,.2);
             flex: 0 0 36px;
         }
         .top-landlord-meta { min-width: 0; }
@@ -1225,10 +1218,58 @@
         </style>
 
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
+
+<style id="la-msg-mobile-fix">
+/* mobile chat visible composer */
+@media (max-width: 820px) {
+  html, body { height: 100%; overflow: hidden; }
+  body.la-has-bottom-nav { padding-bottom: 0 !important; }
+  .messages-layout, .messages-container, .chat-shell {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .chat-area {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: calc(100dvh - 56px - 64px) !important; /* header + bottom nav */
+  }
+  .chat-header { flex: 0 0 auto !important; }
+  .chat-messages, .messages-list, #chatMessages {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px !important;
+  }
+  .message-input-area, .chat-input, .composer, form.message-form, .message-compose {
+    flex: 0 0 auto !important;
+    position: sticky !important;
+    bottom: 64px !important; /* above bottom nav */
+    background: #fff !important;
+    z-index: 20 !important;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important;
+    border-top: 1px solid #e9edef !important;
+  }
+  .la-bottom-nav {
+    z-index: 30 !important;
+  }
+  /* When in active chat, slightly shorter empty state */
+  .chat-empty {
+    padding: 24px 16px !important;
+    min-height: 0 !important;
+  }
+}
+</style>
+
 </head>
 
 
-<body data-leasehub-page="tenant-messages">
+<body data-leaseaccom-page="tenant-messages">
 
 
 <!-- =========================================
@@ -1237,7 +1278,7 @@
 
 <header class="messages-topbar">
 
-    <a href="index.html" class="messages-logo" aria-label="LeaseHub home">
+    <a href="index.html" class="messages-logo" aria-label="LeaseAccom home">
         <span class="messages-logo-text"><span class="lh-lease">Lease</span><span class="lh-hub">Hub</span></span>
     </a>
 
@@ -1246,7 +1287,7 @@
         <input type="text" id="tenantConversationSearch" placeholder="Search conversations...">
     </div>
 
-    <!-- Landlord (active chat) summary on the right — filled by JS when a chat is open -->
+    <!-- Landlord summary for the active conversation -->
     <div class="top-landlord" id="topLandlordStrip" hidden>
         <img id="topLandlordAvatar" class="top-landlord-avatar" src="" alt="">
         <div class="top-landlord-meta">
@@ -1283,7 +1324,7 @@
         <div class="sidebar-header">
 
             <small>
-                LEASEHUB
+                LEASEACCOM
             </small>
 
             <h1>
@@ -1368,7 +1409,7 @@
             </h2>
 
             <p>
-                Your LeaseHub conversations
+                Your LeaseAccom conversations
                 will appear here.
             </p>
 
@@ -1386,21 +1427,6 @@
             <!-- CHAT HEADER -->
 
             <header class="chat-header">
-
-                <div class="chat-header-row chat-header-primary">
-                    <button type="button" class="chat-person chat-owner-trigger" id="chatOwnerProfileBtn" aria-label="Open owner profile">
-                        <img id="tenantChatOwnerAvatar" class="chat-person-avatar" src="" alt="Property Owner">
-                        <div>
-                            <div id="chatPersonName" class="chat-person-name">Property Owner</div>
-                            <div class="online-status"><span class="online-dot"></span> Online</div>
-                            <div id="chatPropertyName" class="chat-property">Property</div>
-                        </div>
-                    </button>
-                    <div class="chat-header-actions chat-header-actions-desktop">
-                        <button type="button" class="chat-action" id="chatCallBtn" title="Call owner" aria-label="Call owner"><i class="bx bx-phone"></i></button>
-                        <button type="button" class="chat-action" id="chatVideoBtn" title="Start video call" aria-label="Start video call"><i class="bx bx-video"></i></button>
-                    </div>
-                </div>
 
                 <div class="chat-header-row chat-header-secondary">
                     <button type="button" class="chat-back-btn" id="chatBackBtn" aria-label="Back to conversations" title="Back">
@@ -1420,7 +1446,7 @@
 
             <div class="chat-protection">
 
-                <i class="bx bx-lock" aria-hidden="true"></i> Messages are protected by LeaseHub.
+                <i class="bx bx-lock" aria-hidden="true"></i> Messages are protected by LeaseAccom.
 
             </div>
 
@@ -1608,6 +1634,13 @@
 </main>
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="JS/supabase-client.js"></script>
+<script src="JS/leaseaccom-cloud.js"></script>
+<script src="JS/config.js"></script>
+<script src="JS/api-client.js"></script>
+<script src="JS/messages-api.js"></script>
+
 <script src="JS/data.js"></script>
 
 <script src="JS/app.js"></script>
@@ -1615,29 +1648,35 @@
 <script src="JS/messages.js"></script>
 
 
-<script src="JS/leasehub-polish.js"></script>
+<script src="JS/leaseaccom-polish.js"></script>
+<script src="JS/leaseaccom-mobile-nav.js"></script>
 
-<footer class="site-footer leasehub-standard-footer"><div class="footer-bottom"><span>© 2026 LeaseHub. All rights reserved.</span><span>Built for Nigeria</span></div></footer>
+<footer class="site-footer leaseaccom-standard-footer"><div class="footer-bottom"><span>© 2026 LeaseAccom. All rights reserved.</span><span>Built for Nigeria</span></div></footer>
 
 
 <script>
 (function () {
   var shell = document.querySelector(".messages-shell");
   var back = document.getElementById("chatBackBtn");
-  var strip = document.getElementById("topLandlordStrip");
+    var strip = document.getElementById("topLandlordStrip");
 
-  function syncLandlordStrip() {
-    if (!strip) return;
-    var name = document.getElementById("chatPersonName");
-    var av = document.getElementById("tenantChatOwnerAvatar");
-    var tn = document.getElementById("topLandlordName");
-    var ta = document.getElementById("topLandlordAvatar");
-    if (name && tn) tn.textContent = name.textContent.trim() || "Property Owner";
-    if (av && ta && av.src) { ta.src = av.src; ta.style.display = ""; }
-    var open = shell && shell.classList.contains("chat-open");
-    if (open) strip.removeAttribute("hidden");
-    else strip.setAttribute("hidden", "");
-  }
+    function syncLandlordStrip() {
+        if (!strip) return;
+        var activeId = localStorage.getItem("activeConversationId");
+        var conversations = [];
+        try {
+            conversations = JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]");
+        } catch (err) {}
+        var conversation = conversations.find(function (item) {
+            return String(item.id) === String(activeId);
+        });
+        var name = document.getElementById("topLandlordName");
+        var avatar = document.getElementById("topLandlordAvatar");
+        if (name) name.textContent = conversation && conversation.ownerName || "Property Owner";
+        if (avatar) avatar.src = conversation && conversation.ownerAvatar || "";
+        if (shell && shell.classList.contains("chat-open")) strip.removeAttribute("hidden");
+        else strip.setAttribute("hidden", "");
+    }
 
   function openChat() {
     if (shell) shell.classList.add("chat-open");
@@ -1648,7 +1687,7 @@
     syncLandlordStrip();
     try {
       if (window.history && window.history.pushState) {
-        window.history.pushState({ leasehubChat: true }, "", window.location.href);
+        window.history.pushState({ leaseaccomChat: true }, "", window.location.href);
       }
     } catch (err) {}
   }
@@ -1662,7 +1701,7 @@
     document.querySelectorAll(".conversation-item.active").forEach(function (el) {
       el.classList.remove("active");
     });
-    syncLandlordStrip();
+        syncLandlordStrip();
   }
 
   if (back) {
@@ -1670,14 +1709,12 @@
       e.preventDefault();
       e.stopPropagation();
       closeChat();
-      // Stay on messages page — only leave the conversation view
       if (window.history && window.history.replaceState) {
         try { window.history.replaceState({}, "", "messages.html"); } catch (err) {}
       }
     });
   }
 
-  // Hardware / browser back on mobile returns to conversation list first
   window.addEventListener("popstate", function () {
     if (shell && shell.classList.contains("chat-open")) {
       closeChat();
@@ -1687,8 +1724,8 @@
   document.addEventListener("click", function (e) {
     if (e.target.closest(".conversation-item, [data-conversation-id], .conversation-list button, .conversation-list a, .conversation-list .conversation")) {
       openChat();
-      setTimeout(syncLandlordStrip, 50);
-      setTimeout(syncLandlordStrip, 300);
+            setTimeout(syncLandlordStrip, 50);
+            setTimeout(syncLandlordStrip, 300);
     }
   });
 
@@ -1696,12 +1733,12 @@
   if (obsTarget && window.MutationObserver) {
     new MutationObserver(function () {
       if (obsTarget.style.display !== "none" && !obsTarget.hidden) openChat();
-      syncLandlordStrip();
-    }).observe(obsTarget, { attributes: true, attributeFilter: ["style", "hidden", "class"], subtree: true, childList: true });
+            syncLandlordStrip();
+        }).observe(obsTarget, { attributes: true, attributeFilter: ["style", "hidden", "class"], subtree: true, childList: true });
   }
 
-  // If chat content is visible on load
   if (obsTarget && !obsTarget.hidden && getComputedStyle(obsTarget).display !== "none") openChat();
+    syncLandlordStrip();
 })();
 </script>
 

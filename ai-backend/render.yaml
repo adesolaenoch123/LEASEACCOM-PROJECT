@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: leasehub-api
+    name: leaseaccom-api
     runtime: python
     plan: free
     rootDir: ai-backend
@@ -13,7 +13,7 @@ services:
       - key: ALLOW_DEMO_AUTH
         value: "false"
       - key: APP_NAME
-        value: LeaseHub API
+        value: leaseaccom API
       - key: CORS_ORIGINS
         sync: false
       - key: SUPABASE_URL

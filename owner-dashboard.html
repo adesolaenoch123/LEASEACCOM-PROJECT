@@ -4,22 +4,21 @@
   <script>try{document.documentElement.classList.add("lh-preload-lock")}catch(e){}</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Owner Lounge — LeaseHub</title>
-  <meta name="description" content="Manage LeaseHub property listings, viewing requests, rental applications and owner activity.">
+  <title>Owner Lounge — LeaseAccom</title>
+  <meta name="description" content="Manage LeaseAccom property listings, viewing requests, rental applications and owner activity.">
   <link rel="stylesheet" href="CSS/style.css">
-<link rel="stylesheet" href="CSS/plans.css">
   <link rel="stylesheet" href="CSS/notifications.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
-<body class="owner-lounge-body" data-owner-page="dashboard">
+<body data-auth-gate="owner" class="owner-lounge-body" data-owner-page="dashboard">
 
 <div class="owner-lounge">
   <aside class="owner-sidebar" id="ownerSidebar">
     <div class="owner-sidebar-top">
       <a href="index.html" class="owner-sidebar-brand">
-        <img src="IMAGES/Lease Hub logo.png" alt="LeaseHub">
+        <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom">
         <div>
-          <strong>LeaseHub</strong>
+          <strong>LeaseAccom</strong>
           <span>Owner Lounge</span>
         </div>
       </a>
@@ -33,8 +32,8 @@
       <a href="owner-dashboard.html#myProperties" class="owner-nav-item"><i class="bx bx-building-house"></i><span>Properties</span></a>
       <a href="owner-dashboard.html#ownerViewings" class="owner-nav-item"><i class="bx bx-calendar"></i><span>Viewings</span></a>
       <a href="owner-dashboard.html#ownerApplications" class="owner-nav-item"><i class="bx bx-file"></i><span>Applications</span></a>
-      <a href="owner-messages.html" class="owner-nav-item"><i class="bx bx-message-dots"></i><span>Messages</span></a>
-      <a href="owner-dashboard.html#ownerStore" class="owner-nav-item"><i class="bx bx-store"></i><span>My Store</span></a>
+      <a href="owner-messages.html" class="owner-nav-item"><i class="bx bx-message-dots" aria-hidden="true"></i><span>Messages</span></a>
+      <a href="owner-dashboard.html#ownerStore" class="owner-nav-item"><i class="bx bx-buildings"></i><span>Your storefront</span></a>
       <a href="owner-payments.html" class="owner-nav-item"><i class="bx bx-wallet"></i><span>Payments</span></a>
       <a href="owner-dashboard.html#ownerPlan" class="owner-nav-item"><i class="bx bx-diamond"></i><span>Plan</span></a>
     </nav>
@@ -58,8 +57,8 @@
   <div class="owner-main">
     <header class="owner-topbar">
       <button type="button" class="owner-menu-toggle" id="ownerMenuToggle" aria-label="Open menu"><i class="bx bx-menu"></i></button>
-      <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseHub">
-        <span class="lh-lease">Lease</span><span class="lh-hub">Hub</span>
+      <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseAccom">
+        <span class="lh-lease">Lease</span><span class="lh-hub">Accom</span>
       </a>
       <div class="owner-topbar-title owner-topbar-title--desktop">
         <span class="owner-eyebrow">OWNER LOUNGE</span>
@@ -122,7 +121,7 @@
             <a href="#myProperties" class="owner-action-tile"><i class="bx bx-building-house"></i><span>Properties</span></a>
             <a href="#ownerViewings" class="owner-action-tile"><i class="bx bx-calendar-check"></i><span>Viewings</span></a>
             <a href="#ownerApplications" class="owner-action-tile"><i class="bx bx-file"></i><span>Applications</span></a>
-            <a href="owner-messages.html" class="owner-action-tile"><i class="bx bx-message-dots"></i><span>Messages</span></a>
+            <a href="owner-messages.html" class="owner-action-tile"><i class="bx bx-message-dots" aria-hidden="true"></i><span>Messages</span></a>
             <a href="properties.html" class="owner-action-tile"><i class="bx bx-store-alt"></i><span>Storefront</span></a>
           </div>
         </article>
@@ -152,6 +151,7 @@
           <strong id="ownerViewCount">0</strong>
           <span>VIEWS</span>
           <small>Property views</small>
+          <strong id="ownerTotalViews">0</strong>
         </article>
       </section>
 
@@ -182,7 +182,7 @@
 
       <section class="owner-panel owner-store-panel" id="ownerStore">
         <div class="owner-panel-head">
-          <span>MY STORE</span>
+          <span>Store</span>
           <small>Private management only. Tenants never see edit controls on the public storefront.</small>
         </div>
         <div class="owner-store-layout">
@@ -206,7 +206,7 @@
               </div>
             </label>
             <label class="owner-field">
-              <span>BUSINESS / STORE NAME *</span>
+              <span>Business / store name *</span>
               <input type="text" id="ownerStoreNameInput" placeholder="e.g. Green Park Homes" maxlength="60">
             </label>
             <label class="owner-field">
@@ -223,16 +223,16 @@
             </div>
           </div>
           <div class="owner-store-preview-wrap">
-            <span class="owner-eyebrow">LIVE STOREFRONT</span>
+            <span class="owner-eyebrow">Live storefront</span>
             <h3>How tenants see your store</h3>
             <p class="owner-muted">Updates as you edit. Properties are your active listings.</p>
             <div class="owner-phone-preview">
               <div class="owner-phone-banner" id="liveBannerText">More Than Shelter — It&apos;s Home.</div>
               <div class="owner-phone-body">
                 <div class="owner-phone-logo" id="liveLogoText">LH</div>
-                <strong id="liveStoreName">LeaseHub Owner</strong>
-                <p id="liveStoreTagline">Explore this store</p>
-                <div class="owner-phone-goal" id="liveStoreGoal">List quality homes</div>
+                <strong id="liveOwnerName">LeaseAccom Owner</strong>
+                <p id="livestoreTagline">Explore this storefront</p>
+                <div class="owner-phone-goal" id="livestoreGoal">List quality homes</div>
                 <div class="owner-phone-actions">
                   <span class="owner-phone-chip">Save store</span>
                   <span class="owner-phone-chip" id="liveProductChip">0 properties</span>
@@ -294,69 +294,63 @@
         <div class="owner-panel-head">
           <div>
             <span>PLAN</span>
-            
-      <section class="owner-grid-2" id="ownerPlanFeatures">
-        <article class="owner-panel" id="ownerAnalyticsPanel" data-plan-feature="analytics">
-          <div class="owner-panel-head"><span>ANALYTICS</span></div>
-          <p class="owner-muted">Views, saves and engagement trends for your listings.</p>
-          <p><strong id="ownerAnalyticsHint">Available on Standard+</strong></p>
-        </article>
-        <article class="owner-panel" id="ownerViewerTracking" data-plan-feature="viewerTracking">
-          <div class="owner-panel-head"><span>VIEWER TRACKING</span></div>
-          <p class="owner-muted">See who viewed your listings (Premium).</p>
-        </article>
-      </section>
-
-<h3 class="owner-panel-title">Subscription</h3>
+            <h3 class="owner-panel-title">Subscription</h3>
           </div>
         </div>
         <div class="owner-plan-card">
-          <!-- filled by plans.js / owner-lounge -->
-
           <div>
             <strong>Free</strong>
             <p class="owner-muted">List properties, receive viewings and applications. Premium payout tools can be added later.</p>
           </div>
           <button type="button" class="owner-ghost-btn" id="ownerManagePlanBtn">Manage</button>
         </div>
+
+        <div class="owner-tour-layout">
+          <video class="owner-featured-video" src="hero-banner.mp4" controls muted playsinline preload="metadata" aria-label="Owner featured video"></video>
+          <div id="ownerPlanOptions" class="owner-plan-options" aria-live="polite"></div>
+        </div>
+        <div id="ownerPlanNotice" class="owner-plan-notice" aria-live="polite"></div>
       </section>
     </main>
   </div>
 </div>
 
+<nav class="owner-bottom-nav" aria-label="Owner dashboard navigation">
+  <a href="owner-dashboard.html" class="is-active" aria-current="page">
+    <i class="bx bx-grid-alt" aria-hidden="true"></i>
+    <span>Dashboard</span>
+  </a>
+  <a href="owner-dashboard.html#myProperties">
+    <i class="bx bx-building-house" aria-hidden="true"></i>
+    <span>Properties</span>
+  </a>
+  <a href="owner-messages.html">
+    <i class="bx bx-message-dots" aria-hidden="true"></i>
+    <span>Messages</span>
+  </a>
+  <a href="owner-dashboard.html#ownerStore">
+    <i class="bx bx-user" aria-hidden="true"></i>
+    <span>Profile</span>
+  </a>
+</nav>
 
-<script id="leasehub-auth-gate">
-(function () {
-  try {
-    var raw = localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("leaseHubCurrentUser") || localStorage.getItem("currentUser");
-    var user = raw ? JSON.parse(raw) : null;
-    if (!user) {
-      window.location.replace("login.html");
-      return;
-    }
-    var type = String(user.accountType || "").trim().toLowerCase();
-    var isOwner = type === "owner" || type === "landlord" || type.indexOf("owner") >= 0 || type.indexOf("business") >= 0;
-    if (!isOwner) {
-      // Wrong dashboard for this account — send to tenant, not back to login (prevents loop)
-      window.location.replace("tenant-dashboard.html");
-    }
-  } catch (e) {
-    window.location.replace("login.html");
-  }
-})();
-</script>
+<script src="JS/auth-gate.js" data-gate="owner" id="leaseaccom-auth-gate"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="JS/supabase-client.js"></script>
-<script src="JS/plans.js"></script>
+<script src="JS/leaseaccom-cloud.js"></script>
+<script src="JS/leaseaccom-data.js"></script>
 <script src="JS/owner-shell.js"></script>
 <script src="JS/data.js"></script>
-<script src="JS/leasehub-status.js"></script>
+<script src="JS/leaseaccom-status.js"></script>
 <script src="JS/app.js"></script>
 <script src="JS/config.js"></script>
 <script src="JS/api-client.js"></script>
+<script src="JS/plans.js"></script>
+<script src="JS/owner-cloud-properties.js"></script>
 <script src="JS/owner-viewings.js"></script>
 <script src="JS/applications-ui.js"></script>
-<script src="JS/leasehub-polish.js"></script>
+<script src="JS/leaseaccom-polish.js"></script>
 <script src="JS/owner-lounge.js"></script>
+<script src="JS/owner-mobile-nav.js"></script>
 </body>
 </html>

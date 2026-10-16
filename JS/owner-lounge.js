@@ -1,5 +1,5 @@
 (function () {
-  const STORE_KEY = "leasehub_owner_store_v1";
+  const store_KEY = "leaseaccom_owner_store_v1";
   const tips = [
     {
       title: "Sharp property photos",
@@ -15,19 +15,19 @@
     }
   ];
 
-  function loadStore() {
+  function loadstore() {
     try {
-      return JSON.parse(localStorage.getItem(STORE_KEY) || "{}") || {};
+      return JSON.parse(localStorage.getItem(store_KEY) || "{}") || {};
     } catch {
       return {};
     }
   }
 
-  function saveStore(data) {
-    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  function savestore(data) {
+    localStorage.setItem(store_KEY, JSON.stringify(data));
   }
 
-  function applyStoreToUI(data) {
+  function applystoreToUI(data) {
     const name = data.name || "";
     const tagline = data.tagline || "";
     const goal = data.goal || "";
@@ -41,16 +41,16 @@
     if (taglineInput && !taglineInput.value) taglineInput.value = tagline;
     if (goalInput && !goalInput.value) goalInput.value = goal;
 
-    const liveName = document.getElementById("liveStoreName");
-    const liveTagline = document.getElementById("liveStoreTagline");
-    const liveGoal = document.getElementById("liveStoreGoal");
+    const liveName = document.getElementById("liveOwnerName");
+    const liveTagline = document.getElementById("livestoreTagline");
+    const liveGoal = document.getElementById("livestoreGoal");
     const liveBanner = document.getElementById("liveBannerText");
     const liveLogo = document.getElementById("liveLogoText");
     const bannerPreview = document.getElementById("ownerBannerPreview");
     const logoPreview = document.getElementById("ownerLogoPreview");
     const storeTitle = document.getElementById("ownerStoreTitle");
 
-    if (liveName) liveName.textContent = nameInput?.value || name || "LeaseHub Owner";
+    if (liveName) liveName.textContent = nameInput?.value || name || "LeaseAccom Owner";
     if (liveTagline) liveTagline.textContent = taglineInput?.value || tagline || "Explore this store";
     if (liveGoal) liveGoal.textContent = goalInput?.value || goal || "List quality homes";
     if (storeTitle && (nameInput?.value || name)) storeTitle.textContent = nameInput?.value || name;
@@ -75,11 +75,11 @@
   }
 
   function syncLiveFromInputs() {
-    const data = loadStore();
+    const data = loadstore();
     data.name = document.getElementById("ownerStoreNameInput")?.value || data.name || "";
     data.tagline = document.getElementById("ownerStoreTaglineInput")?.value || data.tagline || "";
     data.goal = document.getElementById("ownerStoreGoalInput")?.value || data.goal || "";
-    applyStoreToUI(data);
+    applystoreToUI(data);
   }
 
   function readFileAsDataURL(file) {
@@ -111,9 +111,56 @@
     if (text) text.textContent = tip.text;
   }
 
-  function setupStore() {
-    const data = loadStore();
-    applyStoreToUI(data);
+  function ensureOwnerPlanOptions() {
+    const optionsHost = document.getElementById("ownerPlanOptions");
+    if (!optionsHost) return;
+    if (optionsHost.querySelector(".owner-plan-option")) return;
+
+    const planCards = [
+      { name: "Basic", price: "₦5,000", summary: "For growing portfolios", accent: "" },
+      { name: "Standard", price: "₦10,000", summary: "Most popular for active owners", accent: "is-popular" },
+      { name: "Premium", price: "₦20,000", summary: "Unlimited growth and visibility", accent: "" }
+    ];
+
+    optionsHost.innerHTML = planCards.map((plan) => `
+      <article class="owner-plan-option ${plan.accent}">
+        <div class="owner-plan-option-head">
+          <span>${plan.name}</span>
+          <strong>${plan.price}</strong>
+        </div>
+        <p>${plan.summary}</p>
+        <button type="button" class="owner-plan-button" data-plan-name="${plan.name}">Subscribe now</button>
+      </article>
+    `).join("");
+
+    const notice = document.getElementById("ownerPlanNotice");
+    optionsHost.querySelectorAll(".owner-plan-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (notice) {
+          notice.textContent = "Checkout is not connected yet. The demo plan selection is saved locally for now.";
+        }
+      });
+    });
+  }
+
+  function ensureFeaturedVideo() {
+    if (document.querySelector(".owner-featured-video")) return;
+    const host = document.querySelector("#ownerPlan") || document.querySelector("#ownerPlanOptions");
+    if (!host) return;
+    const video = document.createElement("video");
+    video.className = "owner-featured-video";
+    video.src = "hero-banner.mp4";
+    video.controls = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.setAttribute("aria-label", "Owner featured video");
+    host.insertBefore(video, host.firstChild);
+  }
+
+  function setupstore() {
+    const data = loadstore();
+    applystoreToUI(data);
 
     ["ownerStoreNameInput", "ownerStoreTaglineInput", "ownerStoreGoalInput"].forEach((id) => {
       document.getElementById(id)?.addEventListener("input", syncLiveFromInputs);
@@ -130,30 +177,30 @@
       const file = event.target.files?.[0];
       if (!file) return;
       const url = await readFileAsDataURL(file);
-      const stored = loadStore();
+      const stored = loadstore();
       stored.banner = url;
-      saveStore(stored);
-      applyStoreToUI(stored);
+      savestore(stored);
+      applystoreToUI(stored);
     });
 
     document.getElementById("ownerLogoInput")?.addEventListener("change", async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
       const url = await readFileAsDataURL(file);
-      const stored = loadStore();
+      const stored = loadstore();
       stored.logo = url;
-      saveStore(stored);
-      applyStoreToUI(stored);
+      savestore(stored);
+      applystoreToUI(stored);
     });
 
     document.getElementById("ownerSaveStoreBtn")?.addEventListener("click", () => {
-      const stored = loadStore();
+      const stored = loadstore();
       stored.name = document.getElementById("ownerStoreNameInput")?.value?.trim() || "";
       stored.tagline = document.getElementById("ownerStoreTaglineInput")?.value?.trim() || "";
       stored.goal = document.getElementById("ownerStoreGoalInput")?.value?.trim() || "";
-      saveStore(stored);
-      applyStoreToUI(stored);
-      alert("Store appearance saved on this device.");
+      savestore(stored);
+      applystoreToUI(stored);
+      alert("storeappearance saved on this device.");
     });
 
     document.getElementById("ownerManagePlanBtn")?.addEventListener("click", () => {
@@ -165,7 +212,7 @@
     });
   }
 
-  function syncCountsToStorefront() {
+  function syncCountsTostorefront() {
     const count = document.getElementById("ownerListingCount")?.textContent || "0";
     const chip = document.getElementById("liveProductChip");
     const label = document.getElementById("ownerStoreProductCount");
@@ -181,7 +228,7 @@
 
   function getOwnerVerificationStatus() {
     try {
-      const raw = localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("leaseHubCurrentUser") || localStorage.getItem("currentUser");
+      const raw = localStorage.getItem("leaseaccomCurrentUser") || localStorage.getItem("leaseaccomCurrentUser") || localStorage.getItem("currentUser");
       const user = raw ? JSON.parse(raw) : null;
       if (!user) return "unverified";
       return String(user.verificationStatus || user.ownerVerificationStatus || "unverified").toLowerCase();
@@ -202,11 +249,11 @@
     document.body.classList.add("owner-needs-verify");
 
     let title = "Verify your owner account";
-    let text = "You must be verified by LeaseHub before your listings can go Live on the marketplace. Complete verification to build trust with tenants.";
+    let text = "You must be verified by LeaseAccom before your listings can go Live on the marketplace. Complete verification to build trust with tenants.";
     let cta = "Get verified";
     if (status === "pending") {
       title = "Verification under review";
-      text = "We received your details. Your listings stay Pending until LeaseHub approves your account. You will be able to go Live after approval.";
+      text = "We received your details. Your listings stay Pending until LeaseAccom approves your account. You will be able to go Live after approval.";
       cta = "View verification status";
     }
 
@@ -233,10 +280,10 @@
 
     document.getElementById("ownerVerifyDismiss")?.addEventListener("click", () => {
       document.getElementById("ownerVerifyBanner")?.classList.add("is-dismissed");
-      try { sessionStorage.setItem("leasehub_verify_banner_dismissed", "1"); } catch (e) {}
+      try { sessionStorage.setItem("leaseaccom_verify_banner_dismissed", "1"); } catch (e) {}
     });
     try {
-      if (sessionStorage.getItem("leasehub_verify_banner_dismissed") === "1") {
+      if (sessionStorage.getItem("leaseaccom_verify_banner_dismissed") === "1") {
         document.getElementById("ownerVerifyBanner")?.classList.add("is-dismissed");
       }
     } catch (e) {}
@@ -246,27 +293,29 @@
     if (!document.body.classList.contains("owner-lounge-body")) return;
     setupSidebar();
     setupTips();
-    setupStore();
+    ensureFeaturedVideo();
+    ensureOwnerPlanOptions();
+    setupstore();
     setupVerificationPrompt();
     // Wait a tick for app.js owner dashboard render
-    window.setTimeout(syncCountsToStorefront, 200);
-    window.setTimeout(syncCountsToStorefront, 800);
+    window.setTimeout(syncCountsTostorefront, 200);
+    window.setTimeout(syncCountsTostorefront, 800);
   });
 })();
 
 
 /* ===== Subscription plan UI ===== */
 function refreshOwnerPlanUI() {
-  if (!window.LeaseHubPlans) return;
+  if (!window.LeaseAccomPlans) return;
   let user = null;
   try {
-    user = JSON.parse(localStorage.getItem("leasehubCurrentUser") || "null");
+    user = JSON.parse(localStorage.getItem("leaseaccomCurrentUser") || "null");
   } catch (e) {}
   if (!user) return;
-  window.LeaseHubPlans.ensureUserPlan(user);
-  const plan = window.LeaseHubPlans.getCurrentPlan(user);
-  const limits = window.LeaseHubPlans.getPlanLimits(user);
-  const used = window.LeaseHubPlans.countOwnerUnits(user);
+  window.LeaseAccomPlans.ensureUserPlan(user);
+  const plan = window.LeaseAccomPlans.getCurrentPlan(user);
+  const limits = window.LeaseAccomPlans.getPlanLimits(user);
+  const used = window.LeaseAccomPlans.countOwnerUnits(user);
 
   const pill = document.getElementById("ownerPlanPill");
   if (pill) {
@@ -287,9 +336,9 @@ function refreshOwnerPlanUI() {
   if (box) {
     box.innerHTML = `
       <p><strong>${plan.name}</strong> · ${plan.priceLabel}${plan.billing === "month" ? "/mo" : ""}</p>
-      <p class="owner-muted">${used} / ${limits.maxUnits} units used</p>
+      <p class="owner-muted">${used} / ${limits.maxUnits === Infinity ? "∞" : limits.maxUnits} units used</p>
       <p class="owner-muted">${plan.blurb}</p>
-      <div class="owner-plan-meter"><span style="width:${Math.min(100, (used / limits.maxUnits) * 100)}%"></span></div>
+      <div class="owner-plan-meter"><span style="width:${Math.min(100, (limits.maxUnits === Infinity ? 5 : (used / limits.maxUnits) * 100))}%"></span></div>
       <a class="owner-btn owner-btn-small" href="owner-payments.html#plans">Manage plan</a>
     `;
   }
@@ -297,7 +346,7 @@ function refreshOwnerPlanUI() {
   // Gate premium / standard features
   document.querySelectorAll("[data-plan-feature]").forEach((el) => {
     const key = el.getAttribute("data-plan-feature");
-    const ok = window.LeaseHubPlans.canAccessFeature(key, user);
+    const ok = window.LeaseAccomPlans.canAccessFeature(key, user);
     el.classList.toggle("is-plan-locked", !ok);
     if (!ok) {
       el.setAttribute("aria-disabled", "true");
@@ -319,6 +368,81 @@ function refreshOwnerPlanUI() {
       analytics.innerHTML = `<div class="plan-lock-msg"><p>Analytics unlock on <strong>Standard</strong> and <strong>Premium</strong>.</p><a href="owner-payments.html#plans">Upgrade</a></div>`;
     }
   }
+
+  // Live engagement chart from property views
+  (function renderOwnerViewsChart() {
+    const chart = document.getElementById("ownerEngagementChart");
+    if (!chart) return;
+    let viewsMap = {};
+    try { viewsMap = JSON.parse(localStorage.getItem("leaseaccomPropertyViews") || "{}") || {}; } catch (e) {}
+    let props = [];
+    try {
+      props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leaseaccomProperties") || "[]") || [];
+    } catch (e) {}
+    const user = (function () {
+      try {
+        return JSON.parse(
+          localStorage.getItem("leaseaccomCurrentUser") ||
+            localStorage.getItem("leaseaccomCurrentUser") ||
+            "null"
+        );
+      } catch (e) { return null; }
+    })();
+    const ownerId = user && user.id != null ? String(user.id) : "";
+    const mine = (Array.isArray(props) ? props : []).filter(function (p) {
+      return ownerId && String(p.ownerId) === ownerId;
+    });
+    // Build bars: last 7 days totals across owner properties, or per-property totals
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(d.toISOString().slice(0, 10));
+    }
+    const dayTotals = days.map(function (day) {
+      let sum = 0;
+      mine.forEach(function (p) {
+        const rec = viewsMap[String(p.id)];
+        if (rec && rec.byDay && rec.byDay[day]) sum += Number(rec.byDay[day]) || 0;
+      });
+      return sum;
+    });
+    const max = Math.max.apply(null, dayTotals.concat([0]));
+    const totalViews = mine.reduce(function (s, p) {
+      const rec = viewsMap[String(p.id)];
+      return s + (rec ? Number(rec.total) || 0 : Number(p.views) || 0);
+    }, 0);
+    const viewsLabel = document.querySelector(".owner-stat small");
+    // Prefer specific views stat if present
+    const viewStat = document.getElementById("ownerTotalViews");
+    if (viewStat) viewStat.textContent = String(totalViews);
+
+    if (!mine.length || (max === 0 && totalViews === 0)) {
+      chart.innerHTML = '<div class="owner-chart-empty">No views yet. When tenants open your listings, the graph fills in here.</div>';
+      return;
+    }
+    if (max === 0) {
+      // show per-property bars instead
+      const rows = mine.slice(0, 7).map(function (p) {
+        const rec = viewsMap[String(p.id)];
+        const v = rec ? Number(rec.total) || 0 : Number(p.views) || 0;
+        return { label: (p.title || "Listing").slice(0, 10), v: v };
+      });
+      const m2 = Math.max.apply(null, rows.map(function (r) { return r.v; }).concat([1]));
+      chart.innerHTML = rows.map(function (r) {
+        const h = Math.max(6, Math.round((r.v / m2) * 120));
+        return '<div class="owner-chart-bar"><div class="bar" style="height:' + h + 'px"></div><span>' + r.label + ' · ' + r.v + '</span></div>';
+      }).join("");
+      return;
+    }
+    chart.innerHTML = days.map(function (day, i) {
+      const v = dayTotals[i];
+      const h = Math.max(6, Math.round((v / max) * 120));
+      const label = day.slice(5); // MM-DD
+      return '<div class="owner-chart-bar"><div class="bar" style="height:' + h + 'px" title="' + v + ' views"></div><span>' + label + '</span></div>';
+    }).join("");
+  })();
+
   const tracking = document.getElementById("ownerViewerTracking");
   if (tracking) {
     const ok = limits.features.viewerTracking;

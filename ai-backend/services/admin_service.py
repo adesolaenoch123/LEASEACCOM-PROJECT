@@ -8,7 +8,7 @@ from config import settings
 
 
 class AdminService:
-    """Admin operations for LeaseHub dashboards and moderation flows."""
+    """Admin operations for leaseaccom dashboards and moderation flows."""
 
     def __init__(self) -> None:
         self.client: Optional[Client] = None

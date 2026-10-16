@@ -1,5 +1,6 @@
+/* Phase B: Approve → listingStatus live + verification approved. Reject sets rejected. */
 (function () {
-  const KEY = "leasehubProperties";
+  const KEY = "leaseaccomProperties";
 
   function readProps() {
     try {

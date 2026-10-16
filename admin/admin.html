@@ -1,75 +1,416 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Staff Portal — LeaseHub</title>
-<meta name="description" content="LeaseHub private staff and administration portal.">
-<link rel="stylesheet" href="../CSS/style.css">
-<link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
-<link rel="stylesheet" href="admin.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeaseAccom Admin — Command Centre</title>
+  <meta name="description" content="LeaseAccom company operations: users, listings, payments, subscriptions and platform control.">
+  <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
+  <link rel="stylesheet" href="admin.css">
 </head>
-<body class="admin-body">
-<div class="admin-app" id="adminApp" hidden>
-<aside class="admin-sidebar" id="adminSidebar">
-  <a class="admin-brand" href="../index.html"><img src="../IMAGES/Lease Hub logo.png" alt="LeaseHub"><span>Staff Portal</span></a>
-  <nav class="admin-nav" aria-label="Admin navigation">
-    <a href="#overview" data-section="overview" class="active"><i class="bx bx-grid-alt"></i> Overview</a>
-    <a href="#users" data-section="users"><i class="bx bx-group"></i> Users</a>
-    <a href="#properties" data-section="properties"><i class="bx bx-building-house"></i> Properties</a>
-    <a href="#verification" data-section="verification"><i class="bx bx-badge-check"></i> Verification</a>
-    <a href="#applications" data-section="applications"><i class="bx bx-file"></i> Applications</a>
-    <a href="#viewings" data-section="viewings"><i class="bx bx-calendar"></i> Viewings</a>
-    <a href="#payments" data-section="payments"><i class="bx bx-wallet"></i> Payments</a>
-    <a href="#reports" data-section="reports"><i class="bx bx-flag"></i> Reports</a>
-    <a href="#reviews" data-section="reviews"><i class="bx bx-star"></i> Reviews</a>
-    <a href="#student" data-section="student"><i class="bx bx-book-open"></i> Student Housing</a>
-    <a href="#hotels" data-section="hotels"><i class="bx bx-hotel"></i> Hotel Admin</a>
-    <a href="#cms" data-section="cms"><i class="bx bx-edit-alt"></i> Content CMS</a>
-    <a href="#messages" data-section="messages"><i class="bx bx-message-rounded"></i> Messages</a>
-    <a href="#staff" data-section="staff"><i class="bx bx-user-plus"></i> Staff & Roles</a>
-    <a href="#audit" data-section="audit"><i class="bx bx-history"></i> Audit Log</a>
-    <a href="#settings" data-section="settings"><i class="bx bx-cog"></i> Settings</a>
-  </nav>
-  <div class="admin-sidebar-bottom">
-    <a href="../index.html"><i class="bx bx-home-alt-2"></i> Open LeaseHub</a>
-    <button type="button" id="adminLogout"><i class="bx bx-log-out"></i> Log out</button>
+<body>
+
+<!-- LOGIN -->
+<div class="admin-login-screen" id="adminLoginScreen">
+  <div class="admin-login-card">
+    <img src="../IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom" onerror="this.style.display='none'">
+    <span class="admin-eyebrow">Private staff area</span>
+    <h1>LeaseAccom Admin</h1>
+    <p id="adminLoginHint">Sign in with staff credentials. First visit: create Super Admin (min 8-character code).</p>
+    <div id="adminSetupBox" hidden>
+      <form id="adminSetupForm">
+        <label>Admin name<input id="setupName" type="text" placeholder="Your name" required></label>
+        <label>Admin email<input id="setupEmail" type="email" placeholder="admin@leaseaccom.ng" required></label>
+        <label>Create access code<input id="setupCode" type="password" minlength="8" required placeholder="Min 8 characters"></label>
+        <label>Confirm code<input id="setupCode2" type="password" minlength="8" required placeholder="Repeat code"></label>
+        <button class="admin-primary" type="submit">Create Super Admin</button>
+      </form>
+      <hr style="margin:16px 0;border:0;border-top:1px solid #e3e8e5">
+    </div>
+    <form id="adminLoginForm">
+      <label>Email<input id="adminEmail" type="email" required autocomplete="username" placeholder="staff@leaseaccom.ng"></label>
+      <label>Access code<input id="adminCode" type="password" required autocomplete="current-password"></label>
+      <button class="admin-primary" type="submit">Enter command centre</button>
+      <div id="adminLoginError" class="login-error" role="alert"></div>
+    </form>
+    <a class="admin-back" href="../index.html"><i class="bx bx-arrow-back"></i> Back to LeaseAccom</a>
   </div>
-</aside>
-<main class="admin-main">
-<header class="admin-topbar">
-  <button type="button" class="admin-mobile-menu" id="adminMobileMenu" aria-label="Open admin menu" aria-expanded="false"><i class="bx bx-menu"></i></button>
-  <div><span class="admin-eyebrow">LEASEHUB OPERATIONS</span><h1 id="adminSectionTitle">Overview</h1></div>
-  <div class="admin-user"><span class="admin-role-pill" id="adminRolePill">Super Admin</span><strong id="adminUserName">Admin</strong></div>
-</header>
-<div class="admin-content">
-<section class="admin-section active" id="section-overview" data-section-panel="overview">
-  <div class="admin-hero"><div><span class="admin-eyebrow">FOUNDER / OPERATIONS CONTROL</span><h2>Know what is happening across LeaseHub.</h2><p>Monitor listings, users, applications, viewings and payment progress from one place.</p></div><a class="admin-primary" href="../index.html"><i class="bx bx-home-alt-2"></i> Open public app</a></div>
-  <div class="admin-kpi-grid" id="overviewKpis"></div>
-  <div class="admin-grid-2">
-    <article class="admin-panel"><div class="panel-heading"><div><span class="admin-eyebrow">MARKETPLACE</span><h3>Activity snapshot</h3></div></div><div class="admin-bars" id="activityBars"></div></article>
-    <article class="admin-panel"><div class="panel-heading"><div><span class="admin-eyebrow">PAYMENT PROGRESS</span><h3>Transaction pipeline</h3></div></div><div id="paymentPipeline" class="pipeline"></div></article>
-  </div>
-  <div class="admin-grid-2"><article class="admin-panel"><div class="panel-heading"><h3>Recent activity</h3></div><div id="recentActivity" class="activity-list"></div></article><article class="admin-panel"><div class="panel-heading"><h3>Coverage</h3></div><div id="coverageList" class="coverage-list"></div></article></div>
-</section>
-<section class="admin-section" id="section-users" data-section-panel="users"><div class="section-intro"><span class="admin-eyebrow">PEOPLE</span><h2>Users</h2><p>Manage tenant, owner, hotel manager, commercial owner and staff accounts.</p></div><div class="admin-toolbar"><input id="userSearch" placeholder="Search name or email..."><select id="userType"><option value="all">All roles</option><option value="tenant">Tenants</option><option value="owner">Property owners</option><option value="hotel_manager">Hotel managers</option><option value="commercial_owner">Commercial owners</option><option value="admin">Admins</option></select></div><div id="usersTable" class="admin-table-wrap"></div></section>
-<section class="admin-section" id="section-properties" data-section-panel="properties"><div class="section-intro"><span class="admin-eyebrow">MARKETPLACE</span><h2>Properties</h2><p>Review and control every listing across the marketplace.</p></div><div class="admin-toolbar"><input id="propertySearch" placeholder="Search property, owner or location..."><select id="propertyStatus"><option value="all">All statuses</option><option value="pending">Pending</option><option value="approved">Verified</option><option value="rejected">Rejected</option><option value="suspended">Suspended</option><option value="hidden">Hidden</option></select></div><div id="propertiesTable" class="admin-table-wrap"></div></section>
-<section class="admin-section" id="section-verification" data-section-panel="verification"><div class="section-intro"><span class="admin-eyebrow">TRUST &amp; SAFETY</span><h2>Verification Center</h2><p>Move listings through review, approval, rejection or a request for more information.</p></div><div id="verificationQueue" class="admin-card-list"></div></section>
-<section class="admin-section" id="section-applications" data-section-panel="applications"><div class="section-intro"><span class="admin-eyebrow">RENTAL FLOW</span><h2>Applications</h2><p>Track submitted, reviewed, accepted and rejected applications.</p></div><div id="applicationsTable" class="admin-table-wrap"></div></section>
-<section class="admin-section" id="section-viewings" data-section-panel="viewings"><div class="section-intro"><span class="admin-eyebrow">SCHEDULING</span><h2>Viewing Requests</h2><p>Monitor property viewing activity.</p></div><div id="viewingsTable" class="admin-table-wrap"></div></section>
-<section class="admin-section" id="section-payments" data-section-panel="payments"><div class="section-intro"><span class="admin-eyebrow">FINANCE</span><h2>Payments</h2><p>Frontend payment records are shown when they exist. No real funds are processed by this demo.</p></div><div class="admin-kpi-grid" id="paymentKpis"></div><div id="paymentsTable" class="admin-table-wrap"></div></section>
-<section class="admin-section" id="section-reports" data-section-panel="reports"><div class="section-intro"><span class="admin-eyebrow">SAFETY</span><h2>Reports & Complaints</h2><p>Review user-submitted reports when connected to the future backend.</p></div><div id="reportsList" class="admin-card-list"></div></section>
-<section class="admin-section" id="section-reviews" data-section-panel="reviews"><div class="section-intro"><span class="admin-eyebrow">REPUTATION</span><h2>Review moderation</h2><p>Review reported, suspicious, moderated and removed feedback.</p></div><div id="reviewsTable" class="admin-table-wrap"></div></section>
-<section class="admin-section" id="section-student" data-section-panel="student"><div class="section-intro"><span class="admin-eyebrow">STUDENT HOUSING</span><h2>Student Housing Administration</h2><p>Manage universities, campuses, student listings, verification and reports.</p></div><div id="studentPanel" class="admin-card-list"></div></section>
-<section class="admin-section" id="section-hotels" data-section-panel="hotels"><div class="section-intro"><span class="admin-eyebrow">HOSPITALITY</span><h2>Hotel Administration</h2><p>Monitor hotels, lodges, rooms, booking activity and verification status.</p></div><div id="hotelsPanel" class="admin-card-list"></div></section>
-<section class="admin-section" id="section-cms" data-section-panel="cms"><div class="section-intro"><span class="admin-eyebrow">LEASEHUB CMS</span><h2>Website content</h2><p>Edit key homepage content and publish changes without touching source code.</p></div><div class="cms-layout"><form id="cmsForm" class="admin-panel cms-form"><h3>Homepage hero</h3><label>Hero title<input name="heroTitle" required></label><label>Hero subtitle<textarea name="heroSubtitle" rows="3"></textarea></label><label>Primary button<input name="heroButton"></label><label>Hero image URL<input name="heroImage" type="url" placeholder="https://..."></label><h3>Trust &amp; footer</h3><label>Trust message<textarea name="trustText" rows="3"></textarea></label><label>Footer text<textarea name="footerText" rows="2"></textarea></label><div class="cms-actions"><button type="submit" class="admin-primary"><i class="bx bx-cloud-upload"></i> Publish changes</button><button type="button" class="table-action" id="cmsSaveDraft">Save draft</button></div><p class="cms-note" id="cmsStatus" aria-live="polite"></p></form><div class="admin-panel"><div class="panel-heading"><div><span class="admin-eyebrow">PUBLISHED PREVIEW</span><h3>Homepage content</h3></div></div><div id="cmsPreview" class="cms-preview"></div><hr><div class="panel-heading"><h3>FAQs</h3><button type="button" class="table-action" id="addFaq">Add FAQ</button></div><div id="faqList" class="admin-card-list"></div><hr><div class="panel-heading"><h3>Promotions</h3><button type="button" class="table-action" id="addPromo">Add promotion</button></div><div id="promoList" class="admin-card-list"></div></div></div></section>
-<section class="admin-section" id="section-messages" data-section-panel="messages"><div class="section-intro"><span class="admin-eyebrow">SUPPORT</span><h2>Messages</h2><p>See conversation volume and recent conversations. Real-time staff support requires the backend.</p></div><div class="admin-kpi-grid" id="messageKpis"></div><div id="messageList" class="admin-card-list"></div></section>
-<section class="admin-section" id="section-staff" data-section-panel="staff"><div class="section-intro"><span class="admin-eyebrow">ACCESS CONTROL</span><h2>Staff & Roles</h2><p>Frontend role model for your team. Real enforcement belongs in backend authentication.</p></div><div id="staffList" class="role-grid"></div></section>
-<section class="admin-section" id="section-audit" data-section-panel="audit"><div class="section-intro"><span class="admin-eyebrow">ACCOUNTABILITY</span><h2>Audit Log</h2><p>Actions recorded by this frontend demo are kept locally.</p></div><div id="auditList" class="activity-list"></div></section>
-<section class="admin-section" id="section-settings" data-section-panel="settings"><div class="section-intro"><span class="admin-eyebrow">PLATFORM</span><h2>Settings</h2><p>Current frontend configuration and future backend controls.</p></div><div class="settings-grid"><article class="admin-panel"><h3>Brand</h3><p>LeaseHub · Nigeria-first property marketplace</p><p>Theme: green / black / white / restrained gold</p></article><article class="admin-panel"><h3>Backend readiness</h3><p>Planned entities: users, properties, images, viewings, applications, agreements, messages, reviews, payments, reports, notifications and audit logs.</p><span class="status-chip pending">Backend required for secure production access</span></article></div></section>
 </div>
-<footer class="admin-footer">© 2026 LeaseHub. All rights reserved. · Private staff portal.</footer>
-</main></div>
-<div class="admin-login-screen" id="adminLoginScreen"><div class="admin-login-card"><img src="../IMAGES/Lease Hub logo.png" alt="LeaseHub"><span class="admin-eyebrow">PRIVATE STAFF AREA</span><h1>LeaseHub Admin</h1><p>Sign in with an approved staff email and access code. Frontend access control is for demonstration only; secure production access requires a backend.</p><form id="adminLoginForm"><label>Email<input id="adminEmail" type="email" required autocomplete="username" placeholder="staff@leasehub.ng"></label><label>Access code<input id="adminCode" type="password" required autocomplete="current-password" placeholder="Enter access code"></label><button class="admin-primary" type="submit">Enter staff portal <i class="bx bx-arrow-right"></i></button><div id="adminLoginError" class="login-error" role="alert"></div></form><a href="../index.html" class="admin-back"><i class="bx bx-arrow-back"></i> Back to LeaseHub</a></div></div>
-<script src="../JS/data.js"></script><script src="admin.js"></script>
-</body></html>
+
+<!-- APP -->
+<div class="admin-app" id="adminApp">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <img src="../IMAGES/leaseaccom-logo.svg" alt="" onerror="this.remove()">
+      <div>
+        <strong>LeaseAccom</strong>
+        <small>Command Centre</small>
+      </div>
+    </div>
+    <nav class="admin-nav" id="adminNav">
+      <a href="#overview" data-section="overview" class="is-active"><i class="bx bx-home-alt"></i> Overview</a>
+      <a href="#users" data-section="users"><i class="bx bx-group"></i> Users</a>
+      <a href="#properties" data-section="properties"><i class="bx bx-buildings"></i> Properties</a>
+      <a href="#verification" data-section="verification"><i class="bx bx-badge-check"></i> Verification</a>
+      <a href="#viewings" data-section="viewings"><i class="bx bx-calendar"></i> Viewings &amp; Bookings</a>
+      <a href="#applications" data-section="applications"><i class="bx bx-file"></i> Applications</a>
+      <a href="#payments" data-section="payments"><i class="bx bx-credit-card"></i> Payments &amp; Finance</a>
+      <a href="#subscriptions" data-section="subscriptions"><i class="bx bx-diamond"></i> Subscriptions &amp; Plans</a>
+      <a href="#messages" data-section="messages"><i class="bx bx-message-dots"></i> Messages</a>
+      <a href="#reports" data-section="reports"><i class="bx bx-error-circle"></i> Reports &amp; Disputes</a>
+      <a href="#analytics" data-section="analytics"><i class="bx bx-bar-chart-alt-2"></i> Analytics</a>
+      <a href="#staff" data-section="staff"><i class="bx bx-shield-quarter"></i> Staff &amp; Roles</a>
+      <a href="#notifications" data-section="notifications"><i class="bx bx-bell"></i> Notifications</a>
+      <a href="#cms" data-section="cms"><i class="bx bx-news"></i> CMS &amp; Content</a>
+      <a href="#settings" data-section="settings"><i class="bx bx-cog"></i> Platform Settings</a>
+      <a href="#audit" data-section="audit"><i class="bx bx-history"></i> Audit Log</a>
+    </nav>
+    <div class="admin-sidebar-foot">
+      <span class="dot"></span> Platform operational
+      <div style="margin-top:6px;opacity:.8" id="sidebarRole">Super Admin</div>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <h1 id="topbarTitle">Overview</h1>
+      <div class="admin-topbar-actions">
+        <input class="admin-search" id="globalSearch" type="search" placeholder="Search users, listings, payments…">
+        <div class="admin-user-chip"><span id="adminRolePill">Super Admin</span> · <span id="adminUserName">Admin</span></div>
+        <button type="button" id="adminLogout">Log out</button>
+      </div>
+    </header>
+
+    <div class="admin-content">
+
+      <!-- OVERVIEW -->
+      <section class="admin-section is-active" id="section-overview" data-section-panel="overview">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Command centre</span>
+          <h2>Overview</h2>
+          <p>Live snapshot of LeaseAccom operations. Numbers update from platform records.</p>
+        </div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="charts-row">
+          <div class="panel">
+            <div class="panel-head"><h3>Traffic &amp; bookings (30 days)</h3></div>
+            <canvas id="chartTraffic" height="120"></canvas>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Revenue breakdown (₦)</h3></div>
+            <canvas id="chartRevenue" height="120"></canvas>
+          </div>
+        </div>
+        <div class="panel" style="margin-bottom:16px">
+          <h3>Property pipeline</h3>
+          <div class="pipeline" id="propertyPipeline"></div>
+        </div>
+        <div class="split-3">
+          <div class="panel">
+            <div class="panel-head"><h3>Payments snapshot</h3><button type="button" class="btn" data-go="payments">View all</button></div>
+            <div id="overviewPayments"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Subscriptions</h3><button type="button" class="btn" data-go="subscriptions">Plans</button></div>
+            <div id="overviewSubs"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Alerts &amp; activity</h3></div>
+            <div id="overviewAlerts"></div>
+          </div>
+        </div>
+        <div class="quick-actions">
+          <button type="button" class="btn-primary btn" data-go="verification">Review listings</button>
+          <button type="button" class="btn" data-go="payments">Investigate payment</button>
+          <button type="button" class="btn" data-go="staff">Invite staff</button>
+          <button type="button" class="btn-soft btn" id="btnExportOverview">Export report</button>
+        </div>
+      </section>
+
+      <!-- USERS -->
+      <section class="admin-section" id="section-users" data-section-panel="users">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Directory</span>
+          <h2>User management</h2>
+          <p>Registration counts, roles and account status. Passwords are never shown — Supabase stores only secure hashes. Use password reset for support.</p>
+        </div>
+        <div class="kpi-grid" id="userStatsGrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px"></div>
+        <div class="toolbar">
+          <input id="userSearch" type="search" placeholder="Search name or email">
+          <select id="userType"><option value="">All roles</option><option value="tenant">Tenant</option><option value="owner">Owner</option><option value="admin">Admin</option></select>
+          <select id="userStatus"><option value="">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option></select>
+        </div>
+        <div class="panel"><div id="usersTable"></div></div>
+      </section>
+
+      <!-- PROPERTIES -->
+      <section class="admin-section" id="section-properties" data-section-panel="properties">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Marketplace</span>
+          <h2>Property management</h2>
+          <p>Moderate listings. Only approved properties appear on the public marketplace.</p>
+        </div>
+        <div class="toolbar">
+          <input id="propertySearch" type="search" placeholder="Search title or city">
+          <select id="propertyStatus">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved / live</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="panel"><div id="propertiesTable"></div></div>
+      </section>
+
+      <!-- VERIFICATION -->
+      <section class="admin-section" id="section-verification" data-section-panel="verification">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Trust</span>
+          <h2>Verification queue</h2>
+          <p>Listings waiting for review. Approve to publish or reject with a reason.</p>
+        </div>
+        <div class="panel"><div id="verificationQueue"></div></div>
+      </section>
+
+      <!-- VIEWINGS -->
+      <section class="admin-section" id="section-viewings" data-section-panel="viewings">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Operations</span>
+          <h2>Viewings &amp; bookings</h2>
+          <p>Platform-wide viewing requests and status.</p>
+        </div>
+        <div class="panel"><div id="viewingsTable"></div></div>
+      </section>
+
+      <!-- APPLICATIONS -->
+      <section class="admin-section" id="section-applications" data-section-panel="applications">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Operations</span>
+          <h2>Rental applications</h2>
+          <p>All applications across owners and tenants.</p>
+        </div>
+        <div class="panel"><div id="applicationsTable"></div></div>
+      </section>
+
+      <!-- PAYMENTS -->
+      <section class="admin-section" id="section-payments" data-section-panel="payments">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Finance</span>
+          <h2>Payments &amp; finance</h2>
+          <p>Transactions, refunds and reconciliation. Status should match the payment gateway.</p>
+        </div>
+        <div class="toolbar">
+          <select id="paymentStatusFilter">
+            <option value="">All statuses</option>
+            <option value="paid">Paid</option>
+            <option value="failed">Failed</option>
+            <option value="pending">Pending</option>
+            <option value="refunded">Refunded</option>
+          </select>
+          <button type="button" class="btn" id="btnSeedPayment">Add demo payment</button>
+        </div>
+        <div class="panel"><div id="paymentsTable"></div></div>
+      </section>
+
+      <!-- SUBSCRIPTIONS -->
+      <section class="admin-section" id="section-subscriptions" data-section-panel="subscriptions">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Revenue</span>
+          <h2>Subscriptions &amp; plans</h2>
+          <p>Define plan limits. Entitlements must be enforced when owners publish listings.</p>
+        </div>
+        <div class="plan-cards" id="planCards"></div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Active subscriptions</h3>
+          <div id="subscriptionsTable"></div>
+        </div>
+      </section>
+
+      <!-- MESSAGES -->
+      <section class="admin-section" id="section-messages" data-section-panel="messages">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Comms</span>
+          <h2>Messages oversight</h2>
+          <p>Conversation volume and reported threads.</p>
+        </div>
+        <div class="panel"><div id="messagesPanel"></div></div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="admin-section" id="section-reports" data-section-panel="reports">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Trust</span>
+          <h2>Reports &amp; disputes</h2>
+          <p>Listing reports, payment disputes and support cases.</p>
+        </div>
+        <div class="toolbar">
+          <button type="button" class="btn" id="btnSeedReport">Add demo report</button>
+        </div>
+        <div class="panel"><div id="reportsTable"></div></div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section class="admin-section" id="section-analytics" data-section-panel="analytics">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Insights</span>
+          <h2>Analytics</h2>
+          <p>Conversion and growth trends for operations decisions.</p>
+        </div>
+        <div class="charts-row">
+          <div class="panel">
+            <h3>Registrations by week</h3>
+            <canvas id="chartUsers" height="140"></canvas>
+          </div>
+          <div class="panel">
+            <h3>Listing conversion funnel</h3>
+            <canvas id="chartFunnel" height="140"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- STAFF -->
+      <section class="admin-section" id="section-staff" data-section-panel="staff">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Access control</span>
+          <h2>Staff &amp; roles</h2>
+          <p>Staff are invited — never created by public registration.</p>
+        </div>
+        <div class="panel"><div id="staffPanel"></div></div>
+      </section>
+
+      <!-- NOTIFICATIONS -->
+      <section class="admin-section" id="section-notifications" data-section-panel="notifications">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Comms</span>
+          <h2>Notifications</h2>
+          <p>System templates and recent platform alerts.</p>
+        </div>
+        <div class="panel"><div id="notificationsPanel"></div></div>
+      </section>
+
+      <!-- CMS -->
+      <section class="admin-section" id="section-cms" data-section-panel="cms">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Brand &amp; content control</span>
+          <h2>CMS — control the whole public app</h2>
+          <p>Change logo, colours, hero video/banner and landing copy from Command Centre. Saved settings apply site-wide via brand config.</p>
+        </div>
+        <div class="panel" style="margin-bottom:14px">
+          <h3>Brand identity</h3>
+          <form id="cmsForm">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">App name</label>
+                <input id="cmsAppName" value="LeaseAccom" style="width:100%;padding:10px;border:1px solid var(--la-border);border-radius:10px">
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Tagline</label>
+                <input id="cmsTagline" placeholder="Accommodation made easy" style="width:100%;padding:10px;border:1px solid var(--la-border);border-radius:10px">
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Logo URL (horizontal)</label>
+                <input id="cmsLogoUrl" placeholder="IMAGES/leaseaccom-logo-horizontal.svg" style="width:100%;padding:10px;border:1px solid var(--la-border);border-radius:10px">
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Logo URL (icon / stacked)</label>
+                <input id="cmsLogoIconUrl" placeholder="IMAGES/leaseaccom-logo.svg" style="width:100%;padding:10px;border:1px solid var(--la-border);border-radius:10px">
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Primary colour</label>
+                <input id="cmsColorPrimary" type="color" value="#0d7547" style="width:100%;height:42px;border:1px solid var(--la-border);border-radius:10px;padding:4px">
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Secondary colour</label>
+                <input id="cmsColorSecondary" type="color" value="#15945c" style="width:100%;height:42px;border:1px solid var(--la-border);border-radius:10px;padding:4px">
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Background colour</label>
+                <input id="cmsColorBg" type="color" value="#f5f7f6" style="width:100%;height:42px;border:1px solid var(--la-border);border-radius:10px;padding:4px">
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Text / ink colour</label>
+                <input id="cmsColorInk" type="color" value="#101311" style="width:100%;height:42px;border:1px solid var(--la-border);border-radius:10px;padding:4px">
+              </div>
+            </div>
+            <h3 style="margin-top:18px">Hero &amp; media</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Hero title</label>
+                <input id="cmsHeroTitle" style="width:100%;padding:10px;border:1px solid var(--la-border);border-radius:10px">
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Hero video URL</label>
+                <input id="cmsHeroVideo" placeholder="hero-banner.mp4 or https://…" style="width:100%;padding:10px;border:1px solid var(--la-border);border-radius:10px">
+              </div>
+              <div style="grid-column:1/-1">
+                <label style="display:block;font-weight:600;margin-bottom:6px">Hero subtitle</label>
+                <textarea id="cmsHeroSub" rows="2" style="width:100%;padding:10px;border:1px solid var(--la-border);border-radius:10px"></textarea>
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Banner image URL</label>
+                <input id="cmsBannerImage" placeholder="IMAGES/banner.jpg" style="width:100%;padding:10px;border:1px solid var(--la-border);border-radius:10px">
+              </div>
+              <div>
+                <label style="display:block;font-weight:600;margin-bottom:6px">Footer text</label>
+                <input id="cmsFooter" placeholder="© 2026 LeaseAccom" style="width:100%;padding:10px;border:1px solid var(--la-border);border-radius:10px">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:14px">Save &amp; publish brand</button>
+            <span id="cmsStatus" style="margin-left:10px;font-size:13px;color:var(--la-muted)"></span>
+          </form>
+        </div>
+        <div class="panel">
+          <h3>Live preview (colours)</h3>
+          <div id="brandPreview" style="padding:20px;border-radius:12px;border:1px solid #e3e8e5">
+            <strong id="previewName">LeaseAccom</strong>
+            <p id="previewTag" style="margin:6px 0 0;opacity:.8">Tagline preview</p>
+            <button type="button" id="previewBtn" style="margin-top:12px;border:0;padding:10px 16px;border-radius:10px;color:#fff;font-weight:700">Primary button</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="admin-section" id="section-settings" data-section-panel="settings">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Platform</span>
+          <h2>Platform settings</h2>
+          <p>Fees, listing rules and feature flags.</p>
+        </div>
+        <div class="panel">
+          <form id="settingsForm">
+            <label style="display:block;font-weight:600;margin:8px 0 6px">Currency</label>
+            <input id="setCurrency" value="NGN" style="width:100%;max-width:280px;padding:10px;border-radius:10px;border:1px solid var(--la-border)">
+            <label style="display:block;font-weight:600;margin:12px 0 6px">Min photos per listing</label>
+            <input id="setMinPhotos" type="number" min="1" max="20" value="4" style="width:100%;max-width:280px;padding:10px;border-radius:10px;border:1px solid var(--la-border)">
+            <label style="display:block;font-weight:600;margin:12px 0 6px">Platform fee (%)</label>
+            <input id="setFee" type="number" min="0" max="30" step="0.1" value="5" style="width:100%;max-width:280px;padding:10px;border-radius:10px;border:1px solid var(--la-border)">
+            <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:600">
+              <input id="setMaintenance" type="checkbox"> Maintenance mode
+            </label>
+            <button type="submit" class="btn btn-primary" style="margin-top:14px">Save settings</button>
+            <span id="settingsStatus" style="margin-left:10px;font-size:13px;color:var(--la-muted)"></span>
+          </form>
+        </div>
+      </section>
+
+      <!-- AUDIT -->
+      <section class="admin-section" id="section-audit" data-section-panel="audit">
+        <div class="section-intro">
+          <span class="admin-eyebrow">Security</span>
+          <h2>Audit log</h2>
+          <p>Who did what, when — for accountability.</p>
+        </div>
+        <div class="panel"><div id="auditList"></div></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../JS/supabase-client.js"></script>
+<script src="../JS/supabase-store.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

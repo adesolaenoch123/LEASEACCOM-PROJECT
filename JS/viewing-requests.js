@@ -1,8 +1,8 @@
-/* LeaseHub viewing requests — tenant side + shared status */
+/* LeaseAccom viewing requests — tenant side + shared status */
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("viewingRequests");
   if (!container) return;
-  const S = window.LeaseHubStatus;
+  const S = window.LeaseAccomStatus;
   let backendRequests = null;
 
   function loadRequests() {
@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function currentUser() {
     try {
-      return JSON.parse(localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("leaseHubCurrentUser") || "null");
+      return JSON.parse(localStorage.getItem("leaseaccomCurrentUser") || localStorage.getItem("leaseaccomCurrentUser") || "null");
     } catch { return null; }
   }
 
@@ -36,6 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (countEl) countEl.textContent = String(requests.length);
 
     if (!requests.length) {
+      if (document.getElementById("emptyViewings")) {
+        container.innerHTML = "";
+        return;
+      }
       container.innerHTML = `<div class="empty-requests"><h2>No viewing requests yet</h2>
         <p>Request a viewing from a property page. Status updates here for you and the owner.</p>
         <a href="properties.html" class="primary-btn">Browse properties</a></div>`;
@@ -75,10 +79,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadBackendRequests() {
     try {
-      const token = await window.LeaseHubAuth?.getAccessToken();
-      if (!token || !window.LeaseHubApi) return;
+      const token = await window.LeaseAccomAuth?.getAccessToken();
+      if (!token || !window.LeaseAccomApi) return;
 
-      const payload = await window.LeaseHubApi.request("/viewing-requests");
+      const payload = await window.LeaseAccomApi.request("/viewing-requests");
       backendRequests = (payload.viewing_requests || []).map((record) => ({
         id: record.id,
         propertyId: record.property_id,

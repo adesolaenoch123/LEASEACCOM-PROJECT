@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 440" role="img" aria-label="LeaseAccom. Find your space with ease.">
+  <circle cx="220" cy="208" r="190" fill="#050706"/>
+  <g stroke="#f7fbf8" stroke-width="5" stroke-linejoin="round">
+    <path d="M174 73 222 52 267 76V244H174Z" fill="#087849"/>
+    <path d="M119 155 174 130V257L119 274Z" fill="#09633f"/>
+    <path d="M267 145 326 128 372 157V274L267 258Z" fill="#087849"/>
+    <path d="M188 84V246M204 77V246M238 78V246M253 84V248" fill="none" stroke="#c7e9d5" stroke-width="5"/>
+    <path d="M135 168V264M151 162V260M284 157V263M303 151V266M326 147V269" fill="none" stroke="#9dd5b5" stroke-width="4"/>
+  </g>
+  <g fill="#eaf7ef">
+    <path d="M184 103h14v10h-14zm0 22h14v10h-14zm0 22h14v10h-14zm0 22h14v10h-14zm0 22h14v10h-14zm0 22h14v10h-14z"/>
+    <path d="M238 112h11v9h-11zm0 21h11v9h-11zm0 21h11v9h-11zm0 21h11v9h-11zm0 21h11v9h-11z"/>
+    <path d="M125 190h8v8h-8zm0 18h8v8h-8zm0 18h8v8h-8zm28-27h8v8h-8zm0 18h8v8h-8zm0 18h8v8h-8z"/>
+    <path d="M274 176h9v8h-9zm0 18h9v8h-9zm0 18h9v8h-9zm29-27h9v8h-9zm0 18h9v8h-9zm0 18h9v8h-9zm29-28h9v8h-9zm0 18h9v8h-9z"/>
+  </g>
+  <g stroke="#082f22" stroke-width="7" stroke-linejoin="round">
+    <path d="m42 288 75-56 76 56h-14v58H56v-58Z" fill="#087849"/>
+    <path d="m152 287 69-57 80 57h-17v59H169v-59Z" fill="#087849"/>
+    <path d="m264 288 59-51 69 51h-14v58h-99v-58Z" fill="#087849"/>
+    <path d="M69 315h30v31H69zm46 0h20v31h-20zm75 0h34v31h-34zm47 0h19v31h-19zm73 0h22v31h-22z" fill="#f8fffb" stroke="#f8fffb"/>
+    <path d="M208 301h34v45h-34Z" fill="#075d3a" stroke="#f8fffb" stroke-width="4"/>
+    <path d="M213 307h10v9h-10zm14 0h10v9h-10zm-14 14h10v9h-10zm14 0h10v9h-10z" fill="#f8fffb" stroke="none"/>
+  </g>
+
+  <text x="470" y="225" fill="#087849" font-size="150" font-weight="900" font-family="Arial, Helvetica, sans-serif" textLength="970" lengthAdjust="spacingAndGlyphs">LEASEACCOM</text>
+  <text x="486" y="286" fill="#050706" font-size="34" font-weight="800" letter-spacing="8" font-family="Arial, Helvetica, sans-serif">FIND YOUR SPACE WITH</text>
+  <text x="486" y="336" fill="#050706" font-size="34" font-weight="800" letter-spacing="10" font-family="Arial, Helvetica, sans-serif">EASE</text>
+</svg>

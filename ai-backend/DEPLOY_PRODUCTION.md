@@ -1,4 +1,4 @@
-# LeaseHub API — production deploy (problem 6)
+# LeaseAccom API — production deploy (problem 6)
 
 Your FastAPI app already lives in `ai-backend/`.  
 GitHub Pages cannot run Python. Host this API on **Render** (easiest free tier) or Railway.
@@ -18,14 +18,16 @@ GitHub Pages cannot run Python. Host this API on **Render** (easiest free tier) 
 ```
 APP_ENV=production
 ALLOW_DEMO_AUTH=false
-APP_NAME=LeaseHub API
+APP_NAME=LeaseAccom API
 SUPABASE_URL=https://jxbraodoqfwagefsynlc.supabase.co
 SUPABASE_ANON_KEY=<same publishable/anon key as frontend>
 SUPABASE_SERVICE_ROLE_KEY=<from Supabase → Settings → API → service_role — SECRET>
-CORS_ORIGINS=https://adesolaenoch123.github.io,https://adesolaenoch123.github.io/LEASE-HUB-PROJECT,http://localhost:5500,http://127.0.0.1:5500
+CORS_ORIGINS=https://adesolaenoch123.github.io,http://localhost:5500,http://127.0.0.1:5500
 ```
 
-5. Deploy → copy URL, e.g. `https://leasehub-api.onrender.com`
+Use origins only in `CORS_ORIGINS` (scheme, host, and optional port); do not include the GitHub Pages repository path.
+
+5. Deploy → copy URL, e.g. `https://leaseaccom-api.onrender.com`
 
 6. Test:
 
@@ -40,7 +42,7 @@ Should return JSON with status ok.
 In the **project root** (GitHub Pages), create/update `JS/config.js`:
 
 ```js
-window.LEASEHUB_API_URL = "https://YOUR-API.onrender.com";
+window.LEASEACCOM_API_URL = "https://YOUR-API.onrender.com";
 ```
 
 Load it **before** `api-client.js` on pages that need the API (already wired in this pack for main pages).

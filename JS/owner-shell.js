@@ -4,13 +4,13 @@
  * and a <div id="ownerShellRoot"></div> OR existing .owner-lounge structure.
  */
 (function () {
-  const STORE_KEY = 'leasehub_owner_store_v1';
-  const NOTIF_KEY = 'leasehub_owner_notifs_v1';
+  const STORE_KEY = 'leaseaccom_owner_store_v1';
+  const NOTIF_KEY = 'leaseaccom_owner_notifs_v1';
   let backendNotifications = null;
 
   function currentUser() {
     try {
-      return JSON.parse(localStorage.getItem('leasehubCurrentUser') || localStorage.getItem('leaseHubCurrentUser') || localStorage.getItem('currentUser') || 'null');
+      return JSON.parse(localStorage.getItem('leaseaccomCurrentUser') || localStorage.getItem('leaseaccomCurrentUser') || localStorage.getItem('currentUser') || 'null');
     } catch {
       return null;
     }
@@ -34,7 +34,7 @@
     const list = loadNotifs();
     if (list.length) return;
     const seeded = [
-      { id: 'tip1', type: 'tip', title: 'Welcome to Owner Lounge', body: 'Add a property and complete store appearance.', read: false, at: Date.now() },
+      { id: 'tip1', type: 'tip', title: 'Welcome to Owner Lounge', body: 'Add a property and complete Property Page appearance.', read: false, at: Date.now() },
       { id: 'tip2', type: 'tip', title: 'Respond fast', body: 'Quick replies to viewings improve conversion.', read: false, at: Date.now() - 1000 }
     ];
     saveNotifs(seeded);
@@ -54,8 +54,8 @@
 <aside class="owner-sidebar" id="ownerSidebar">
   <div class="owner-sidebar-top">
     <a href="index.html" class="owner-sidebar-brand">
-      <img src="IMAGES/Lease Hub logo.png" alt="LeaseHub">
-      <div><strong>LeaseHub</strong><span>Owner Lounge</span></div>
+      <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom">
+      <div><strong>LeaseAccom</strong><span>Owner Lounge</span></div>
     </a>
     <button type="button" class="owner-sidebar-hide" id="ownerSidebarHide" aria-label="Hide menu"><i class="bx bx-chevron-left"></i></button>
   </div>
@@ -67,8 +67,8 @@
     ${item('owner-dashboard.html#ownerViewings', 'viewings', 'bx-calendar', 'Viewings')}
     ${item('owner-dashboard.html#ownerApplications', 'applications', 'bx-file', 'Applications')}
     ${item('owner-messages.html', 'messages', 'bx-message-dots', 'Messages')}
-    ${item('owner-dashboard.html#ownerStore', 'store', 'bx-store', 'My Store')}
-    ${item('owner-storefront.html', 'storefront', 'bx-store-alt', 'Public storefront')}
+    ${item('owner-dashboard.html#ownerProperty Page ', 'Property Page ', 'bx-Property Page ', 'Property Page ')}
+    ${item('owner-Property Page front.html', 'Property Page front', 'bx-Property Page -alt', 'Public Property Page front')}
     ${item('owner-payments.html', 'payments', 'bx-wallet', 'Payments')}
     ${item('owner-dashboard.html#ownerPlan', 'plan', 'bx-diamond', 'Plan')}
   </nav>
@@ -89,8 +89,8 @@
     return `
 <header class="owner-topbar">
   <button type="button" class="owner-menu-toggle" id="ownerMenuToggle" aria-label="Open menu"><i class="bx bx-menu"></i></button>
-  <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseHub">
-    <span class="lh-lease">Lease</span><span class="lh-hub">Hub</span>
+  <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseAccom">
+    <span class="lh-lease">Lease</span><span class="lh-hub">Accom</span>
   </a>
   <div class="owner-topbar-title owner-topbar-title--desktop">
     <span class="owner-eyebrow">OWNER LOUNGE</span>
@@ -134,11 +134,11 @@
   }
 
   async function loadBackendNotifications() {
-    if (!window.LeaseHubApi || !window.LeaseHubAuth) return;
+    if (!window.LeaseAccomApi || !window.LeaseAccomAuth) return;
     try {
-      const token = await window.LeaseHubAuth.getAccessToken();
+      const token = await window.LeaseAccomAuth.getAccessToken();
       if (!token) return;
-      const payload = await window.LeaseHubApi.request('/notifications');
+      const payload = await window.LeaseAccomApi.request('/notifications');
       backendNotifications = payload.notifications || [];
       renderNotifList(backendNotifications);
       const badge = document.getElementById('ownerNotifBadge');
@@ -181,11 +181,11 @@
       panel.hidden = !panel.hidden;
     });
     document.getElementById('ownerNotifReadAll')?.addEventListener('click', async () => {
-      if (backendNotifications && window.LeaseHubApi) {
+      if (backendNotifications && window.LeaseAccomApi) {
         try {
           await Promise.all(backendNotifications
             .filter((item) => !item.read)
-            .map((item) => window.LeaseHubApi.request(
+            .map((item) => window.LeaseAccomApi.request(
               `/notifications/${encodeURIComponent(item.id)}/read`,
               { method: 'PATCH' }
             )));
@@ -238,7 +238,7 @@
     setupChrome();
   }
 
-  window.LeaseHubOwnerShell = {
+  window.LeaseAccomOwnerShell = {
     loadNotifs,
     saveNotifs,
     pushNotif(title, body, type = 'info') {
@@ -266,7 +266,7 @@
       bar.id = 'ownerVerifyBanner';
       bar.setAttribute('style', 'margin:0 0 16px;padding:14px 16px;border-radius:14px;background:#fff8e8;border:1px solid #f0e0b0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;');
       var msg = st === 'pending'
-        ? '<strong>Verification pending</strong><span style="display:block;font-size:13px;color:#6b5a20;margin-top:4px">You cannot publish listings until LeaseHub approves your details.</span>'
+        ? '<strong>Verification pending</strong><span style="display:block;font-size:13px;color:#6b5a20;margin-top:4px">You cannot publish listings until LeaseAccom approves your details.</span>'
         : '<strong>Verify your owner account</strong><span style="display:block;font-size:13px;color:#6b5a20;margin-top:4px">Landlords must complete verification before listing a property.</span>';
       bar.innerHTML = '<div>' + msg + '</div><a href="owner-verification.html" class="primary-btn" style="text-decoration:none;white-space:nowrap">Verify now</a>';
       main.insertBefore(bar, main.firstChild);

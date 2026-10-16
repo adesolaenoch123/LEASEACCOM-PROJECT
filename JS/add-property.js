@@ -5,8 +5,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const formStatus = document.getElementById("propertyFormStatus");
     if (!form) return;
 
-    const MIN_IMAGES = 8;
+    const MIN_IMAGES = 3;
     const MAX_IMAGES = 20;
+    const MAX_VIDEOS = 3;
+    let selectedVideos = [];
     let selectedImages = [];
     let coverIndex = 0;
 
@@ -16,7 +18,13 @@ document.addEventListener("DOMContentLoaded", () => {
         formStatus.className = `form-status is-visible is-${type}`;
     }
     function readCurrentUser() {
-        try { return JSON.parse(localStorage.getItem("leasehubCurrentUser") || "null"); }
+        try { return JSON.parse(
+            localStorage.getItem("leasehubCurrentUser") ||
+            localStorage.getItem("leaseHubCurrentUser") ||
+            localStorage.getItem("leaseaccomCurrentUser") ||
+            localStorage.getItem("currentUser") ||
+            "null"
+        ); }
         catch { return null; }
     }
     const currentUser = readCurrentUser();
@@ -33,10 +41,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Subscription unit limit
     function enforceUnitLimit() {
-        if (!window.LeaseHubPlans || typeof window.LeaseHubPlans.canAddUnit !== "function") {
+        if (!window.LeaseAccomPlans || typeof window.LeaseAccomPlans.canAddUnit !== "function") {
             return true;
         }
-        const gate = window.LeaseHubPlans.canAddUnit(currentUser);
+        const gate = window.LeaseAccomPlans.canAddUnit(currentUser);
         if (!gate.ok) {
             showFormStatus(
                 gate.message + " Open Payments / Plans to upgrade (Basic ₦5k · Standard ₦10k · Premium ₦20k).",
@@ -62,19 +70,52 @@ document.addEventListener("DOMContentLoaded", () => {
             const reader = new FileReader();
             reader.onerror = () => reject(new Error("Unable to read image."));
             reader.onload = () => {
+                const dataUrl = reader.result;
+                // Fast path: if browser can't decode (HEIC etc), keep original data URL
                 const img = new Image();
                 img.onload = () => {
-                    const maxSide = 1280;
-                    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-                    const canvas = document.createElement("canvas");
-                    canvas.width = Math.max(1, Math.round(img.width * scale));
-                    canvas.height = Math.max(1, Math.round(img.height * scale));
-                    const ctx = canvas.getContext("2d", { alpha: false });
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL("image/jpeg", 0.72));
+                    try {
+                        const maxSide = 1280;
+                        const scale = Math.min(1, maxSide / Math.max(img.width || 1, img.height || 1));
+                        const canvas = document.createElement("canvas");
+                        canvas.width = Math.max(1, Math.round((img.width || 1) * scale));
+                        canvas.height = Math.max(1, Math.round((img.height || 1) * scale));
+                        const ctx = canvas.getContext("2d", { alpha: false });
+                        if (!ctx) {
+                            resolve(dataUrl);
+                            return;
+                        }
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL("image/jpeg", 0.72));
+                    } catch (e) {
+                        resolve(dataUrl);
+                    }
                 };
-                img.onerror = () => reject(new Error("Invalid image."));
-                img.src = reader.result;
+                img.onerror = () => {
+                    // Still keep the file as data URL so preview/submit can work
+                    resolve(dataUrl);
+                };
+                img.src = dataUrl;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function readVideoFile(file) {
+        return new Promise((resolve, reject) => {
+            if (file.size > 40 * 1024 * 1024) {
+                reject(new Error("Video must be under 40MB."));
+                return;
+            }
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error("Unable to read video."));
+            reader.onload = () => {
+                resolve({
+                    name: file.name,
+                    type: file.type || "video/mp4",
+                    size: file.size,
+                    dataUrl: reader.result
+                });
             };
             reader.readAsDataURL(file);
         });
@@ -82,18 +123,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderPreview() {
         if (!imagePreview) return;
+        const photoMsg = selectedImages.length < MIN_IMAGES
+            ? `Add ${MIN_IMAGES - selectedImages.length} more photo(s) to continue.`
+            : "Photos ready — you can add more or continue.";
         imagePreview.innerHTML = `
-            <div class="leasehub-image-upload-summary">
-                <strong>${selectedImages.length} / ${MAX_IMAGES} photos selected</strong>
-                <span>${selectedImages.length < MIN_IMAGES ? `Add ${MIN_IMAGES - selectedImages.length} more to continue.` : "Minimum reached — you can add more photos."}</span>
+            <div class="leaseaccom-image-upload-summary">
+                <strong>${selectedImages.length} / ${MAX_IMAGES} photos · ${selectedVideos.length} / ${MAX_VIDEOS} videos</strong>
+                <span>${photoMsg}</span>
             </div>
-            <div class="leasehub-upload-grid">
+            <div class="leaseaccom-upload-grid">
                 ${selectedImages.map((src, index) => `
-                    <div class="leasehub-upload-thumb ${index === coverIndex ? "is-cover" : ""}" draggable="true" data-index="${index}">
+                    <div class="leaseaccom-upload-thumb ${index === coverIndex ? "is-cover" : ""}" draggable="true" data-index="${index}">
                         <img src="${src}" alt="Property photo ${index + 1}">
-                        ${index === coverIndex ? '<span class="leasehub-cover-label">Cover</span>' : ''}
-                        <button type="button" class="leasehub-remove-photo" data-remove="${index}" aria-label="Remove photo ${index + 1}"><i class="bx bx-x"></i></button>
-                        <button type="button" class="leasehub-set-cover" data-cover="${index}">${index === coverIndex ? "Cover photo" : "Set as cover"}</button>
+                        ${index === coverIndex ? '<span class="leaseaccom-cover-label">Cover</span>' : ''}
+                        <button type="button" class="leaseaccom-remove-photo" data-remove="${index}" aria-label="Remove photo"><i class="bx bx-x"></i></button>
+                        <button type="button" class="leaseaccom-set-cover" data-cover="${index}">${index === coverIndex ? "Cover photo" : "Set as cover"}</button>
+                    </div>
+                `).join("")}
+                ${selectedVideos.map((vid, index) => `
+                    <div class="leaseaccom-upload-thumb is-video" data-video-index="${index}">
+                        <video src="${vid.dataUrl}" muted playsinline preload="metadata"></video>
+                        <span class="leaseaccom-cover-label">Video</span>
+                        <button type="button" class="leaseaccom-remove-photo" data-remove-video="${index}" aria-label="Remove video"><i class="bx bx-x"></i></button>
+                        <span class="leaseaccom-set-cover" style="pointer-events:none">${(vid.name || "clip").slice(0, 18)}</span>
                     </div>
                 `).join("")}
             </div>
@@ -104,13 +156,19 @@ document.addEventListener("DOMContentLoaded", () => {
             if (coverIndex >= selectedImages.length) coverIndex = Math.max(0, selectedImages.length - 1);
             else if (index < coverIndex) coverIndex -= 1;
             renderPreview();
+            renderQualityChecklist();
+        }));
+        imagePreview.querySelectorAll("[data-remove-video]").forEach(btn => btn.addEventListener("click", () => {
+            selectedVideos.splice(Number(btn.dataset.removeVideo), 1);
+            renderPreview();
+            renderQualityChecklist();
         }));
         imagePreview.querySelectorAll("[data-cover]").forEach(btn => btn.addEventListener("click", () => {
             coverIndex = Number(btn.dataset.cover);
             renderPreview();
         }));
         let dragIndex = null;
-        imagePreview.querySelectorAll(".leasehub-upload-thumb").forEach(card => {
+        imagePreview.querySelectorAll(".leaseaccom-upload-thumb[data-index]").forEach(card => {
             card.addEventListener("dragstart", () => { dragIndex = Number(card.dataset.index); });
             card.addEventListener("dragover", e => e.preventDefault());
             card.addEventListener("drop", e => {
@@ -130,19 +188,69 @@ document.addEventListener("DOMContentLoaded", () => {
     imageInput?.addEventListener("change", async () => {
         const files = Array.from(imageInput.files || []);
         if (!files.length) return;
-        const valid = files.filter(file => file.type.startsWith("image/"));
-        if (valid.length !== files.length) showFormStatus("Some selected files were skipped because they are not images.");
+        showFormStatus("Processing photos…", "success");
+        // Accept image/* and common mobile types with empty type
+        const valid = files.filter(file =>
+            (file.type && file.type.startsWith("image/")) ||
+            /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || "")
+        );
+        if (!valid.length) {
+            showFormStatus("No usable images found. Use JPG, PNG or WEBP.");
+            imageInput.value = "";
+            return;
+        }
+        if (valid.length !== files.length) showFormStatus("Some files were skipped (not images).");
         const room = MAX_IMAGES - selectedImages.length;
-        if (valid.length > room) showFormStatus(`You can add only ${room} more photo${room === 1 ? "" : "s"}.`);
+        if (room <= 0) {
+            showFormStatus(`Maximum ${MAX_IMAGES} photos reached.`);
+            imageInput.value = "";
+            return;
+        }
         const filesToAdd = valid.slice(0, room);
         try {
-            for (const file of filesToAdd) selectedImages.push(await compressImage(file));
+            for (const file of filesToAdd) {
+                const dataUrl = await compressImage(file);
+                if (dataUrl) selectedImages.push(dataUrl);
+            }
             renderPreview();
             if (selectedImages.length >= MIN_IMAGES) showFormStatus("Photo set ready. You can continue through the property wizard.", "success");
         } catch (error) {
             showFormStatus("One or more images could not be processed. Please try again.");
         }
         imageInput.value = "";
+        renderQualityChecklist();
+    });
+
+    const videoInput = document.getElementById("propertyVideo");
+    videoInput?.addEventListener("change", async () => {
+        const files = Array.from(videoInput.files || []);
+        if (!files.length) return;
+        showFormStatus("Processing video…", "success");
+        const valid = files.filter(f =>
+            (f.type && f.type.startsWith("video/")) || /\.(mp4|webm|mov|m4v)$/i.test(f.name || "")
+        );
+        if (!valid.length) {
+            showFormStatus("Use MP4, WEBM or MOV video files.");
+            videoInput.value = "";
+            return;
+        }
+        const room = MAX_VIDEOS - selectedVideos.length;
+        if (room <= 0) {
+            showFormStatus(`Maximum ${MAX_VIDEOS} videos reached.`);
+            videoInput.value = "";
+            return;
+        }
+        try {
+            for (const file of valid.slice(0, room)) {
+                selectedVideos.push(await readVideoFile(file));
+            }
+            renderPreview();
+            showFormStatus(`${selectedVideos.length} video(s) attached.`, "success");
+        } catch (err) {
+            showFormStatus(err.message || "Could not read video.");
+        }
+        videoInput.value = "";
+        renderQualityChecklist();
     });
 
     form.addEventListener("submit", async (event) => {
@@ -179,7 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const amenities = Array.from(document.querySelectorAll('input[name="amenity"]:checked')).map(c => c.value);
         let ownerProfile = {};
-        try { ownerProfile = JSON.parse(localStorage.getItem("leasehubOwnerProfile") || "{}") || {}; } catch {}
+        try { ownerProfile = JSON.parse(localStorage.getItem("leaseaccomOwnerProfile") || "{}") || {}; } catch {}
         const ownerName = ownerProfile.name || ownerProfile.displayName || currentUser.name || "Property Owner";
         const serviceChargeEl = document.getElementById("propertyServiceCharge");
         const cautionEl = document.getElementById("propertyCautionFee");
@@ -188,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const newProperty = {
             id: Date.now(), title, type, purpose, state, city, location, price, period, bedrooms, bathrooms, size,
-            description, amenities, image: selectedImages[coverIndex] || selectedImages[0], images: selectedImages.slice(),
+            description, amenities, image: selectedImages[coverIndex] || selectedImages[0], images: selectedImages.slice(), videos: selectedVideos.map(v => v.dataUrl), videoMeta: selectedVideos.map(v => ({ name: v.name, type: v.type, size: v.size })), views: 0, viewHistory: [],
             ownerId: currentUser.id, ownerName, ownerAvatar: ownerProfile.avatar || currentUser.avatar || "",
             ownerPhone: ownerProfile.phone || currentUser.phone || "",
             ownerVerified: true,
@@ -198,7 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
             verificationLabel: "Pending review",
             listingStatus: "pending",
             quality: {
-                photos: selectedImages.length,
+                photos: selectedImages.length, videos: selectedVideos.length,
                 descriptionLength: description.length,
                 minPhotosRequired: MIN_IMAGES
             },
@@ -207,47 +315,66 @@ document.addEventListener("DOMContentLoaded", () => {
             submittedAt: new Date().toISOString()
         };
         let storedProperties = [];
-        try { const parsed = JSON.parse(localStorage.getItem("leasehubProperties") || "[]"); storedProperties = Array.isArray(parsed) ? parsed : []; } catch {}
+        try { const parsed = JSON.parse(localStorage.getItem("leaseaccomProperties") || "[]"); storedProperties = Array.isArray(parsed) ? parsed : []; } catch {}
         storedProperties.push(newProperty);
         // Always keep local copy (fallback / offline)
-        localStorage.setItem("leasehubProperties", JSON.stringify(storedProperties));
+        localStorage.setItem("leaseaccomProperties", JSON.stringify(storedProperties));
         const currentUserProperties = Array.isArray(currentUser.properties) ? currentUser.properties : [];
         if (!currentUserProperties.some(id => String(id) === String(newProperty.id))) currentUserProperties.push(newProperty.id);
         currentUser.properties = currentUserProperties;
-        localStorage.setItem("leasehubCurrentUser", JSON.stringify(currentUser));
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(currentUser));
         try {
-            const users = JSON.parse(localStorage.getItem("leasehubUsers") || "[]");
+            const users = JSON.parse(localStorage.getItem("leaseaccomUsers") || "[]");
             if (Array.isArray(users)) {
                 const index = users.findIndex(user => String(user.id) === String(currentUser.id));
-                if (index !== -1) { users[index] = currentUser; localStorage.setItem("leasehubUsers", JSON.stringify(users)); }
+                if (index !== -1) { users[index] = currentUser; localStorage.setItem("leaseaccomUsers", JSON.stringify(users)); }
             }
         } catch {}
 
-        // Cloud save (Supabase) so listings work across devices
-        showFormStatus("Submitting listing…", "success");
+        // Cloud: upload media to Storage, then insert property row
+        showFormStatus("Uploading photos to LeaseAccom cloud…", "success");
         try {
-            if (window.LeaseHubData && typeof window.LeaseHubData.createProperty === "function") {
-                const cloud = await window.LeaseHubData.createProperty(newProperty);
-                if (cloud && cloud.ok) {
-                    if (cloud.mapped && cloud.mapped.id) {
-                        newProperty.id = cloud.mapped.id;
-                    }
-                    showFormStatus("Property saved to LeaseHub cloud. Pending review before it goes live.", "success");
-                } else if (cloud && cloud.offline) {
-                    showFormStatus("Saved on this device only (offline). Sign in again to sync to the cloud.", "success");
-                } else {
-                    console.warn("Supabase createProperty:", cloud && cloud.error);
-                    showFormStatus("Saved on this device. Cloud sync failed: " + ((cloud && cloud.error) || "unknown") + ". Check Supabase RLS/columns.", "error");
-                    // still redirect so owner sees local pending
+            let imageUrls = selectedImages.slice();
+            let videoUrls = selectedVideos.map(v => v.dataUrl);
+            if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.uploadListingMedia === "function") {
+                const media = await window.LeaseAccomCloud.uploadListingMedia(selectedImages, selectedVideos);
+                if (media && media.images && media.images.length) {
+                    imageUrls = media.images;
+                    videoUrls = media.videos || [];
+                    newProperty.images = imageUrls;
+                    newProperty.image = imageUrls[Math.min(coverIndex, imageUrls.length - 1)] || imageUrls[0];
+                    newProperty.videos = videoUrls;
+                    showFormStatus("Photos uploaded. Saving listing…", "success");
+                } else if (media && media.offline) {
+                    showFormStatus("Offline — saving on this device only.", "success");
+                } else if (media && media.error) {
+                    console.warn("media upload", media.error);
+                    showFormStatus("Photo upload issue: " + media.error + ". Trying to save listing…", "error");
                 }
+            }
+            let cloud = null;
+            if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.createProperty === "function") {
+                cloud = await window.LeaseAccomCloud.createProperty(newProperty);
+            } else if (window.LeaseAccomData && typeof window.LeaseAccomData.createProperty === "function") {
+                cloud = await window.LeaseAccomData.createProperty(newProperty);
+            }
+            if (cloud && cloud.ok) {
+                if (cloud.data && cloud.data.id) newProperty.id = cloud.data.id;
+                if (cloud.mapped && cloud.mapped.id) newProperty.id = cloud.mapped.id;
+                showFormStatus("Property saved to cloud. Pending admin approval before it goes live.", "success");
+            } else if (cloud && cloud.offline) {
+                showFormStatus("Saved on this device only (offline).", "success");
+            } else if (cloud) {
+                console.warn("createProperty", cloud.error);
+                showFormStatus("Saved on this device. Cloud: " + (cloud.error || "failed"), "error");
             } else {
-                showFormStatus("Property submitted on this device (Supabase client not loaded). Pending verification.", "success");
+                showFormStatus("Saved on this device (cloud client not loaded).", "success");
             }
         } catch (err) {
             console.warn(err);
             showFormStatus("Saved locally. Cloud error: " + (err && err.message ? err.message : "failed"), "error");
         }
-        window.setTimeout(() => { window.location.href = "owner-dashboard.html"; }, 900);
+        window.setTimeout(() => { window.location.href = "owner-dashboard.html"; }, 1200);
     });
 
 
@@ -281,7 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <ul class="listing-quality-list">
                 ${items.map(i => `<li class="${i.ok ? "is-ok" : "is-miss"}"><i class="bx ${i.ok ? "bx-check-circle" : "bx-circle"}"></i> ${i.label}${i.meta ? ` <small>${i.meta}</small>` : ""}</li>`).join("")}
             </ul>
-            <p class="listing-quality-note">After submit, status is <strong>Pending</strong> until LeaseHub approves — then it goes <strong>Live</strong> on the marketplace.</p>
+            <p class="listing-quality-note">After submit, status is <strong>Pending</strong> until LeaseAccom approves — then it goes <strong>Live</strong> on the marketplace.</p>
         `;
     }
 

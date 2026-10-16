@@ -1,5 +1,5 @@
 /* =========================================================
-   LEASEHUB - PROPERTY DETAILS
+   LEASEACCOM - PROPERTY DETAILS
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -9,12 +9,65 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!detailsContainer) return;
 
+    function showDetailsError(title, message) {
+        detailsContainer.innerHTML = `
+            <div class="property-loading">
+                <h2>${title}</h2>
+                <p>${message}</p>
+                <a href="properties.html" class="primary-btn">Browse Properties</a>
+            </div>
+        `;
+    }
 
+    /**
+     * For a specific property the user opened, do not hide it
+     * solely because of the strict marketplace quality gate
+     * (min 4 photos). Only reject truly rejected listings.
+     */
     function isPublicProperty(listing) {
-        return typeof isPropertyPublic === "function"
-            ? isPropertyPublic(listing)
-            : String(listing?.verificationStatus || "")
-                .toLowerCase() !== "rejected";
+        if (!listing) return false;
+        if (typeof isLeaseAccomPropertyPublic === "function") {
+            return isLeaseAccomPropertyPublic(listing);
+        }
+        if (typeof isPropertyPublic === "function") {
+            // Fallback: still allow non-rejected listings on details page
+            const status = String(listing.verificationStatus || listing.verification_status || "").toLowerCase();
+            if (status === "rejected") return false;
+            return true;
+        }
+        return String(listing.verificationStatus || "").toLowerCase() !== "rejected";
+    }
+
+    function withTimeout(promise, ms) {
+        return Promise.race([
+            promise,
+            new Promise(function (resolve) {
+                setTimeout(function () { resolve(null); }, ms);
+            })
+        ]);
+    }
+
+    function findPropertyById(list, id) {
+        if (!Array.isArray(list) || !id) return null;
+        const target = String(id);
+        return list.find(function (item) {
+            return String(item.id) === target;
+        }) || null;
+    }
+
+    function readSelectedFromStorage() {
+        try {
+            const raw = localStorage.getItem("selectedProperty");
+            if (!raw) return null;
+            // Newer path stores full JSON object
+            if (raw.trim().charAt(0) === "{") {
+                return JSON.parse(raw);
+            }
+            // Older path stored only the id
+            return null;
+        } catch (e) {
+            return null;
+        }
     }
 
 
@@ -25,8 +78,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     const urlParams =
         new URLSearchParams(window.location.search);
 
-    const propertyId =
-        String(urlParams.get("id") || "");
+    let propertyId =
+        String(urlParams.get("id") || "").trim();
+
+    // Fallback: id from localStorage when URL has no ?id=
+    if (!propertyId) {
+        try {
+            const storedProperty = localStorage.getItem("selectedProperty");
+            if (storedProperty) {
+                if (storedProperty.trim().charAt(0) === "{") {
+                    const obj = JSON.parse(storedProperty);
+                    propertyId = String(obj && obj.id != null ? obj.id : "");
+                } else {
+                    propertyId = String(storedProperty);
+                }
+            }
+        } catch (e) {}
+    }
+
+    if (!propertyId) {
+        showDetailsError(
+            "No property selected",
+            "Open a listing from the marketplace to view its details."
+        );
+        return;
+    }
 
 
     /* =====================================================
@@ -34,34 +110,36 @@ document.addEventListener("DOMContentLoaded", async () => {
        ===================================================== */
 
     if (!Array.isArray(properties)) {
-
-        detailsContainer.innerHTML = `
-            <div class="property-loading">
-                <h2>Unable to load properties</h2>
-                <p>Please refresh the page and try again.</p>
-            </div>
-        `;
-
-        console.error(
-            "LeaseHub: properties data was not loaded."
+        showDetailsError(
+            "Unable to load properties",
+            "Please refresh the page and try again."
         );
-
+        console.error("LeaseAccom: properties data was not loaded.");
         return;
     }
 
-    if (window.loadLeaseHubPropertyCatalog) {
-        await window.loadLeaseHubPropertyCatalog();
+    // Catalog load must never hang the page forever
+    if (window.loadLeaseAccomPropertyCatalog) {
+        try {
+            await withTimeout(window.loadLeaseAccomPropertyCatalog(), 4000);
+        } catch (e) {
+            console.warn("LeaseAccom: catalog refresh skipped.", e);
+        }
     }
 
 
     /* =====================================================
-       FIND PROPERTY
+       FIND PROPERTY (demo IDs + UUID + localStorage fallback)
        ===================================================== */
 
-    const property =
-        properties.find(
-            item => String(item.id) === propertyId
-        );
+    let property = findPropertyById(properties, propertyId);
+
+    if (!property) {
+        const fromStorage = readSelectedFromStorage();
+        if (fromStorage && String(fromStorage.id) === String(propertyId)) {
+            property = fromStorage;
+        }
+    }
 
 
     /* =====================================================
@@ -69,25 +147,10 @@ document.addEventListener("DOMContentLoaded", async () => {
        ===================================================== */
 
     if (!property || !isPublicProperty(property)) {
-
-        detailsContainer.innerHTML = `
-            <div class="property-loading">
-                <h2>Property not found</h2>
-
-                <p>
-                    Sorry, we couldn't find the property
-                    you're looking for.
-                </p>
-
-                <a
-                    href="properties.html"
-                    class="primary-btn"
-                >
-                    Browse Properties
-                </a>
-            </div>
-        `;
-
+        showDetailsError(
+            "Property not found",
+            "Sorry, we couldn't find the property you're looking for."
+        );
         return;
     }
 
@@ -136,8 +199,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const isSaved =
         savedProperties
-            .map(Number)
-            .includes(propertyId);
+            .map(String)
+            .includes(String(propertyId));
 
 
     /* =====================================================
@@ -221,7 +284,7 @@ document.addEventListener("DOMContentLoaded", async () => {
        ===================================================== */
 
     function isSameProperty(item, compareTo) {
-        return Number(item.id) === Number(compareTo.id);
+        return String(item && item.id) === String(compareTo && compareTo.id);
     }
 
     const similarProperties =
@@ -238,7 +301,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             .slice(0, 3);
 
     const similarIds = similarProperties.map(item =>
-        Number(item.id)
+        String(item.id)
     );
 
     const recommendedProperties =
@@ -246,7 +309,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             .filter(item =>
                 isPublicProperty(item) &&
                 !isSameProperty(item, property) &&
-                !similarIds.includes(Number(item.id)) &&
+                !similarIds.includes(String(item.id)) &&
                 (
                     item.city === property.city ||
                     item.state === property.state
@@ -255,7 +318,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             .slice(0, 3);
 
     const recommendedIds = recommendedProperties.map(item =>
-        Number(item.id)
+        String(item.id)
     );
 
     const recentProperties =
@@ -263,7 +326,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             ? getRecentlyViewedProperties()
                 .filter(item =>
                     !isSameProperty(item, property) &&
-                    !similarIds.includes(Number(item.id)) &&
+                    !similarIds.includes(String(item.id)) &&
                     !recommendedIds.includes(Number(item.id))
                 )
                 .slice(0, 3)
@@ -316,7 +379,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         || (isVerified && property.verified === true);
 
     const checks = [
-        { ok: isVerified, label: "Listing reviewed by LeaseHub" },
+        { ok: isVerified, label: "Listing reviewed by LeaseAccom" },
         { ok: ownerVerified || isVerified, label: "Owner identity status checked" },
         { ok: Array.isArray(property.images) ? property.images.length >= 4 : Boolean(property.image), label: "Multiple photos on listing" },
         { ok: Boolean(property.location || property.city), label: "Location provided" },
@@ -467,7 +530,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                                 "Nigeria"
                             }.
 
-                            Contact LeaseHub to learn more
+                            Contact LeaseAccom to learn more
                             about this property, arrange a
                             viewing, and begin the rental process.`
                         }
@@ -578,20 +641,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <p class="availability-note">
                         ${
                             isVerified
-                                ? "This listing has been reviewed by LeaseHub and is open for enquiries."
-                                : "This listing is awaiting LeaseHub review before it becomes fully available."
+                                ? "This listing has been reviewed by LeaseAccom and is open for enquiries."
+                                : "This listing is awaiting LeaseAccom review before it becomes fully available."
                         }
                     </p>
 
                 </section>
 
 
-                <!-- LEASEHUB TRUST -->
+                <!-- LEASEACCOM TRUST -->
 
                 <section class="details-section trust-section">
 
                     <span class="section-label">
-                        LEASEHUB TRUST
+                        LEASEACCOM TRUST
                     </span>
 
                     <h2>
@@ -619,8 +682,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                                 <p>
                                     ${
                                         isVerified
-                                            ? "This listing completed LeaseHub's listing review."
-                                            : "This listing has not completed LeaseHub review yet."
+                                            ? "This listing completed LeaseAccom's listing review."
+                                            : "This listing has not completed LeaseAccom review yet."
                                     }
                                 </p>
 
@@ -645,7 +708,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                                     ${
                                         property.ownerName
                                             ? `Listed by ${property.ownerName}.`
-                                            : "Owner details are shared securely through LeaseHub."
+                                            : "Owner details are shared securely through LeaseAccom."
                                     }
                                 </p>
 
@@ -663,12 +726,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                             <div>
 
                                 <strong>
-                                    Secure LeaseHub communication
+                                    Secure LeaseAccom communication
                                 </strong>
 
                                 <p>
                                     Keep conversations and payments
-                                    inside LeaseHub.
+                                    inside LeaseAccom.
                                 </p>
 
                             </div>
@@ -678,7 +741,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
 
                     <p class="trust-disclaimer">
-                        LeaseHub reviews listing information. We do not
+                        LeaseAccom reviews listing information. We do not
                         claim to have physically inspected a property
                         unless a physical inspection is recorded.
                     </p>
@@ -714,7 +777,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
                     <p class="booking-note">
-                        Secure your rental process through LeaseHub.
+                        Secure your rental process through LeaseAccom.
                     </p>
 
 
@@ -749,7 +812,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                     <p class="secure-note">
                         Your personal information is
-                        protected by LeaseHub.
+                        protected by LeaseAccom.
                     </p>
 
                 </div>
@@ -768,7 +831,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
                     <p class="cost-note">
                         Figures marked as estimates should be confirmed with the owner before you pay.
-                        Prefer LeaseHub-protected payment when it goes live — never send money to a random account.
+                        Prefer LeaseAccom-protected payment when it goes live — never send money to a random account.
                     </p>
                 </div>
 
@@ -776,7 +839,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <div class="lh-trust-panel">
                     <div class="lh-trust-head">
                         <div>
-                            <span class="lh-trust-kicker">LeaseHub trust</span>
+                            <span class="lh-trust-kicker">LeaseAccom trust</span>
                             <h3>${isVerified ? "Verified listing" : "Verification in progress"}</h3>
                         </div>
                         <div class="lh-trust-score" title="Trust checklist score">
@@ -795,7 +858,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
                     <p class="lh-trust-foot">
                         ${isVerified
-                            ? "LeaseHub has reviewed this listing. Always inspect the property and keep conversations in-app."
+                            ? "LeaseAccom has reviewed this listing. Always inspect the property and keep conversations in-app."
                             : "This listing is still under review. Extra caution is advised until verification completes."}
                     </p>
                 </div>
@@ -804,7 +867,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <div class="info-card lh-safety-card">
                     <div class="info-icon">🛡️</div>
                     <div>
-                        <h3>Stay safe on LeaseHub</h3>
+                        <h3>Stay safe on LeaseAccom</h3>
                         <p>Never pay inspection fees or deposits outside the app to unknown accounts. Use Request Viewing and Apply so there is a record.</p>
                     </div>
                 </div>
@@ -1056,7 +1119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
                 saved =
-                    saved.map(Number);
+                    saved.map(String);
 
 
                 const index =
@@ -1225,7 +1288,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 try {
                     currentUser = JSON.parse(
-                        localStorage.getItem("leasehubCurrentUser") || "null"
+                        localStorage.getItem("leaseaccomCurrentUser") || "null"
                     );
                 } catch (error) {
                     currentUser = null;
@@ -1276,59 +1339,72 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 const viewingRequest = {
 
-                    id:
-                        Date.now(),
+                    id: "vr-" + Date.now(),
 
-                    propertyId:
-                        property.id,
+                    propertyId: String(property.id),
 
-                    propertyTitle:
-                        property.title,
+                    propertyTitle: property.title,
 
-                    viewerName:
-                        viewerName,
+                    propertyLocation: property.location || property.city || "",
 
-                    viewingDate:
-                        viewingDate,
+                    propertyImage: property.image || (Array.isArray(property.images) && property.images[0]) || "",
 
-                    viewingTime:
-                        viewingTime,
+                    viewerName: viewerName,
 
-                    status:
-                        "requested",
+                    viewingDate: viewingDate,
 
-                    createdAt:
-                        new Date().toISOString(),
+                    viewingTime: viewingTime,
 
-                    updatedAt:
-                        new Date().toISOString(),
+                    status: "requested",
+
+                    // Critical for owner dashboard matching
+                    ownerId: property.ownerId != null ? String(property.ownerId) : "",
+                    ownerName: property.ownerName || "Property Owner",
+                    tenantId: currentUser.id != null ? String(currentUser.id) : "",
+                    tenantEmail: currentUser.email || "",
+                    tenantName: currentUser.name || viewerName,
+
+                    createdAt: new Date().toISOString(),
+
+                    updatedAt: new Date().toISOString(),
 
                     statusHistory: [{ status: "requested", at: new Date().toISOString(), by: "tenant" }]
 
                 };
 
 
+                // Optional API — never block localStorage save if API is offline
                 try {
-                    const response = await window.LeaseHubApi?.createViewingRequest({
-                        property_id: String(property.id),
-                        preferred_date: viewingDate,
-                        preferred_time: viewingTime
-                    });
-                    const savedViewing = response?.viewing_request;
-                    if (savedViewing) {
-                        Object.assign(viewingRequest, {
-                            id: savedViewing.id,
-                            propertyId: savedViewing.property_id,
-                            tenantId: savedViewing.tenant_id,
-                            ownerId: savedViewing.owner_id,
-                            status: savedViewing.status,
-                            createdAt: savedViewing.created_at,
-                            updatedAt: savedViewing.updated_at
+                    if (window.LeaseAccomApi && typeof window.LeaseAccomApi.createViewingRequest === "function") {
+                        const response = await window.LeaseAccomApi.createViewingRequest({
+                            property_id: String(property.id),
+                            preferred_date: viewingDate,
+                            preferred_time: viewingTime,
+                            notes: viewingMessage || viewingRequest.message || ""
                         });
+                        const savedViewing = response && (response.viewing_request || response.viewing || response);
+                        if (savedViewing && savedViewing.id) {
+                            Object.assign(viewingRequest, {
+                                id: savedViewing.id,
+                                propertyId: savedViewing.property_id || viewingRequest.propertyId,
+                                tenantId: savedViewing.tenant_id || viewingRequest.tenantId,
+                                ownerId: savedViewing.owner_id || viewingRequest.ownerId,
+                                status: savedViewing.status || viewingRequest.status,
+                                createdAt: savedViewing.created_at || viewingRequest.createdAt,
+                                updatedAt: savedViewing.updated_at || viewingRequest.updatedAt
+                            });
+                        }
                     }
                 } catch (error) {
-                    alert(error.message || "Unable to submit your viewing request.");
-                    return;
+                    console.warn("LeaseAccom: viewing API unavailable, saved locally.", error);
+                }
+
+                if (window.persistViewingRequest) {
+                    try {
+                        await window.persistViewingRequest(viewingRequest);
+                    } catch (error) {
+                        console.warn("LeaseAccom: viewing request could not sync to Supabase.", error);
+                    }
                 }
 
 
@@ -1371,7 +1447,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 );
 
                 localStorage.setItem(
-                    "leasehubCurrentUser",
+                    "leaseaccomCurrentUser",
                     JSON.stringify(currentUser)
                 );
 
@@ -1400,7 +1476,7 @@ Property: ${property.title}
 Date: ${viewingDate}
 Time: ${viewingTime}
 
-LeaseHub will process your request.`
+LeaseAccom will process your request.`
                 );
 
 
@@ -1538,7 +1614,7 @@ LeaseHub will process your request.`
 
                 try {
                     currentUser = JSON.parse(
-                        localStorage.getItem("leasehubCurrentUser") || "null"
+                        localStorage.getItem("leaseaccomCurrentUser") || "null"
                     );
                 } catch (error) {
                     currentUser = null;
@@ -1701,7 +1777,7 @@ LeaseHub will process your request.`
                         applicationMessage,
 
                     status:
-                        "requested",
+                        "submitted",
 
                     createdAt:
                         new Date().toISOString()
@@ -1709,28 +1785,49 @@ LeaseHub will process your request.`
                 };
 
 
+                // Attach owner + tenant linkage for owner dashboard
+                rentalApplication.ownerId = property.ownerId != null ? String(property.ownerId) : (rentalApplication.ownerId || "");
+                rentalApplication.ownerName = property.ownerName || rentalApplication.ownerName || "Property Owner";
+                rentalApplication.tenantId = currentUser.id != null ? String(currentUser.id) : "";
+                rentalApplication.tenantEmail = currentUser.email || rentalApplication.applicantEmail || "";
+                rentalApplication.propertyId = String(property.id);
+                rentalApplication.status = rentalApplication.status === "requested" ? "submitted" : rentalApplication.status;
+
                 try {
-                    const response = await window.LeaseHubApi?.createApplication({
-                        property_id: String(property.id),
-                        applicant_name: rentalApplication.applicantName,
-                        applicant_phone: rentalApplication.applicantPhone,
-                        move_in_date: rentalApplication.moveInDate,
-                        message: rentalApplication.message
-                    });
-                    const savedApplication = response?.application;
-                    if (savedApplication) {
-                        Object.assign(rentalApplication, {
-                            id: savedApplication.id,
-                            propertyId: savedApplication.property_id,
-                            tenantId: savedApplication.tenant_id,
-                            ownerId: savedApplication.owner_id,
-                            status: savedApplication.status,
-                            createdAt: savedApplication.created_at
+                    if (window.LeaseAccomApi && typeof window.LeaseAccomApi.createApplication === "function") {
+                        const response = await window.LeaseAccomApi.createApplication({
+                            property_id: String(property.id),
+                            applicant_name: rentalApplication.applicantName,
+                            applicant_phone: rentalApplication.applicantPhone,
+                            move_in_date: rentalApplication.moveInDate,
+                            occupants: rentalApplication.occupants,
+                            stay_length: rentalApplication.stayLength,
+                            income_range: rentalApplication.incomeRange,
+                            employment_status: rentalApplication.employmentStatus,
+                            message: rentalApplication.message
                         });
+                        const savedApplication = response && (response.application || response);
+                        if (savedApplication && savedApplication.id) {
+                            Object.assign(rentalApplication, {
+                                id: savedApplication.id,
+                                propertyId: savedApplication.property_id || rentalApplication.propertyId,
+                                tenantId: savedApplication.tenant_id || rentalApplication.tenantId,
+                                ownerId: savedApplication.owner_id || rentalApplication.ownerId,
+                                status: savedApplication.status || rentalApplication.status,
+                                createdAt: savedApplication.created_at || rentalApplication.createdAt
+                            });
+                        }
                     }
                 } catch (error) {
-                    alert(error.message || "Unable to submit your application.");
-                    return;
+                    console.warn("LeaseAccom: application API unavailable, saved locally.", error);
+                }
+
+                if (window.persistApplication) {
+                    try {
+                        await window.persistApplication(rentalApplication);
+                    } catch (error) {
+                        console.warn("LeaseAccom: application could not sync to Supabase.", error);
+                    }
                 }
 
 
@@ -1759,13 +1856,13 @@ LeaseHub will process your request.`
                 }
 
                 localStorage.setItem(
-                    "leasehubCurrentUser",
+                    "leaseaccomCurrentUser",
                     JSON.stringify(currentUser)
                 );
 
                 try {
                     const users = JSON.parse(
-                        localStorage.getItem("leasehubUsers") || "[]"
+                        localStorage.getItem("leaseaccomUsers") || "[]"
                     );
                     const userIndex = Array.isArray(users)
                         ? users.findIndex(user =>
@@ -1776,12 +1873,12 @@ LeaseHub will process your request.`
                     if (userIndex !== -1) {
                         users[userIndex] = currentUser;
                         localStorage.setItem(
-                            "leasehubUsers",
+                            "leaseaccomUsers",
                             JSON.stringify(users)
                         );
                     }
                 } catch (error) {
-                    console.warn("LeaseHub tenant data could not be updated.", error);
+                    console.warn("LeaseAccom tenant data could not be updated.", error);
                 }
 
 
@@ -1802,8 +1899,8 @@ LeaseHub will process your request.`
                    SUCCESS MESSAGE
                    ===================================== */
 
-                if (typeof leaseHubToast === "function") {
-                    leaseHubToast("Application submitted — pending owner review.");
+                if (typeof leaseaccomToast === "function") {
+                    leaseaccomToast("Application submitted — pending owner review.");
                 } else {
                     alert("Application submitted successfully.");
                 }
@@ -1820,7 +1917,7 @@ LeaseHub will process your request.`
 
     /* =====================================================
        CONTACT PROPERTY OWNER
-       LeaseHub Messaging
+       LeaseAccom Messaging
        ===================================================== */
 
     const contactLandlordBtn =
@@ -1846,14 +1943,14 @@ LeaseHub will process your request.`
                     conversations =
                         JSON.parse(
                             localStorage.getItem(
-                                "leasehubMessages"
+                                "leaseaccomMessages"
                             )
                         ) || [];
 
                 } catch (error) {
 
                     console.error(
-                        "Unable to load LeaseHub messages.",
+                        "Unable to load LeaseAccom messages.",
                         error
                     );
 
@@ -1934,7 +2031,7 @@ LeaseHub will process your request.`
 
 
                     localStorage.setItem(
-                        "leasehubMessages",
+                        "leaseaccomMessages",
                         JSON.stringify(
                             conversations
                         )
@@ -2035,7 +2132,7 @@ LeaseHub will process your request.`
             const num = Number(reason);
             if (num >= 1 && num <= reasons.length) reason = reasons[num - 1];
 
-            const key = "leasehubListingReports";
+            const key = "leaseaccomListingReports";
             let reports = [];
             try { reports = JSON.parse(localStorage.getItem(key) || "[]") || []; } catch (e) { reports = []; }
             reports.unshift({
@@ -2048,9 +2145,49 @@ LeaseHub will process your request.`
             localStorage.setItem(key, JSON.stringify(reports.slice(0, 50)));
             reportBtn.textContent = "Report submitted — thank you";
             reportBtn.disabled = true;
-            alert("Thanks. LeaseHub will review this report: " + reason);
+            alert("Thanks. LeaseAccom will review this report: " + reason);
         });
     }
 
 });
 
+
+
+/* Track property views for owner analytics */
+(function trackPropertyViewOnce() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var id = params.get("id");
+    if (!id) {
+      try {
+        var sp = JSON.parse(localStorage.getItem("selectedProperty") || "null");
+        id = sp && (sp.id != null ? String(sp.id) : null);
+      } catch (e) {}
+    }
+    if (!id) return;
+    var key = "leaseaccomPropertyViews";
+    var map = {};
+    try { map = JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch (e) { map = {}; }
+    var day = new Date().toISOString().slice(0, 10);
+    if (!map[id]) map[id] = { total: 0, byDay: {} };
+    map[id].total = (map[id].total || 0) + 1;
+    map[id].byDay[day] = (map[id].byDay[day] || 0) + 1;
+    map[id].lastViewedAt = new Date().toISOString();
+    localStorage.setItem(key, JSON.stringify(map));
+    if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.recordView === "function") {
+      try { window.LeaseAccomCloud.recordView(id); } catch (e) {}
+    }
+    // also bump on stored property list if present
+    try {
+      var props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leaseaccomProperties") || "[]");
+      if (Array.isArray(props)) {
+        props.forEach(function (p) {
+          if (String(p.id) === String(id)) {
+            p.views = (Number(p.views) || 0) + 1;
+          }
+        });
+        localStorage.setItem("leaseaccomProperties", JSON.stringify(props));
+      }
+    } catch (e2) {}
+  } catch (err) {}
+})();

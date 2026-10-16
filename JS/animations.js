@@ -1,4 +1,4 @@
-/* LeaseHub — page loader, toast, entrance animations */
+/* LeaseAccom — page loader, toast, entrance animations */
 
 (function () {
     "use strict";
@@ -12,7 +12,7 @@
         loader.id = "pageLoader";
         loader.innerHTML = `
             <div class="page-loader-spinner" aria-hidden="true"></div>
-            <div class="page-loader-text">Loading LeaseHub…</div>
+            <div class="page-loader-text">Loading LeaseAccom…</div>
         `;
         document.body.prepend(loader);
     }

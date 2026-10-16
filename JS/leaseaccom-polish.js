@@ -1,4 +1,4 @@
-/* LeaseHub — stable navigation, scroll reveal and lightweight UI polish */
+/* LeaseAccom — stable navigation, scroll reveal and lightweight UI polish */
 (function () {
     "use strict";
 
@@ -6,7 +6,7 @@
         window.matchMedia &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    window.leaseHubSafeJSON = function (key, fallback) {
+    window.leaseaccomSafeJSON = function (key, fallback) {
         try {
             const value = JSON.parse(localStorage.getItem(key) || "null");
             return value ?? fallback;
@@ -15,16 +15,16 @@
         }
     };
 
-    window.leaseHubToast = function (message, type) {
+    window.leaseaccomToast = function (message, type) {
         if (typeof window.showToast === "function") {
             window.showToast(message, type || "success");
             return;
         }
 
-        let toast = document.querySelector(".leasehub-toast-fallback");
+        let toast = document.querySelector(".leaseaccom-toast-fallback");
         if (!toast) {
             toast = document.createElement("div");
-            toast.className = "toast leasehub-toast-fallback";
+            toast.className = "toast leaseaccom-toast-fallback";
             document.body.appendChild(toast);
         }
 
@@ -44,7 +44,7 @@
 
     function setupMobileNav() {
         document.querySelectorAll(".navbar .menu-btn").forEach((button) => {
-            if (button.dataset.leasehubNavStable === "1") return;
+            if (button.dataset.leaseaccomNavStable === "1") return;
 
             const navbar = button.closest(".navbar");
             if (!navbar) return;
@@ -54,7 +54,7 @@
 
             if (!links && !actions) return;
 
-            button.dataset.leasehubNavStable = "1";
+            button.dataset.leaseaccomNavStable = "1";
 
             const setIcon = (open) => {
                 button.innerHTML = open
@@ -72,13 +72,13 @@
             };
 
             const close = () => {
-                navbar.classList.remove("leasehub-mobile-open");
+                navbar.classList.remove("leaseaccom-mobile-open");
                 navbar.classList.remove("menu-open");
                 setIcon(false);
             };
 
             const open = () => {
-                navbar.classList.add("leasehub-mobile-open");
+                navbar.classList.add("leaseaccom-mobile-open");
                 navbar.classList.remove("menu-open");
                 setIcon(true);
             };
@@ -89,7 +89,7 @@
                 event.preventDefault();
                 event.stopPropagation();
 
-                if (navbar.classList.contains("leasehub-mobile-open")) {
+                if (navbar.classList.contains("leaseaccom-mobile-open")) {
                     close();
                 } else {
                     open();
@@ -104,7 +104,7 @@
 
             document.addEventListener("click", (event) => {
                 if (
-                    navbar.classList.contains("leasehub-mobile-open") &&
+                    navbar.classList.contains("leaseaccom-mobile-open") &&
                     !navbar.contains(event.target)
                 ) {
                     close();
@@ -114,7 +114,7 @@
             document.addEventListener("keydown", (event) => {
                 if (
                     event.key === "Escape" &&
-                    navbar.classList.contains("leasehub-mobile-open")
+                    navbar.classList.contains("leaseaccom-mobile-open")
                 ) {
                     close();
                     button.focus();
@@ -188,9 +188,9 @@
         add(".how-it-works-step");
         add(".stat-item");
         add(".trust-item");
-        add(".leasehub-city");
-        add(".leasehub-detail-card");
-        add(".leasehub-empty");
+        add(".leaseaccom-city");
+        add(".leaseaccom-detail-card");
+        add(".leaseaccom-empty");
         add(".form-section");
         add(".admin-card");
         add(".admin-panel");
@@ -205,7 +205,7 @@
         /* Add a short stagger only to actual repeated card groups. */
         document
             .querySelectorAll(
-                ".property-grid, .category-grid, .steps, .how-it-works-grid, .trust-grid, .leasehub-city-grid"
+                ".property-grid, .category-grid, .steps, .how-it-works-grid, .trust-grid, .leaseaccom-city-grid"
             )
             .forEach((group) => {
                 Array.from(group.children).forEach((child, index) => {
@@ -291,9 +291,9 @@
 
     function setupImages() {
         document.querySelectorAll("img").forEach((image) => {
-            if (image.dataset.leasehubImageReady === "1") return;
+            if (image.dataset.leaseaccomImageReady === "1") return;
 
-            image.dataset.leasehubImageReady = "1";
+            image.dataset.leaseaccomImageReady = "1";
 
             if (
                 !image.hasAttribute("loading") &&
@@ -305,7 +305,7 @@
             image.addEventListener(
                 "error",
                 () => {
-                    image.classList.add("leasehub-img-error");
+                    image.classList.add("leaseaccom-img-error");
                     image.parentElement?.classList.add("image-error");
                 },
                 { once: true }
@@ -333,13 +333,13 @@
 
     function loaderVisual(purpose) {
         const visuals = {
-            home: `<div class="leasehub-loader-pins" aria-hidden="true"><span></span><span></span><span></span></div>`,
-            listings: `<div class="leasehub-loader-listings" aria-hidden="true"><i></i><i></i><i></i></div>`,
-            gallery: `<div class="leasehub-loader-gallery" aria-hidden="true"><span></span><span></span><span></span></div>`,
-            messages: `<div class="leasehub-loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>`,
-            dashboard: `<div class="leasehub-loader-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div>`,
-            form: `<div class="leasehub-loader-steps" aria-hidden="true"><span></span><span></span><span></span></div>`,
-            default: `<div class="leasehub-loader-spinner" aria-hidden="true"></div>`
+            home: `<div class="leaseaccom-loader-pins" aria-hidden="true"><span></span><span></span><span></span></div>`,
+            listings: `<div class="leaseaccom-loader-listings" aria-hidden="true"><i></i><i></i><i></i></div>`,
+            gallery: `<div class="leaseaccom-loader-gallery" aria-hidden="true"><span></span><span></span><span></span></div>`,
+            messages: `<div class="leaseaccom-loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>`,
+            dashboard: `<div class="leaseaccom-loader-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div>`,
+            form: `<div class="leaseaccom-loader-steps" aria-hidden="true"><span></span><span></span><span></span></div>`,
+            default: `<div class="leaseaccom-loader-spinner" aria-hidden="true"></div>`
         };
         return visuals[purpose] || visuals.default;
     }
@@ -352,20 +352,20 @@
             messages: "Connecting conversations...",
             dashboard: "Building your overview...",
             form: "Getting things ready...",
-            default: "Loading LeaseHub..."
-        }[purpose] || "Loading LeaseHub...";
+            default: "Loading LeaseAccom..."
+        }[purpose] || "Loading LeaseAccom...";
     }
 
     function installPurposeLoader() {
-        if (!document.body || document.getElementById("leasehubPageLoader")) return;
+        if (!document.body || document.getElementById("leaseaccomPageLoader")) return;
 
         const purpose = getLoaderPurpose();
         const loader = document.createElement("div");
-        loader.id = "leasehubPageLoader";
-        loader.className = `leasehub-loader--${purpose}`;
+        loader.id = "leaseaccomPageLoader";
+        loader.className = `leaseaccom-loader--${purpose}`;
         loader.setAttribute("role", "status");
         loader.setAttribute("aria-live", "polite");
-        loader.innerHTML = `<div class="leasehub-loader-content"><img class="leasehub-loader-logo" src="IMAGES/Lease Hub logo.png" alt=""><div class="leasehub-loader-visual">${loaderVisual(purpose)}</div><div class="leasehub-loader-text">${loaderCopy(purpose)}</div><span class="sr-only">Loading page</span></div>`;
+        loader.innerHTML = `<div class="leaseaccom-loader-content"><img class="leaseaccom-loader-logo" src="IMAGES/leaseaccom-logo-horizontal.svg" alt=""><div class="leaseaccom-loader-visual">${loaderVisual(purpose)}</div><div class="leaseaccom-loader-text">${loaderCopy(purpose)}</div><span class="sr-only">Loading page</span></div>`;
         document.body.prepend(loader);
         document.documentElement.classList.remove("lh-preload-lock");
         document.documentElement.classList.add("lh-loader-on");
@@ -402,6 +402,8 @@
         setupScrollReveal();
         setupDynamicReveal();
         setupImages();
+
+        // Notifications are intentionally disabled on the landing page.
     });
 })();
 
@@ -419,8 +421,8 @@
                 if (logo.querySelector(".logo-text")) return;
                 var span = document.createElement("span");
                 span.className = "logo-text";
-                span.setAttribute("aria-label", "LeaseHub");
-                span.innerHTML = '<span class="lh-lease">Lease</span><span class="lh-hub">Hub</span>';
+                span.setAttribute("aria-label", "LeaseAccom");
+                span.innerHTML = '<span class="lh-lease">Lease</span><span class="lh-hub">Accom</span>';
                 logo.appendChild(span);
             });
         } catch (e) {}

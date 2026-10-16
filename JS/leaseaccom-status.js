@@ -1,5 +1,5 @@
 /**
- * LeaseHub shared status — viewings + applications (same labels both sides)
+ * LeaseAccom shared status — viewings + applications (same labels both sides)
  */
 (function (global) {
   const VIEWING_STEPS = [
@@ -83,7 +83,7 @@
     if (item.statusHistory.length > 12) item.statusHistory = item.statusHistory.slice(-12);
   }
 
-  global.LeaseHubStatus = {
+  global.LeaseAccomStatus = {
     normalizeViewingStatus, normalizeApplicationStatus,
     viewingLabel, applicationLabel, viewingClass, applicationClass,
     timelineHtml, pushHistory, VIEWING_STEPS, APPLICATION_STEPS

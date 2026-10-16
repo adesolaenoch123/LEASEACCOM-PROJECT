@@ -2,8 +2,8 @@
  * Owner Payments page — demo UI only (no real charges).
  */
 (function () {
-  const BANK_KEY = 'leasehub_owner_payout_bank_v1';
-  const SAMPLE_KEY = 'leasehub_owner_pay_sample_v1';
+  const BANK_KEY = 'leaseaccom_owner_payout_bank_v1';
+  const SAMPLE_KEY = 'leaseaccom_owner_pay_sample_v1';
 
   const sampleRows = [
     { date: '2026-09-28', desc: 'Rent collection', property: 'Lekki 2BED Apartment', type: 'in', status: 'Cleared', amount: 850000 },

@@ -8,12 +8,12 @@
     return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
   ready(function () {
-    const S = window.LeaseHubStatus;
+    const S = window.LeaseAccomStatus;
     let apps = [];
     try { apps = JSON.parse(localStorage.getItem("rentalApplications") || "[]"); } catch { apps = []; }
     if (!Array.isArray(apps)) apps = [];
     let user = null;
-    try { user = JSON.parse(localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("leaseHubCurrentUser") || "null"); } catch {}
+    try { user = JSON.parse(localStorage.getItem("leaseaccomCurrentUser") || localStorage.getItem("leaseaccomCurrentUser") || "null"); } catch {}
     if (user && user.email) {
       const mine = apps.filter((a) =>
         String(a.applicantEmail || a.email || "").toLowerCase() === String(user.email).toLowerCase() ||

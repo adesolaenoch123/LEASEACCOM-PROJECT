@@ -1,15 +1,15 @@
 /**
- * LeaseHub hybrid data layer — Supabase first, local fallback.
+ * LeaseAccom hybrid data layer — Supabase first, local fallback.
  */
 (function (global) {
   function hasSb() {
-    return !!(global.leasehubSupabase && global.leasehubSupabase.from);
+    return !!(global.leaseaccomSupabase && global.leaseaccomSupabase.from);
   }
 
   async function getSessionUser() {
     if (!hasSb()) return null;
     try {
-      const { data, error } = await global.leasehubSupabase.auth.getUser();
+      const { data, error } = await global.leaseaccomSupabase.auth.getUser();
       if (error || !data?.user) return null;
       return data.user;
     } catch (e) {
@@ -20,7 +20,7 @@
   async function getProfile(userId) {
     if (!hasSb() || !userId) return null;
     try {
-      const { data, error } = await global.leasehubSupabase
+      const { data, error } = await global.leaseaccomSupabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
@@ -54,8 +54,8 @@
     const profile = await getProfile(authUser.id);
     const legacy = toLegacyUser(authUser, profile);
     try {
-      localStorage.setItem("leasehubCurrentUser", JSON.stringify(legacy));
-      localStorage.setItem("leaseHubCurrentUser", JSON.stringify(legacy));
+      localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(legacy));
+      localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(legacy));
     } catch (e) {}
     return legacy;
   }
@@ -87,7 +87,7 @@
       image: row.cover_image || row.image || images[0] || "",
       images: images.length ? images : [row.cover_image || row.image].filter(Boolean),
       ownerId: row.owner_id,
-      ownerName: row.owner_name || "LeaseHub Owner",
+      ownerName: row.owner_name || "LeaseAccom Owner",
       amenities: row.amenities || []
     };
   }
@@ -96,7 +96,7 @@
     if (!hasSb()) return null;
     try {
       // Prefer listing_status=live; also accept verification_status=approved
-      let { data, error } = await global.leasehubSupabase
+      let { data, error } = await global.leaseaccomSupabase
         .from("properties")
         .select("*")
         .or("listing_status.eq.live,verification_status.eq.approved")
@@ -104,13 +104,13 @@
 
       if (error) {
         // Fallback older schema
-        const res2 = await global.leasehubSupabase
+        const res2 = await global.leaseaccomSupabase
           .from("properties")
           .select("*")
           .eq("verification_status", "approved")
           .order("created_at", { ascending: false });
         if (res2.error) {
-          console.warn("LeaseHub properties:", error.message || res2.error.message);
+          console.warn("LeaseAccom properties:", error.message || res2.error.message);
           return null;
         }
         data = res2.data;
@@ -124,7 +124,7 @@
   async function fetchOwnerProperties(ownerId) {
     if (!hasSb() || !ownerId) return null;
     try {
-      const { data, error } = await global.leasehubSupabase
+      const { data, error } = await global.leaseaccomSupabase
         .from("properties")
         .select("*")
         .eq("owner_id", ownerId)
@@ -141,7 +141,7 @@
 
   /**
    * Insert listing into Supabase. Images as data URLs may be large —
-   * we store cover + up to 12 images; Storage can replace this later.
+   * we Property Page  cover + up to 12 images; Storage can replace this later.
    */
   async function createProperty(payload) {
     if (!hasSb()) return { ok: false, offline: true };
@@ -179,7 +179,7 @@
       updated_at: new Date().toISOString()
     };
 
-    const { data, error } = await global.leasehubSupabase
+    const { data, error } = await global.leaseaccomSupabase
       .from("properties")
       .insert(row)
       .select()
@@ -199,7 +199,7 @@
         images: row.images,
         verification_status: "pending"
       };
-      const res2 = await global.leasehubSupabase.from("properties").insert(minimal).select().maybeSingle();
+      const res2 = await global.leaseaccomSupabase.from("properties").insert(minimal).select().maybeSingle();
       if (res2.error) return { ok: false, error: error.message || res2.error.message };
       return { ok: true, data: res2.data, mapped: mapPropertyRow(res2.data || minimal) };
     }
@@ -210,7 +210,7 @@
   async function createViewing(payload) {
     const user = await getSessionUser();
     if (!hasSb() || !user) return { ok: false, offline: true };
-    const { data, error } = await global.leasehubSupabase
+    const { data, error } = await global.leaseaccomSupabase
       .from("viewings")
       .insert({
         property_id: String(payload.propertyId),
@@ -226,7 +226,7 @@
     return { ok: true, data };
   }
 
-  global.LeaseHubData = {
+  global.LeaseAccomData = {
     getSessionUser,
     getProfile,
     syncLegacySession,

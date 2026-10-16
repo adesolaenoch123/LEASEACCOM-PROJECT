@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let requests =
         JSON.parse(
-            localStorage.getItem("leaseHubVerificationRequests")
+            localStorage.getItem("leaseaccomVerificationRequests")
         ) || [
 
             {
@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function saveRequests() {
 
         localStorage.setItem(
-            "leaseHubVerificationRequests",
+            "leaseaccomVerificationRequests",
             JSON.stringify(requests)
         );
 

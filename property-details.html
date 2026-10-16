@@ -5,20 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Property Details — LeaseHub</title>
-<meta name="description" content="View LeaseHub property details, gallery, amenities, availability, viewing and rental application options.">
+    <title>Property Details — LeaseAccom</title>
+<meta name="description" content="View LeaseAccom property details, gallery, amenities, availability, viewing and rental application options.">
 
     <link rel="stylesheet" href="CSS/style.css">
+<link rel="stylesheet" href="CSS/tenant-loop.css">
     <link rel="stylesheet" href="CSS/property-details.css">
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 
-<body data-leasehub-page="property-details">
+<body data-leaseaccom-page="property-details">
 
 <header class="navbar">
 
     <a href="index.html" class="logo">
-        <img src="IMAGES/Lease Hub logo.png" alt="Lease Hub">
+        <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom">
     </a>
 
     <nav class="nav-links">
@@ -27,9 +28,7 @@
         <a href="commercial.html">Commercial</a>
             <a href="student-housing.html">Student Housing</a>
             <a href="hotels.html">Hotels &amp; Lodges</a>
-            <a href="saved.html">Saved</a>
-            <a href="compare.html">Compare</a>
-        <a href="viewing-requests.html">
+<a href="viewing-requests.html">
             My Viewings
         </a>
     </nav>
@@ -295,12 +294,12 @@
         <div>
 
             <a href="index.html" class="logo">
-                <img src="IMAGES/Lease Hub logo.png" alt="Lease Hub">
+                <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom">
             </a>
 
             <p>
                 Find your place without the unnecessary
-                agent fees.
+                stress.
             </p>
 
         </div>
@@ -311,7 +310,7 @@
     <div class="footer-bottom">
 
         <span>
-            © 2026 LeaseHub
+            © 2026 LeaseAccom
         </span>
 
         <span>
@@ -325,15 +324,20 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="JS/supabase-client.js"></script>
+<script src="JS/leaseaccom-cloud.js"></script>
+<script src="JS/leaseaccom-data.js"></script>
+<script src="JS/supabase-store.js"></script>
+<script src="JS/role-walls.js"></script>
 <script src="JS/data.js"></script>
-<script src="JS/leasehub-status.js"></script>
+<script src="JS/leaseaccom-status.js"></script>
 <script src="JS/app.js"></script>
 <script src="JS/config.js"></script>
 <script src="JS/api-client.js"></script>
 <script src="JS/property-details.js"></script>
 <script src="JS/property-details-polish.js"></script>
 
-<script src="JS/leasehub-polish.js"></script>
+<script src="JS/leaseaccom-polish.js"></script>
+<script src="JS/leaseaccom-mobile-nav.js"></script>
 </body>
 
 </html>

@@ -1,0 +1,15 @@
+Phase C — Tenant loop
+=====================
+Browse Live homes → Save → Request viewing → Apply → Track on tenant dashboard
+
+- tenant-loop.js: journey + counts + application list
+- role walls: owners bounced from tenant home
+- Existing viewing-requests.js + app.js property-details handle create
+- Applications Property Page d in rentalApplications localStorage (+ API if configured)
+
+Test:
+1. Login as tenant → tenant-dashboard path checklist
+2. properties.html → only live public listings
+3. Property detail → Request viewing → appears on dashboard
+4. Apply → application status section
+5. Owner account cannot stay on tenant-dashboard

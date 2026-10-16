@@ -2,13 +2,13 @@
   const localHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
   function resolveApiBase() {
-    const fromWindow = String(window.LEASEHUB_API_URL || "").trim().replace(/\/$/, "");
+    const fromWindow = String(window.LEASEACCOM_API_URL || "").trim().replace(/\/$/, "");
     if (fromWindow) return fromWindow;
     if (localHost) return "http://127.0.0.1:8000";
     return "";
   }
 
-  window.LeaseHubApi = {
+  window.LeaseAccomApi = {
     isConfigured() {
       return Boolean(resolveApiBase());
     },
@@ -19,10 +19,10 @@
       const apiBaseUrl = resolveApiBase();
       if (!apiBaseUrl) {
         throw new Error(
-          "LeaseHub API is not configured. Set window.LEASEHUB_API_URL in JS/config.js."
+          "LeaseAccom API is not configured. Set window.LEASEACCOM_API_URL in JS/config.js."
         );
       }
-      const token = await window.LeaseHubAuth?.getAccessToken?.();
+      const token = await window.LeaseAccomAuth?.getAccessToken?.();
       if (!token) {
         throw new Error("Please log in again to continue.");
       }
@@ -42,7 +42,7 @@
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         const detail = payload.detail;
-        const msg = typeof detail === "string" ? detail : (detail && JSON.stringify(detail)) || "LeaseHub could not complete that request.";
+        const msg = typeof detail === "string" ? detail : (detail && JSON.stringify(detail)) || "LeaseAccom could not complete that request.";
         throw new Error(msg);
       }
       return payload;
@@ -59,12 +59,12 @@
       }
     },
     async createApplication(payload) {
-      const token = await window.LeaseHubAuth?.getAccessToken?.();
+      const token = await window.LeaseAccomAuth?.getAccessToken?.();
       if (!token) return null;
       return this.request("/applications", { method: "POST", body: payload });
     },
     async createViewingRequest(payload) {
-      const token = await window.LeaseHubAuth?.getAccessToken?.();
+      const token = await window.LeaseAccomAuth?.getAccessToken?.();
       if (!token) return null;
       return this.request("/viewing-requests", { method: "POST", body: payload });
     }

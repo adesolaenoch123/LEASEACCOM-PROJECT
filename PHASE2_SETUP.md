@@ -1,11 +1,11 @@
-# LeaseHub Phase 2 — Real data (Supabase)
+# LeaseAccom Phase 2 — Real data (Supabase)
 
 ## Goal
 Same app, but data works on **phone + PC** (not only one browser).
 
 ## You already have
 - Supabase project URL in `JS/supabase-client.js`
-- Auth helpers (`LeaseHubAuth`)
+- Auth helpers (`LeaseAccomAuth`)
 - Frontend flows (verify, list, chat, viewings, applications)
 
 ## Step checklist
@@ -13,7 +13,7 @@ Same app, but data works on **phone + PC** (not only one browser).
 ### A. Database (do first — 15 min)
 1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project
 2. **SQL Editor** → New query
-3. For the current unified schema, paste and run: `migrations/001_leasehub_core.sql`
+3. For the current unified schema, paste and run: `migrations/001_leaseaccom_core.sql`
 4. Do not also run the older split files in `ai-backend/migrations/`; they define overlapping tables with an incompatible `images` column type. If one of those migrations has already been applied, inspect and reconcile the existing schema before applying anything else.
 5. Confirm tables exist: `profiles`, `properties`, `viewings`, `applications`, `conversations`, `messages`, `owner_verifications`, `agreements`, `notifications`
 
@@ -52,4 +52,4 @@ Same app, but data works on **phone + PC** (not only one browser).
 3. Owner can list; you set property `listing_status = 'live'` when ready
 
 ## Next after this checklist
-Wire login/register pages to `LeaseHubAuth`, then properties read/write.
+Wire login/register pages to `LeaseAccomAuth`, then properties read/write.

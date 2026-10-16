@@ -8,7 +8,7 @@ from config import settings
 
 
 class NotificationService:
-    """User notifications for LeaseHub events."""
+    """User notifications for leaseaccom events."""
 
     def __init__(self) -> None:
         self.client: Optional[Client] = None

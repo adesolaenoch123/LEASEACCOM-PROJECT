@@ -14,7 +14,7 @@ def _split_csv(value: str | None) -> List[str]:
 
 
 class Settings:
-    APP_NAME: str = os.getenv("APP_NAME", "LeaseHub AI")
+    APP_NAME: str = os.getenv("APP_NAME", "LeaseAccom AI")
     APP_ENV: str = os.getenv("APP_ENV", "development")
     ALLOW_DEMO_AUTH: bool = (
         os.getenv("ALLOW_DEMO_AUTH", "false").strip().lower() in {"1", "true", "yes"}
@@ -32,8 +32,8 @@ class Settings:
     CORS_ORIGINS: List[str] = _split_csv(
         os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://localhost:8080,http://localhost:5500,"
-            "https://adesolaenoch123.github.io,https://adesolaenoch123.github.io/LEASE-HUB-PROJECT",
+            "http://localhost:3000,http://127.0.0.1:3000,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8000,http://localhost:8080,http://localhost:5500,"
+            "https://adesolaenoch123.github.io",
         )
     )
 

@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Payments — LeaseHub Owner</title>
-  <meta name="description" content="Owner payouts, rent collections and payment settings on LeaseHub. Demo UI — real payments not enabled yet.">
+  <title>Payments — LeaseAccom Owner</title>
+  <meta name="description" content="Owner payouts, rent collections and payment settings on LeaseAccom. Demo UI — real payments not enabled yet.">
   <link rel="stylesheet" href="CSS/style.css">
+<link rel="stylesheet" href="CSS/plans.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 <body class="owner-lounge-body" data-owner-page="payments" data-owner-title="Payments">
@@ -125,7 +126,7 @@
       <div class="pay-flow-step">
         <span>01</span>
         <strong>Tenant pays</strong>
-        <p>Rent / deposit paid on LeaseHub (card, transfer, or USSD).</p>
+        <p>Rent / deposit paid on LeaseAccom (card, transfer, or USSD).</p>
       </div>
       <div class="pay-flow-step">
         <span>02</span>
@@ -239,41 +240,25 @@
 <script src="JS/owner-shell.js"></script>
 <script src="JS/owner-payments.js"></script>
 
-<section id="plans" class="owner-plans-section">
-  <h2>Subscription plans</h2>
-  <p class="owner-muted">Paystack checkout comes next. For now you can switch plans on this device to test limits.</p>
-  <div class="owner-plans-grid" id="ownerPlansGrid"></div>
+
+
+
+<section id="plans" class="lh-pricing-wrap">
+  <h2>LeaseAccom Pricing Plans</h2>
+  <p class="lh-pricing-sub">Choose the plan that fits your portfolio. Switch anytime on this device until Paystack is live.</p>
+  <div class="lh-plans-grid" id="ownerPlansGrid"></div>
+  <p class="lh-pricing-footnote">All plans include 10% platform fee on transactions. Prices in Nigerian Naira.</p>
 </section>
 <script src="JS/plans.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  if (!window.LeaseHubPlans) return;
-  const grid = document.getElementById("ownerPlansGrid");
+  if (!window.LeaseAccomPlans) return;
+  var grid = document.getElementById("ownerPlansGrid");
   if (!grid) return;
-  const current = window.LeaseHubPlans.getCurrentPlan();
-  grid.innerHTML = window.LeaseHubPlans.listPlans().map(function (p) {
-    const active = p.id === current.id ? " is-active" : "";
-    return (
-      '<article class="owner-plan-option' + active + '" data-plan-pick="' + p.id + '">' +
-      "<h3>" + p.name + "</h3>" +
-      "<p class=\"price\">" + p.priceLabel + (p.billing === "month" ? "/mo" : "") + "</p>" +
-      "<p>" + p.blurb + "</p>" +
-      "<p><strong>" + p.maxUnits + "</strong> units max</p>" +
-      '<button type="button" class="owner-btn plan-select-btn" data-plan="' + p.id + '">' +
-      (p.id === current.id ? "Current plan" : "Select " + p.name) +
-      "</button></article>"
-    );
-  }).join("");
-  grid.addEventListener("click", function (e) {
-    const btn = e.target.closest("[data-plan]");
-    if (!btn) return;
-    const id = btn.getAttribute("data-plan");
-    window.LeaseHubPlans.setPlan(id);
-    alert("Plan set to " + id + " on this device. Paystack will replace this demo switch.");
-    location.reload();
-  });
+  window.LeaseAccomPlans.renderPricingGrid(grid);
 });
 </script>
 
+<script src="JS/owner-mobile-nav.js"></script>
 </body>
 </html>

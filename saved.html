@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Saved Properties — LeaseHub</title><meta name="description" content="Reopen properties you saved on LeaseHub.">
+<title>Saved Properties — LeaseAccom</title><meta name="description" content="Reopen properties you saved on LeaseAccom.">
 <link rel="stylesheet" href="CSS/style.css"><link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head><body>
-<header class="navbar"><a href="index.html" class="logo"><img src="IMAGES/Lease Hub logo.png" alt="LeaseHub"></a>
+<header class="navbar"><a href="index.html" class="logo"><img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom"></a>
 <nav class="nav-links"><a href="properties.html">Rent</a><a href="shortlets.html">Shortlets</a><a href="hotels.html">Hotels</a><a href="student-housing.html">Student Housing</a><a href="commercial.html">Commercial</a></nav>
 <div class="nav-actions"><a href="login.html" class="login-btn">Log in</a><a href="register.html" class="owner-btn">List a Property</a></div>
 <button class="menu-btn" type="button" aria-label="Open navigation"></button></header>
-<main class="leasehub-catalog-page"><section class="leasehub-catalog-hero"><span class="section-label">SAVED PROPERTIES</span><h1>Your shortlist, ready when you are.</h1><p>Save properties while you search and come back to them anytime on this device.</p></section>
-<div class="leasehub-catalog-heading"><div><span class="section-label">YOUR SAVED LIST</span><h2>Saved properties</h2><p id="savedCountLabel">Loading...</p></div><a class="leasehub-secondary-btn" href="properties.html" style="display:inline-flex;align-items:center;padding:0 15px;text-decoration:none">Browse properties</a></div>
+<main class="leaseaccom-catalog-page"><section class="leaseaccom-catalog-hero"><span class="section-label">SAVED PROPERTIES</span><h1>Your shortlist, ready when you are.</h1><p>Save properties while you search and come back to them anytime on this device.</p></section>
+<div class="leaseaccom-catalog-heading"><div><span class="section-label">YOUR SAVED LIST</span><h2>Saved properties</h2><p id="savedCountLabel">Loading...</p></div><a class="leaseaccom-secondary-btn" href="properties.html" style="display:inline-flex;align-items:center;padding:0 15px;text-decoration:none">Browse properties</a></div>
 <div id="savedGrid" class="property-grid"></div>
-<div id="savedEmpty" class="leasehub-empty" hidden><i class="bx bx-heart"></i><h3>No saved properties yet</h3><p>Save a property you like and it will appear here.</p><a class="primary-btn" href="properties.html">Explore properties</a></div>
-</main><footer><div class="footer-bottom"><span>© 2026 LeaseHub</span><span>Find your place without unnecessary agent fees.</span></div></footer>
-<script src="JS/data.js"></script><script src="JS/app.js"></script><script src="JS/leasehub-polish.js"></script>
+<div id="savedEmpty" class="leaseaccom-empty" hidden><i class="bx bx-heart"></i><h3>No saved properties yet</h3><p>Save a property you like and it will appear here.</p><a class="primary-btn" href="properties.html">Explore properties</a></div>
+</main><footer><div class="footer-bottom"><span>© 2026 LeaseAccom</span><span>Find your place without the unnecessary stress.</span></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="JS/supabase-client.js"></script><script src="JS/leaseaccom-data.js"></script>
+<script src="JS/data.js"></script><script src="JS/app.js"></script><script src="JS/leaseaccom-polish.js"></script>
+<script src="JS/leaseaccom-mobile-nav.js"></script>
 <script src="JS/saved.js"></script></body></html>

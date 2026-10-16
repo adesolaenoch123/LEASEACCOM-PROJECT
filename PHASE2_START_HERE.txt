@@ -1,15 +1,15 @@
-LEASEHUB PHASE 2 — START HERE
+LEASEACCOM PHASE 2 — START HERE
 =============================
 
 1. Open Supabase Dashboard → SQL Editor
-2. Run file: migrations/001_leasehub_core.sql
+2. Run file: migrations/001_leaseaccom_core.sql
 3. Confirm tables appear under Table Editor
 4. Add to key HTML pages (after boxicons, before app.js):
      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
      <script src="JS/supabase-client.js"></script>
-     <script src="JS/leasehub-data.js"></script>
+     <script src="JS/leaseaccom-data.js"></script>
 5. Test: register a new user → row in Authentication + profiles
 
-Next build after SQL succeeds: wire login.html + register.html to LeaseHubAuth.
+Next build after SQL succeeds: wire login.html + register.html to LeaseAccomAuth.
 
 Read PHASE2_SETUP.md for full checklist.

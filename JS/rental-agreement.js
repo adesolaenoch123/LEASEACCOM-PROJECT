@@ -1,5 +1,5 @@
 /* =========================================================
-   LEASEHUB RENTAL AGREEMENT ENGINE
+   LEASEACCOM RENTAL AGREEMENT ENGINE
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -70,11 +70,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     let applications = [];
 
     try {
-        const storedApplications = JSON.parse(
+        const Property Page dApplications = JSON.parse(
             localStorage.getItem("rentalApplications") || "[]"
         );
-        applications = Array.isArray(storedApplications)
-            ? storedApplications
+        applications = Array.isArray(Property Page dApplications)
+            ? Property Page dApplications
             : [];
     } catch (error) {
         applications = [];
@@ -93,16 +93,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     let backendLoadError = null;
     let currentUser = null;
     try {
-        currentUser = JSON.parse(localStorage.getItem("leasehubCurrentUser") || "null");
+        currentUser = JSON.parse(localStorage.getItem("leaseaccomCurrentUser") || "null");
     } catch (error) {
         currentUser = null;
     }
 
-    if (window.LeaseHubApi && window.LeaseHubAuth) {
+    if (window.LeaseAccomApi && window.LeaseAccomAuth) {
         try {
-            const token = await window.LeaseHubAuth.getAccessToken();
+            const token = await window.LeaseAccomAuth.getAccessToken();
             if (token) {
-                const response = await window.LeaseHubApi.request(
+                const response = await window.LeaseAccomApi.request(
                     `/applications/${encodeURIComponent(applicationId)}`
                 );
                 const record = response.application;
@@ -187,11 +187,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     let properties = [];
 
     try {
-        const storedProperties = JSON.parse(
-            localStorage.getItem("leasehubProperties") || "[]"
+        const Property Page dProperties = JSON.parse(
+            localStorage.getItem("leaseaccomProperties") || "[]"
         );
-        properties = Array.isArray(storedProperties)
-            ? storedProperties
+        properties = Array.isArray(Property Page dProperties)
+            ? Property Page dProperties
             : [];
     } catch (error) {
         properties = [];
@@ -247,7 +247,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
         ownerProfile = JSON.parse(
-            localStorage.getItem("leasehubOwnerProfile") || "{}"
+            localStorage.getItem("leaseaccomOwnerProfile") || "{}"
         ) || {};
     } catch (error) {
         ownerProfile = {};
@@ -763,7 +763,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="agreement-introduction">
 
             <p>
-                This LeaseHub agreement has been generated
+                This LeaseAccom agreement has been generated
                 using the information provided in the rental
                 application and property listing.
             </p>
@@ -840,7 +840,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             <p>
                 This prototype agreement is generated from
-                LeaseHub application data and is intended for
+                LeaseAccom application data and is intended for
                 product testing. It should be reviewed by a
                 qualified legal professional before being used
                 as a legally binding rental agreement.
@@ -858,11 +858,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     let agreements = [];
 
     try {
-        const storedAgreements = JSON.parse(
-            localStorage.getItem("leaseHubAgreements") || "[]"
+        const Property Page dAgreements = JSON.parse(
+            localStorage.getItem("leaseaccomAgreements") || "[]"
         );
-        agreements = Array.isArray(storedAgreements)
-            ? storedAgreements
+        agreements = Array.isArray(Property Page dAgreements)
+            ? Property Page dAgreements
             : [];
     } catch (error) {
         agreements = [];
@@ -879,7 +879,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (backendMode) {
         try {
-            const response = await window.LeaseHubApi.request("/agreements");
+            const response = await window.LeaseAccomApi.request("/agreements");
             backendAgreement = (response.agreements || []).find((item) =>
                 String(item.application_id) === String(application.id)
             );
@@ -890,7 +890,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const termMonths = /month/i.test(requestedStay)
                     ? requestedValue
                     : requestedValue * 12;
-                const created = await window.LeaseHubApi.request("/agreements", {
+                const created = await window.LeaseAccomApi.request("/agreements", {
                     method: "POST",
                     body: {
                         application_id: String(application.id),
@@ -983,7 +983,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
         localStorage.setItem(
-            "leaseHubAgreements",
+            "leaseaccomAgreements",
             JSON.stringify(agreements)
         );
 
@@ -1030,7 +1030,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 <p>
                     The agreement is ready for the next
-                    LeaseHub stage: protected payment.
+                    LeaseAccom stage: protected payment.
                 </p>
             `;
 
@@ -1069,7 +1069,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function recordSignature(role) {
         if (backendMode) {
             try {
-                const response = await window.LeaseHubApi.request(
+                const response = await window.LeaseAccomApi.request(
                     `/agreements/${encodeURIComponent(backendAgreement.id)}/sign`,
                     { method: "PATCH" }
                 );
@@ -1140,7 +1140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
         localStorage.setItem(
-            "leaseHubAgreements",
+            "leaseaccomAgreements",
             JSON.stringify(
                 agreements
             )

@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function getProperties() {
         try {
             return JSON.parse(
-                localStorage.getItem("leasehubProperties")
+                localStorage.getItem("leaseaccomProperties")
             ) || [];
         } catch (error) {
             console.error("Unable to load properties:", error);
@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function saveProperties(properties) {
         localStorage.setItem(
-            "leasehubProperties",
+            "leaseaccomProperties",
             JSON.stringify(properties)
         );
     }
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <div class="admin-property-image">
                         <img
-                            src="${property.image || "IMAGES/Lease Hub logo.png"}"
+                            src="${property.image || "IMAGES/leaseaccom-logo-horizontal.svg"}"
                             alt="${property.title || "Property"}"
                         >
                     </div>
@@ -293,10 +293,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     renderProperties();
 
-    // Refresh if another LeaseHub page changes the properties
+    // Refresh if another LeaseAccom page changes the properties
     window.addEventListener("storage", event => {
 
-        if (event.key === "leasehubProperties") {
+        if (event.key === "leaseaccomProperties") {
             renderProperties();
         }
 

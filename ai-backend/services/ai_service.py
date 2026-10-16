@@ -9,7 +9,7 @@ from tools.property_search import PropertySearchTool
 
 
 class AIService:
-    """LeaseHub AI service with an OpenAI-compatible LLM integration and a Supabase-backed property search tool."""
+    """leaseaccom AI service with an OpenAI-compatible LLM integration and a Supabase-backed property search tool."""
 
     def __init__(self) -> None:
         self.model = settings.LLM_MODEL
@@ -69,13 +69,13 @@ class AIService:
     async def _call_llm(self, user_message: str, property_context: list[dict]) -> str:
         if not settings.LLM_API_KEY:
             return (
-                "LeaseHub AI is configured and ready for an LLM connection, but no API key has been set yet. "
+                "leaseaccom AI is configured and ready for an LLM connection, but no API key has been set yet. "
                 "Add LLM_API_KEY and the provider settings in the backend .env file to enable live responses."
             )
 
         system_prompt = (
-            "You are LeaseHub AI, a helpful assistant for property searching, tenant questions, owner workflows, "
-            "and trust and safety guidance. Keep responses concise, helpful, and grounded in LeaseHub property data. "
+            "You are leaseaccom AI, a helpful assistant for property searching, tenant questions, owner workflows, "
+            "and trust and safety guidance. Keep responses concise, helpful, and grounded in leaseaccom property data. "
             "Do not claim to have access to data you do not have."
         )
 
@@ -84,7 +84,7 @@ class AIService:
                 f"- {item.get('title', 'Property')} | city: {item.get('city', 'n/a')} | type: {item.get('type', 'n/a')} | price: {item.get('price', 'n/a')}"
                 for item in property_context
             )
-            system_prompt += f"\nRelevant LeaseHub properties:\n{context_block}"
+            system_prompt += f"\nRelevant leaseaccom properties:\n{context_block}"
 
         payload = {
             "model": self.model,
@@ -130,12 +130,12 @@ class AIService:
                     for item in property_context
                 ]
                 return (
-                    "I found matching LeaseHub listings for your request in conversation "
+                    "I found matching leaseaccom listings for your request in conversation "
                     f"'{conversation_label}':\n- " + "\n- ".join(formatted) +
                     "\nPlease confirm the city, budget, and property type, and I can refine the list further."
                 )
 
             return (
-                "LeaseHub AI is ready, but the live LLM connection is not configured yet. "
+                "leaseaccom AI is ready, but the live LLM connection is not configured yet. "
                 "Set LLM_API_KEY in the backend .env file and restart the service to enable AI responses."
             )

@@ -1,0 +1,12 @@
+CONFIRMED: .env is tracked in the GitHub repo.
+.gitignore alone does not remove a file that was already committed.
+
+Run these once on your machine (in the project folder):
+
+  git rm --cached .env
+  git commit -m "Remove committed .env from repository"
+  git push
+
+Then rotate any keys that were in .env (Supabase dashboard → Settings → API).
+The anon/publishable key in JS/supabase-client.js is designed to be public
+with RLS; a service_role key must never appear in frontend or public git.

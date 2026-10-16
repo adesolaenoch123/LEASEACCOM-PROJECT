@@ -9,3 +9,14 @@ __pycache__/
 node_modules/
 playwright-report/
 test-results/
+
+# ===== Phase 2 Problem 9: secrets must never be committed =====
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.local
+**/.env.production
+ai-backend/.env
+*.pem
+service-role*.json

@@ -1,7 +1,7 @@
 (function(){
   'use strict';
-  const fallback={heroTitle:'Find your place without the unnecessary stress.',heroSubtitle:'Search verified properties across Nigeria.',heroButton:'Explore Properties',heroImage:'',footerText:'Find your place without the unnecessary agent fees.'};
-  let content;try{content={...fallback,...JSON.parse(localStorage.getItem('leasehubCmsPublished')||'{}')}}catch(e){content=fallback}
+  const fallback={heroTitle:'Find your place without the unnecessary stress.',heroSubtitle:'Search verified properties across Nigeria.',heroButton:'Explore Properties',heroImage:'',footerText:'Find your place without the unnecessary stress.'};
+  let content;try{content={...fallback,...JSON.parse(localStorage.getItem('leaseaccomCmsPublished')||'{}')}}catch(e){content=fallback}
   const hero=document.querySelector('.hero');
   const title=document.querySelector('.hero h1');
   const subtitle=document.querySelector('.hero-content > p');

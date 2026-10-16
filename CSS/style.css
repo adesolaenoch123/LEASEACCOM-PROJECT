@@ -125,6 +125,14 @@ select {
     position: relative;
     overflow: hidden;
     color: white;
+    /* Always show a designed fallback if the hero video cannot load. */
+    background-color: #073b28;
+    background-image:
+        radial-gradient(ellipse at 78% 22%, rgba(21, 148, 92, .62) 0%, rgba(21, 148, 92, 0) 42%),
+        radial-gradient(ellipse at 15% 100%, rgba(8, 95, 57, .8) 0%, rgba(8, 95, 57, 0) 48%),
+        linear-gradient(115deg, #061f17 0%, #0b4930 52%, #0d7547 100%);
+    background-size: cover;
+    background-position: center;
 }
 
 .hero-video {
@@ -134,7 +142,8 @@ select {
     height: 100%;
     object-fit: cover;
     object-position: center;
-    background: #0d7547;
+    background: transparent;
+    z-index: 0;
     animation: hero-video-drift 28s ease-in-out infinite alternate;
 }
 
@@ -703,15 +712,26 @@ select {
 }
 
 .primary-btn {
-    display: inline-block;
-    padding: 12px 18px;
-    background: var(--green);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 22px;
+    background: linear-gradient(135deg, #0e9f74 0%, #0d8b68 100%);
     color: white;
-    border-radius: 8px;
-    font-weight: 700;
+    border-radius: 12px;
+    font-weight: 800;
     font-size: 13px;
     border: none;
     cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 10px 20px rgba(16, 138, 92, 0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.primary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(16, 138, 92, 0.22);
+    filter: brightness(1.02);
 }
 
 .owner-icon {
@@ -2482,28 +2502,49 @@ body.modal-open {
 
 .dashboard-empty {
     text-align: center;
-    border: 1px dashed var(--border);
-    border-radius: 14px;
-    padding: 55px 20px;
+    border: 1px dashed rgba(15, 23, 42, 0.18);
+    border-radius: 18px;
+    padding: 64px 24px;
+    background: rgba(248, 250, 252, 0.4);
+    min-height: 230px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .dashboard-empty div {
-    font-size: 35px;
+    font-size: 54px;
+    line-height: 1;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 82px;
+    height: 82px;
+    margin: 0 auto 18px;
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.02);
 }
 
 .dashboard-empty h3 {
-    margin-top: 10px;
+    margin-top: 0;
+    font-size: clamp(28px, 2vw, 38px);
+    letter-spacing: -0.06em;
+    line-height: 1.1;
+    font-weight: 800;
 }
 
 .dashboard-empty p {
     color: var(--gray);
-    font-size: 12px;
-    margin: 7px auto 20px;
-    max-width: 350px;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 10px auto 0;
+    max-width: 420px;
 }
 
 .small-empty {
-    padding: 45px 20px;
+    padding: 48px 20px;
 }
 
 
@@ -3941,7 +3982,7 @@ body.modal-open {
 .compare-properties strong { color: var(--green-dark); }
 
 /* =====================================================
-   LEASEHUB MARKETPLACE STATISTICS
+   LEASEACCOM MARKETPLACE STATISTICS
    ===================================================== */
 
 .stats-section {
@@ -4101,11 +4142,11 @@ body {
 
 
 /* =====================================================
-   HOW LEASEHUB WORKS
+   HOW LEASEACCOM WORKS
    ===================================================== */
 
 .how-it-works,
-.how-leasehub-works {
+.how-leaseaccom-works {
     width: min(1100px, calc(100% - 40px));
     margin: 90px auto;
     box-sizing: border-box;
@@ -4216,7 +4257,7 @@ body {
 
     .category-section,
     .how-it-works,
-    .how-leasehub-works {
+    .how-leaseaccom-works {
         width: calc(100% - 30px);
         margin: 60px auto;
     }
@@ -4251,7 +4292,7 @@ body {
 }
 
 /* =====================================================
-   HOW LEASEHUB WORKS
+   HOW LEASEACCOM WORKS
    ===================================================== */
 
 .how-section {
@@ -4481,12 +4522,12 @@ body {
 }
 
 /* =========================================================
-   LEASEHUB — LOADING SYSTEM
+   LEASEACCOM — LOADING SYSTEM
    ========================================================= */
 
 /* ---------- PAGE LOADER ---------- */
 
-#leasehubPageLoader {
+#leaseaccomPageLoader {
     position: fixed;
     inset: 0;
     z-index: 99999;
@@ -4501,13 +4542,13 @@ body {
         visibility 0.3s ease;
 }
 
-#leasehubPageLoader.is-hidden {
+#leaseaccomPageLoader.is-hidden {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
 }
 
-.leasehub-loader-content {
+.leaseaccom-loader-content {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -4515,23 +4556,23 @@ body {
     text-align: center;
 }
 
-.leasehub-loader-logo {
-    width: 64px;
-    height: 64px;
+.leaseaccom-loader-logo {
+    width: min(72vw, 220px);
+    height: auto;
     object-fit: contain;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
-.leasehub-loader-spinner {
-    width: 34px;
-    height: 34px;
-    border: 3px solid #e9f7ef;
+.leaseaccom-loader-spinner {
+    width: 46px;
+    height: 46px;
+    border: 4px solid #e9f7ef;
     border-top-color: #15945c;
     border-radius: 50%;
-    animation: leasehubSpin 3s linear infinite;
+    animation: leaseaccomSpin 3s linear infinite;
 }
 
-.leasehub-loader-text {
+.leaseaccom-loader-text {
     margin-top: 14px;
     color: #66706a;
     font-size: 13px;
@@ -4542,43 +4583,43 @@ body {
 /* Each loading state mirrors the destination: pins for discovery, cards for
    catalogues, frames for galleries, dots for chat, bars for dashboards and
    steps for forms. */
-.leasehub-loader-visual { min-height: 38px; display: grid; place-items: center; }
-.leasehub-loader-pins { display: flex; gap: 13px; align-items: end; height: 38px; }
-.leasehub-loader-pins span { width: 11px; height: 11px; border-radius: 50% 50% 50% 0; background: #15945c; transform: rotate(-45deg) scale(.75); animation: leasehubPinBounce 3s ease-in-out infinite; }
-.leasehub-loader-pins span:nth-child(2) { animation-delay: .15s; background: #0d7547; }
-.leasehub-loader-pins span:nth-child(3) { animation-delay: .3s; background: #7abf99; }
+.leaseaccom-loader-visual { min-height: 52px; display: grid; place-items: center; }
+.leaseaccom-loader-pins { display: flex; gap: 16px; align-items: end; height: 52px; }
+.leaseaccom-loader-pins span { width: 15px; height: 15px; border-radius: 50% 50% 50% 0; background: #15945c; transform: rotate(-45deg) scale(.75); animation: leaseaccomPinBounce 1.6s ease-in-out infinite; }
+.leaseaccom-loader-pins span:nth-child(2) { animation-delay: .15s; background: #0d7547; }
+.leaseaccom-loader-pins span:nth-child(3) { animation-delay: .3s; background: #7abf99; }
 
-.leasehub-loader-listings { display: flex; gap: 8px; }
-.leasehub-loader-listings i { display: block; width: 42px; height: 32px; border-radius: 7px; background: linear-gradient(110deg,#edf3ef 25%,#dcefe3 45%,#edf3ef 65%); background-size: 240% 100%; animation: leasehubCardShimmer 3s ease-in-out infinite; }
-.leasehub-loader-listings i:nth-child(2) { animation-delay: .12s; }
-.leasehub-loader-listings i:nth-child(3) { animation-delay: .24s; }
+.leaseaccom-loader-listings { display: flex; gap: 10px; }
+.leaseaccom-loader-listings i { display: block; width: 54px; height: 40px; border-radius: 7px; background: linear-gradient(110deg,#edf3ef 25%,#dcefe3 45%,#edf3ef 65%); background-size: 240% 100%; animation: leaseaccomCardShimmer 1.8s ease-in-out infinite; }
+.leaseaccom-loader-listings i:nth-child(2) { animation-delay: .12s; }
+.leaseaccom-loader-listings i:nth-child(3) { animation-delay: .24s; }
 
-.leasehub-loader-gallery { display: flex; gap: 5px; align-items: center; height: 38px; }
-.leasehub-loader-gallery span { display: block; width: 17px; height: 31px; border-radius: 4px; background: #dcefe3; animation: leasehubGalleryFrame 3s ease-in-out infinite; }
-.leasehub-loader-gallery span:nth-child(2) { height: 38px; background: #15945c; animation-delay: .13s; }
-.leasehub-loader-gallery span:nth-child(3) { animation-delay: .26s; }
+.leaseaccom-loader-gallery { display: flex; gap: 7px; align-items: center; height: 52px; }
+.leaseaccom-loader-gallery span { display: block; width: 22px; height: 42px; border-radius: 4px; background: #dcefe3; animation: leaseaccomGalleryFrame 1.6s ease-in-out infinite; }
+.leaseaccom-loader-gallery span:nth-child(2) { height: 52px; background: #15945c; animation-delay: .13s; }
+.leaseaccom-loader-gallery span:nth-child(3) { animation-delay: .26s; }
 
-.leasehub-loader-dots { display: flex; gap: 7px; align-items: center; height: 38px; }
-.leasehub-loader-dots span { width: 9px; height: 9px; border-radius: 50%; background: #15945c; animation: leasehubTyping 3s ease-in-out infinite; }
-.leasehub-loader-dots span:nth-child(2) { animation-delay: .15s; }
-.leasehub-loader-dots span:nth-child(3) { animation-delay: .3s; }
+.leaseaccom-loader-dots { display: flex; gap: 10px; align-items: center; height: 52px; }
+.leaseaccom-loader-dots span { width: 12px; height: 12px; border-radius: 50%; background: #15945c; animation: leaseaccomTyping 1.6s ease-in-out infinite; }
+.leaseaccom-loader-dots span:nth-child(2) { animation-delay: .15s; }
+.leaseaccom-loader-dots span:nth-child(3) { animation-delay: .3s; }
 
-.leasehub-loader-bars { height: 38px; display: flex; align-items: end; gap: 6px; }
-.leasehub-loader-bars i { display: block; width: 8px; height: 14px; border-radius: 6px 6px 2px 2px; background: #15945c; animation: leasehubBars 3s ease-in-out infinite; }
-.leasehub-loader-bars i:nth-child(2) { height: 27px; animation-delay: .12s; }.leasehub-loader-bars i:nth-child(3) { height: 20px; animation-delay: .24s; }.leasehub-loader-bars i:nth-child(4) { height: 34px; animation-delay: .36s; }
+.leaseaccom-loader-bars { height: 52px; display: flex; align-items: end; gap: 8px; }
+.leaseaccom-loader-bars i { display: block; width: 11px; height: 19px; border-radius: 6px 6px 2px 2px; background: #15945c; animation: leaseaccomBars 1.6s ease-in-out infinite; }
+.leaseaccom-loader-bars i:nth-child(2) { height: 37px; animation-delay: .12s; }.leaseaccom-loader-bars i:nth-child(3) { height: 28px; animation-delay: .24s; }.leaseaccom-loader-bars i:nth-child(4) { height: 48px; animation-delay: .36s; }
 
-.leasehub-loader-steps { display: flex; align-items: center; gap: 0; }
-.leasehub-loader-steps span { position: relative; width: 13px; height: 13px; border-radius: 50%; background: #d5e5db; animation: leasehubStep 3s ease-in-out infinite; }
-.leasehub-loader-steps span + span { margin-left: 20px; }.leasehub-loader-steps span + span::before { content: ""; position: absolute; right: 13px; top: 5px; width: 20px; height: 3px; background: #d5e5db; }.leasehub-loader-steps span:nth-child(2) { animation-delay: .18s; }.leasehub-loader-steps span:nth-child(3) { animation-delay: .36s; }
+.leaseaccom-loader-steps { display: flex; align-items: center; gap: 0; }
+.leaseaccom-loader-steps span { position: relative; width: 17px; height: 17px; border-radius: 50%; background: #d5e5db; animation: leaseaccomStep 1.6s ease-in-out infinite; }
+.leaseaccom-loader-steps span + span { margin-left: 27px; }.leaseaccom-loader-steps span + span::before { content: ""; position: absolute; right: 17px; top: 7px; width: 27px; height: 3px; background: #d5e5db; }.leaseaccom-loader-steps span:nth-child(2) { animation-delay: .18s; }.leaseaccom-loader-steps span:nth-child(3) { animation-delay: .36s; }
 
-@keyframes leasehubPinBounce { 0%,100% { transform: rotate(-45deg) translate(0,0) scale(.75); opacity:.55; } 50% { transform: rotate(-45deg) translate(0,-8px) scale(1); opacity:1; } }
-@keyframes leasehubCardShimmer { from { background-position: 200% 0; } to { background-position: -40% 0; } }
-@keyframes leasehubGalleryFrame { 0%,100% { transform: translateY(2px); opacity:.55; } 50% { transform: translateY(-3px); opacity:1; } }
-@keyframes leasehubTyping { 0%,60%,100% { transform: translateY(0); opacity:.45; } 30% { transform: translateY(-8px); opacity:1; } }
-@keyframes leasehubBars { 0%,100% { transform: scaleY(.55); transform-origin:bottom; opacity:.55; } 50% { transform: scaleY(1); transform-origin:bottom; opacity:1; } }
-@keyframes leasehubStep { 0%,100% { background:#d5e5db; box-shadow:none; } 40%,60% { background:#15945c; box-shadow:0 0 0 5px rgba(21,148,92,.12); } }
+@keyframes leaseaccomPinBounce { 0%,100% { transform: rotate(-45deg) translate(0,0) scale(.75); opacity:.55; } 50% { transform: rotate(-45deg) translate(0,-8px) scale(1); opacity:1; } }
+@keyframes leaseaccomCardShimmer { from { background-position: 200% 0; } to { background-position: -40% 0; } }
+@keyframes leaseaccomGalleryFrame { 0%,100% { transform: translateY(2px); opacity:.55; } 50% { transform: translateY(-3px); opacity:1; } }
+@keyframes leaseaccomTyping { 0%,60%,100% { transform: translateY(0); opacity:.45; } 30% { transform: translateY(-8px); opacity:1; } }
+@keyframes leaseaccomBars { 0%,100% { transform: scaleY(.55); transform-origin:bottom; opacity:.55; } 50% { transform: scaleY(1); transform-origin:bottom; opacity:1; } }
+@keyframes leaseaccomStep { 0%,100% { background:#d5e5db; box-shadow:none; } 40%,60% { background:#15945c; box-shadow:0 0 0 5px rgba(21,148,92,.12); } }
 
-@keyframes leasehubSpin {
+@keyframes leaseaccomSpin {
     to {
         transform: rotate(360deg);
     }
@@ -4587,11 +4628,11 @@ body {
 
 /* ---------- CONTENT FADE IN ---------- */
 
-.leasehub-content-ready {
-    animation: leasehubContentFade 0.3s ease both;
+.leaseaccom-content-ready {
+    animation: leaseaccomContentFade 0.3s ease both;
 }
 
-@keyframes leasehubContentFade {
+@keyframes leaseaccomContentFade {
     from {
         opacity: 0;
         transform: translateY(6px);
@@ -4606,47 +4647,47 @@ body {
 
 /* ---------- PROPERTY SKELETON ---------- */
 
-.leasehub-skeleton-grid {
+.leaseaccom-skeleton-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 24px;
 }
 
-.leasehub-skeleton-card {
+.leaseaccom-skeleton-card {
     overflow: hidden;
     background: #ffffff;
     border: 1px solid #e3e8e5;
     border-radius: 16px;
 }
 
-.leasehub-skeleton-image {
+.leaseaccom-skeleton-image {
     width: 100%;
     height: 220px;
 }
 
-.leasehub-skeleton-body {
+.leaseaccom-skeleton-body {
     padding: 18px;
 }
 
-.leasehub-skeleton-line {
+.leaseaccom-skeleton-line {
     height: 12px;
     margin-bottom: 12px;
     border-radius: 6px;
 }
 
-.leasehub-skeleton-line.short {
+.leaseaccom-skeleton-line.short {
     width: 55%;
 }
 
-.leasehub-skeleton-line.medium {
+.leaseaccom-skeleton-line.medium {
     width: 75%;
 }
 
-.leasehub-skeleton-line.long {
+.leaseaccom-skeleton-line.long {
     width: 90%;
 }
 
-.leasehub-skeleton-shimmer {
+.leaseaccom-skeleton-shimmer {
     background:
         linear-gradient(
             90deg,
@@ -4655,10 +4696,10 @@ body {
             #f5f7f6 75%
         );
     background-size: 200% 100%;
-    animation: leasehubShimmer 3s ease-in-out infinite;
+    animation: leaseaccomShimmer 3s ease-in-out infinite;
 }
 
-@keyframes leasehubShimmer {
+@keyframes leaseaccomShimmer {
     from {
         background-position: 200% 0;
     }
@@ -4671,17 +4712,17 @@ body {
 
 /* ---------- BUTTON LOADING ---------- */
 
-.leasehub-btn-loading {
+.leaseaccom-btn-loading {
     position: relative;
     pointer-events: none;
     cursor: wait;
 }
 
-.leasehub-btn-loading > * {
+.leaseaccom-btn-loading > * {
     visibility: hidden;
 }
 
-.leasehub-btn-spinner {
+.leaseaccom-btn-spinner {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -4691,22 +4732,22 @@ body {
     border: 2px solid currentColor;
     border-right-color: transparent;
     border-radius: 50%;
-    animation: leasehubSpin 3s linear infinite;
+    animation: leaseaccomSpin 3s linear infinite;
 }
 
 
 /* ---------- IMAGE LOADING ---------- */
 
-.leasehub-image-loading {
+.leaseaccom-image-loading {
     opacity: 0;
     transition: opacity 0.35s ease;
 }
 
-.leasehub-image-loaded {
+.leaseaccom-image-loaded {
     opacity: 1;
 }
 
-.leasehub-image-fallback {
+.leaseaccom-image-fallback {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4720,53 +4761,49 @@ body {
 /* ---------- MOBILE ---------- */
 
 @media (max-width: 900px) {
-    .leasehub-skeleton-grid {
+    .leaseaccom-skeleton-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 600px) {
-    .leasehub-skeleton-grid {
+    .leaseaccom-skeleton-grid {
         grid-template-columns: 1fr;
         gap: 16px;
     }
 
-    .leasehub-skeleton-image {
+    .leaseaccom-skeleton-image {
         height: 200px;
     }
 
-    .leasehub-loader-logo {
-        width: 54px;
-        height: 54px;
-    }
 }
 
 
 /* ---------- REDUCED MOTION ---------- */
 
 @media (prefers-reduced-motion: reduce) {
-    #leasehubPageLoader,
-    .leasehub-image-loading,
-    .leasehub-content-ready {
+    #leaseaccomPageLoader,
+    .leaseaccom-image-loading,
+    .leaseaccom-content-ready {
         transition: none;
         animation: none;
     }
 
-    .leasehub-loader-spinner,
-    .leasehub-btn-spinner,
-    .leasehub-skeleton-shimmer,
-    .leasehub-loader-pins span,
-    .leasehub-loader-listings i,
-    .leasehub-loader-gallery span,
-    .leasehub-loader-dots span,
-    .leasehub-loader-bars i,
-    .leasehub-loader-steps span {
+    .leaseaccom-loader-spinner,
+    .leaseaccom-btn-spinner,
+    .leaseaccom-skeleton-shimmer,
+    .leaseaccom-loader-pins span,
+    .leaseaccom-loader-listings i,
+    .leaseaccom-loader-gallery span,
+    .leaseaccom-loader-dots span,
+    .leaseaccom-loader-bars i,
+    .leaseaccom-loader-steps span {
         animation: none;
     }
 }
 
 /* =========================================================
-   LEASEHUB — PUBLIC BETA POLISH
+   LEASEACCOM — PUBLIC BETA POLISH
    ========================================================= */
 :root {
     --lh-green: #15945c;
@@ -4898,8 +4935,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     .navbar .nav-actions {
         display: none;
     }
-    .navbar.leasehub-mobile-open .nav-links,
-    .navbar.leasehub-mobile-open .nav-actions {
+    .navbar.leaseaccom-mobile-open .nav-links,
+    .navbar.leaseaccom-mobile-open .nav-actions {
         display: flex;
         position: absolute;
         left: 14px;
@@ -4914,22 +4951,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         background: #fff;
         box-shadow: 0 18px 45px rgba(16,19,17,.14);
     }
-    .navbar.leasehub-mobile-open .nav-links { margin-bottom: 0; }
-    .navbar.leasehub-mobile-open .nav-actions { top: calc(100% + 8px + 210px); }
-    .navbar.leasehub-mobile-open .nav-links a,
-    .navbar.leasehub-mobile-open .nav-actions a {
+    .navbar.leaseaccom-mobile-open .nav-links { margin-bottom: 0; }
+    .navbar.leaseaccom-mobile-open .nav-actions { top: calc(100% + 8px + 210px); }
+    .navbar.leaseaccom-mobile-open .nav-links a,
+    .navbar.leaseaccom-mobile-open .nav-actions a {
         padding: 11px 12px;
         border-radius: 9px;
     }
 }
 
 /* Catalog pages */
-.leasehub-catalog-page {
+.leaseaccom-catalog-page {
     max-width: 1240px;
     margin: 0 auto;
     padding: 36px 5% 80px;
 }
-.leasehub-catalog-hero {
+.leaseaccom-catalog-hero {
     position: relative;
     overflow: hidden;
     margin-bottom: 26px;
@@ -4938,21 +4975,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     background: linear-gradient(135deg, #101311 0%, #173b29 100%);
     color: #fff;
 }
-.leasehub-catalog-hero .section-label { color: #8ee1b7; }
-.leasehub-catalog-hero h1 {
+.leaseaccom-catalog-hero .section-label { color: #8ee1b7; }
+.leaseaccom-catalog-hero h1 {
     max-width: 760px;
     margin: 10px 0 12px;
     font-size: clamp(34px, 5vw, 60px);
     line-height: 1.02;
     letter-spacing: -2px;
 }
-.leasehub-catalog-hero p {
+.leaseaccom-catalog-hero p {
     max-width: 650px;
     margin: 0;
     color: rgba(255,255,255,.78);
     line-height: 1.7;
 }
-.leasehub-search-panel {
+.leaseaccom-search-panel {
     display: grid;
     grid-template-columns: 1.5fr repeat(3, 1fr) auto;
     gap: 10px;
@@ -4963,8 +5000,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     background: #fff;
     box-shadow: 0 16px 40px rgba(16,19,17,.07);
 }
-.leasehub-search-panel input,
-.leasehub-search-panel select {
+.leaseaccom-search-panel input,
+.leaseaccom-search-panel select {
     width: 100%;
     min-height: 46px;
     box-sizing: border-box;
@@ -4975,15 +5012,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     color: var(--lh-black);
     font: inherit;
 }
-.leasehub-search-panel button { min-height: 46px; }
-.leasehub-filter-row {
+.leaseaccom-search-panel button { min-height: 46px; }
+.leaseaccom-filter-row {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin: 18px 0 24px;
 }
-.leasehub-filter-row select,
-.leasehub-filter-row label {
+.leaseaccom-filter-row select,
+.leaseaccom-filter-row label {
     min-height: 40px;
     display: inline-flex;
     align-items: center;
@@ -4996,28 +5033,28 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     font-size: 12px;
     font-weight: 700;
 }
-.leasehub-filter-row select { cursor: pointer; }
-.leasehub-catalog-heading {
+.leaseaccom-filter-row select { cursor: pointer; }
+.leaseaccom-catalog-heading {
     display: flex;
     justify-content: space-between;
     align-items: end;
     gap: 18px;
     margin: 28px 0 16px;
 }
-.leasehub-catalog-heading h2 { margin: 0; }
-.leasehub-catalog-heading p { margin: 5px 0 0; color: var(--lh-gray); font-size: 13px; }
-.leasehub-empty {
+.leaseaccom-catalog-heading h2 { margin: 0; }
+.leaseaccom-catalog-heading p { margin: 5px 0 0; color: var(--lh-gray); font-size: 13px; }
+.leaseaccom-empty {
     padding: 50px 24px;
     border: 1px dashed #bfd6c8;
     border-radius: 16px;
     background: var(--lh-soft);
     text-align: center;
 }
-.leasehub-empty i { font-size: 30px; color: var(--lh-green); }
-.leasehub-empty h3 { margin: 12px 0 7px; }
-.leasehub-empty p { max-width: 440px; margin: 0 auto 18px; color: var(--lh-gray); line-height: 1.6; }
+.leaseaccom-empty i { font-size: 30px; color: var(--lh-green); }
+.leaseaccom-empty h3 { margin: 12px 0 7px; }
+.leaseaccom-empty p { max-width: 440px; margin: 0 auto 18px; color: var(--lh-gray); line-height: 1.6; }
 
-.leasehub-detail-card {
+.leaseaccom-detail-card {
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr);
     gap: 30px;
@@ -5026,21 +5063,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     border-radius: 20px;
     background: #fff;
 }
-.leasehub-gallery {
+.leaseaccom-gallery {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 92px;
     gap: 10px;
     min-height: 430px;
 }
-.leasehub-gallery-main {
+.leaseaccom-gallery-main {
     position: relative;
     min-height: 430px;
     overflow: hidden;
     border-radius: 15px;
     background: var(--lh-soft);
 }
-.leasehub-gallery-main img { width: 100%; height: 100%; min-height: 430px; object-fit: cover; display: block; }
-.leasehub-gallery-counter {
+.leaseaccom-gallery-main img { width: 100%; height: 100%; min-height: 430px; object-fit: cover; display: block; }
+.leaseaccom-gallery-counter {
     position: absolute;
     right: 12px;
     bottom: 12px;
@@ -5051,8 +5088,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     font-size: 11px;
     font-weight: 700;
 }
-.leasehub-gallery-thumbs { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
-.leasehub-gallery-thumbs button {
+.leaseaccom-gallery-thumbs { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.leaseaccom-gallery-thumbs button {
     height: 70px;
     padding: 0;
     overflow: hidden;
@@ -5061,22 +5098,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     background: var(--lh-soft);
     cursor: pointer;
 }
-.leasehub-gallery-thumbs button.active { border-color: var(--lh-green); }
-.leasehub-gallery-thumbs img { width: 100%; height: 100%; object-fit: cover; }
-.leasehub-detail-info h1 { margin: 8px 0 10px; font-size: clamp(28px, 4vw, 44px); line-height: 1.08; }
-.leasehub-detail-price { margin: 18px 0; font-size: 25px; font-weight: 800; }
-.leasehub-detail-price span { color: var(--lh-gray); font-size: 12px; font-weight: 600; }
-.leasehub-detail-meta { display: grid; grid-template-columns: repeat(2,1fr); gap: 9px; margin: 18px 0; }
-.leasehub-detail-meta div {
+.leaseaccom-gallery-thumbs button.active { border-color: var(--lh-green); }
+.leaseaccom-gallery-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+.leaseaccom-detail-info h1 { margin: 8px 0 10px; font-size: clamp(28px, 4vw, 44px); line-height: 1.08; }
+.leaseaccom-detail-price { margin: 18px 0; font-size: 25px; font-weight: 800; }
+.leaseaccom-detail-price span { color: var(--lh-gray); font-size: 12px; font-weight: 600; }
+.leaseaccom-detail-meta { display: grid; grid-template-columns: repeat(2,1fr); gap: 9px; margin: 18px 0; }
+.leaseaccom-detail-meta div {
     padding: 11px 12px;
     border: 1px solid var(--lh-border);
     border-radius: 10px;
     background: #fbfdfb;
 }
-.leasehub-detail-meta small { display:block; color:var(--lh-gray); font-size:10px; margin-bottom:4px; }
-.leasehub-detail-meta strong { font-size:13px; }
-.leasehub-action-stack { display: grid; gap: 9px; margin-top: 18px; }
-.leasehub-secondary-btn {
+.leaseaccom-detail-meta small { display:block; color:var(--lh-gray); font-size:10px; margin-bottom:4px; }
+.leaseaccom-detail-meta strong { font-size:13px; }
+.leaseaccom-action-stack { display: grid; gap: 9px; margin-top: 18px; }
+.leaseaccom-secondary-btn {
     min-height: 46px;
     border: 1px solid var(--lh-green);
     border-radius: 10px;
@@ -5086,8 +5123,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     font-weight: 700;
     cursor: pointer;
 }
-.leasehub-secondary-btn:hover { background: var(--lh-green-light); }
-.leasehub-lightbox {
+.leaseaccom-secondary-btn:hover { background: var(--lh-green-light); }
+.leaseaccom-lightbox {
     position: fixed;
     inset: 0;
     z-index: 7000;
@@ -5096,9 +5133,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     padding: 20px;
     background: rgba(8,12,10,.92);
 }
-.leasehub-lightbox.is-open { display: grid; }
-.leasehub-lightbox img { max-width: min(1100px, 94vw); max-height: 88vh; object-fit: contain; border-radius: 10px; }
-.leasehub-lightbox button {
+.leaseaccom-lightbox.is-open { display: grid; }
+.leaseaccom-lightbox img { max-width: min(1100px, 94vw); max-height: 88vh; object-fit: contain; border-radius: 10px; }
+.leaseaccom-lightbox button {
     position: absolute;
     border: 1px solid rgba(255,255,255,.25);
     background: rgba(255,255,255,.1);
@@ -5108,89 +5145,89 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     height: 42px;
     cursor: pointer;
 }
-.leasehub-lightbox-close { top: 18px; right: 18px; }
-.leasehub-lightbox-prev { left: 18px; top: 50%; }
-.leasehub-lightbox-next { right: 18px; top: 50%; }
+.leaseaccom-lightbox-close { top: 18px; right: 18px; }
+.leaseaccom-lightbox-prev { left: 18px; top: 50%; }
+.leaseaccom-lightbox-next { right: 18px; top: 50%; }
 
-.leasehub-steps {
+.leaseaccom-steps {
     display: grid;
     grid-template-columns: repeat(4,1fr);
     gap: 12px;
     margin: 26px 0;
 }
-.leasehub-step {
+.leaseaccom-step {
     padding: 17px;
     border: 1px solid var(--lh-border);
     border-radius: 14px;
     background: #fff;
 }
-.leasehub-step span {
+.leaseaccom-step span {
     display: grid;
     width: 30px; height: 30px; place-items: center;
     margin-bottom: 12px; border-radius: 50%;
     background: var(--lh-green-light); color: var(--lh-green);
     font-size: 11px; font-weight: 800;
 }
-.leasehub-step h3 { margin: 0 0 6px; font-size: 14px; }
-.leasehub-step p { margin: 0; color: var(--lh-gray); font-size: 12px; line-height: 1.6; }
+.leaseaccom-step h3 { margin: 0 0 6px; font-size: 14px; }
+.leaseaccom-step p { margin: 0; color: var(--lh-gray); font-size: 12px; line-height: 1.6; }
 
-.leasehub-status-track {
+.leaseaccom-status-track {
     display: grid;
     grid-template-columns: repeat(4,1fr);
     gap: 0;
     margin: 18px 0;
 }
-.leasehub-status-step { position: relative; text-align: center; }
-.leasehub-status-step::before {
+.leaseaccom-status-step { position: relative; text-align: center; }
+.leaseaccom-status-step::before {
     content: "";
     position: absolute;
     left: 50%; right: -50%; top: 15px; height: 2px;
     background: var(--lh-border);
 }
-.leasehub-status-step:last-child::before { display:none; }
-.leasehub-status-dot {
+.leaseaccom-status-step:last-child::before { display:none; }
+.leaseaccom-status-dot {
     position: relative; z-index: 1;
     display: grid; width: 30px; height: 30px; margin: 0 auto 8px;
     place-items: center; border-radius: 50%;
     background: var(--lh-soft); border: 2px solid var(--lh-border);
     color: var(--lh-gray); font-size: 10px; font-weight: 800;
 }
-.leasehub-status-step.is-current .leasehub-status-dot,
-.leasehub-status-step.is-done .leasehub-status-dot {
+.leaseaccom-status-step.is-current .leaseaccom-status-dot,
+.leaseaccom-status-step.is-done .leaseaccom-status-dot {
     border-color: var(--lh-green); background: var(--lh-green); color: #fff;
 }
-.leasehub-status-step span:last-child { font-size: 10px; font-weight: 700; color: var(--lh-gray); }
+.leaseaccom-status-step span:last-child { font-size: 10px; font-weight: 700; color: var(--lh-gray); }
 
-.leasehub-city-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-.leasehub-city { padding:16px; border:1px solid var(--lh-border); border-radius:12px; background:#fff; }
-.leasehub-city strong { display:block; margin-bottom:4px; }
-.leasehub-city span { color:var(--lh-gray); font-size:11px; }
+.leaseaccom-city-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.leaseaccom-city { padding:16px; border:1px solid var(--lh-border); border-radius:12px; background:#fff; }
+.leaseaccom-city strong { display:block; margin-bottom:4px; }
+.leaseaccom-city span { color:var(--lh-gray); font-size:11px; }
 
 @media (max-width: 900px) {
-    .leasehub-search-panel { grid-template-columns: 1fr 1fr; }
-    .leasehub-detail-card { grid-template-columns: 1fr; }
-    .leasehub-steps { grid-template-columns: repeat(2,1fr); }
-    .leasehub-city-grid { grid-template-columns: repeat(2,1fr); }
+    .leaseaccom-search-panel { grid-template-columns: 1fr 1fr; }
+    .leaseaccom-detail-card { grid-template-columns: 1fr; }
+    .leaseaccom-steps { grid-template-columns: repeat(2,1fr); }
+    .leaseaccom-city-grid { grid-template-columns: repeat(2,1fr); }
 }
 @media (max-width: 600px) {
-    .leasehub-catalog-page { padding-left: 4%; padding-right: 4%; }
-    .leasehub-search-panel { grid-template-columns: 1fr; }
-    .leasehub-gallery { grid-template-columns: 1fr; }
-    .leasehub-gallery-main, .leasehub-gallery-main img { min-height: 300px; }
-    .leasehub-gallery-thumbs { flex-direction: row; overflow-x:auto; }
-    .leasehub-gallery-thumbs button { flex:0 0 72px; }
-    .leasehub-steps, .leasehub-city-grid { grid-template-columns: 1fr; }
-    .leasehub-status-track { overflow-x:auto; min-width:540px; }
+    .leaseaccom-catalog-page { padding-left: 4%; padding-right: 4%; }
+    .leaseaccom-search-panel { grid-template-columns: 1fr; }
+    .leaseaccom-gallery { grid-template-columns: 1fr; }
+    .leaseaccom-gallery-main, .leaseaccom-gallery-main img { min-height: 300px; }
+    .leaseaccom-gallery-thumbs { flex-direction: row; overflow-x:auto; }
+    .leaseaccom-gallery-thumbs button { flex:0 0 72px; }
+    .leaseaccom-steps, .leaseaccom-city-grid { grid-template-columns: 1fr; }
+    .leaseaccom-status-track { overflow-x:auto; min-width:540px; }
 }
 
 /* Stagger + utility motion */
-.leasehub-stagger > * { animation: leasehubCardIn .35s ease both; }
-.leasehub-stagger > *:nth-child(2) { animation-delay: .04s; }
-.leasehub-stagger > *:nth-child(3) { animation-delay: .08s; }
-.leasehub-stagger > *:nth-child(4) { animation-delay: .12s; }
-.leasehub-stagger > *:nth-child(5) { animation-delay: .16s; }
-.leasehub-stagger > *:nth-child(6) { animation-delay: .20s; }
-@keyframes leasehubCardIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+.leaseaccom-stagger > * { animation: leaseaccomCardIn .35s ease both; }
+.leaseaccom-stagger > *:nth-child(2) { animation-delay: .04s; }
+.leaseaccom-stagger > *:nth-child(3) { animation-delay: .08s; }
+.leaseaccom-stagger > *:nth-child(4) { animation-delay: .12s; }
+.leaseaccom-stagger > *:nth-child(5) { animation-delay: .16s; }
+.leaseaccom-stagger > *:nth-child(6) { animation-delay: .20s; }
+@keyframes leaseaccomCardIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
@@ -5201,50 +5238,57 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     display:grid; place-items:center; border:1px solid rgba(255,255,255,.5);
     border-radius:10px; background:rgba(16,19,17,.72); color:#fff; cursor:pointer;
 }
-.leasehub-extra-actions { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 4px; }
-.leasehub-extra-actions .leasehub-secondary-btn { flex:1 1 180px; }
-.leasehub-enhanced-card .property-location { display:flex; align-items:center; gap:6px; }
-.leasehub-enhanced-card .property-meta { display:flex; flex-wrap:wrap; gap:10px; }
-.leasehub-enhanced-card .property-meta span { display:inline-flex; align-items:center; gap:5px; }
-.leasehub-enhanced-card .badge { display:inline-flex; align-items:center; gap:5px; }
+.leaseaccom-extra-actions { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 4px; }
+.leaseaccom-extra-actions .leaseaccom-secondary-btn { flex:1 1 180px; }
+.leaseaccom-enhanced-card .property-location { display:flex; align-items:center; gap:6px; }
+.leaseaccom-enhanced-card .property-meta { display:flex; flex-wrap:wrap; gap:10px; }
+.leaseaccom-enhanced-card .property-meta span { display:inline-flex; align-items:center; gap:5px; }
+.leaseaccom-enhanced-card .badge { display:inline-flex; align-items:center; gap:5px; }
 @media(max-width:600px) {
-    .leasehub-extra-actions { display:grid; }
+    .leaseaccom-extra-actions { display:grid; }
 }
 
-.leasehub-wizard-bar {
-    display:flex; gap:8px; overflow-x:auto; margin:0 auto 18px; max-width:900px;
-    padding:8px; border:1px solid var(--lh-border); border-radius:14px; background:#fff;
+.leaseaccom-wizard-bar {
+    display:flex; gap:4px; overflow-x:auto; margin:0 auto 18px; max-width:900px;
+    padding:8px 10px; border:1px solid var(--lh-border); border-radius:10px; background:#fff;
 }
-.leasehub-wizard-bar button {
-    flex:1 0 150px; display:flex; align-items:center; gap:8px; min-height:46px;
-    padding:8px 11px; border:1px solid transparent; border-radius:9px; background:transparent;
-    color:var(--lh-gray); font:inherit; font-size:11px; font-weight:700; cursor:pointer;
+.leaseaccom-wizard-bar button {
+    flex:1 0 96px; display:flex; align-items:center; gap:6px; min-height:30px;
+    padding:4px 7px; border:1px solid transparent; border-radius:7px; background:transparent;
+    color:var(--lh-gray); font:inherit; font-size:9px; font-weight:700; cursor:pointer;
 }
-.leasehub-wizard-bar button span { display:grid; width:27px;height:27px;place-items:center;border-radius:50%;background:var(--lh-soft); }
-.leasehub-wizard-bar button.active { border-color:#ccebd9; background:var(--lh-green-light); color:var(--lh-green-dark); }
-.leasehub-wizard-bar button.active span { background:var(--lh-green); color:#fff; }
+.leaseaccom-wizard-bar button span {
+    display:grid; width:14px; height:14px; place-items:center; border-radius:4px;
+    background:var(--lh-soft); border:1px solid rgba(21, 148, 92, 0.2); font-size:8px; line-height:1;
+    flex-shrink:0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8);
+}
+.leaseaccom-wizard-bar button.active { border-color:#ccebd9; background:var(--lh-green-light); color:var(--lh-green-dark); }
+.leaseaccom-wizard-bar button.active span {
+    background:var(--lh-green); color:#fff; border-color:var(--lh-green);
+    box-shadow: 0 0 0 2px rgba(21,148,92,0.12);
+}
 .form-section.wizard-hidden { display:none !important; }
-.leasehub-wizard-controls { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:18px; padding-top:18px; border-top:1px solid var(--lh-border); }
-.leasehub-wizard-controls > span { color:var(--lh-gray); font-size:11px; font-weight:700; }
-@media(max-width:600px){.leasehub-wizard-controls{position:sticky;bottom:0;background:#fff;padding:12px 0;z-index:5}.leasehub-wizard-controls .primary-btn,.leasehub-wizard-controls .leasehub-secondary-btn{min-width:110px}}
-/* LeaseHub multi-photo uploader */
-.leasehub-upload-help{display:block;margin:10px 0 14px;color:var(--lh-gray);font-size:11px;line-height:1.6}.leasehub-image-upload-summary{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:12px 0;color:var(--lh-gray);font-size:11px}.leasehub-image-upload-summary strong{color:var(--lh-black);font-size:12px}.leasehub-upload-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.leasehub-upload-thumb{position:relative;min-height:130px;border:1px solid var(--lh-border);border-radius:10px;overflow:hidden;background:#f5f7f6;cursor:grab}.leasehub-upload-thumb img{width:100%;height:130px;object-fit:cover;display:block}.leasehub-upload-thumb.is-cover{border:2px solid var(--lh-green)}.leasehub-cover-label{position:absolute;left:7px;top:7px;padding:4px 6px;border-radius:6px;background:#15945c;color:#fff;font-size:9px;font-weight:800}.leasehub-remove-photo{position:absolute;right:6px;top:6px;width:28px;height:28px;border:0;border-radius:50%;background:rgba(16,19,17,.78);color:#fff;cursor:pointer}.leasehub-set-cover{position:absolute;left:6px;right:6px;bottom:6px;border:0;border-radius:6px;padding:7px;background:rgba(255,255,255,.94);color:var(--lh-black);font-size:9px;font-weight:800;cursor:pointer}.leasehub-upload-thumb.is-cover .leasehub-set-cover{background:#e9f7ef;color:#0d7547}@media(max-width:800px){.leasehub-upload-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:520px){.leasehub-upload-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.leasehub-image-upload-summary{align-items:flex-start;flex-direction:column}}
+.leaseaccom-wizard-controls { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:18px; padding-top:18px; border-top:1px solid var(--lh-border); }
+.leaseaccom-wizard-controls > span { color:var(--lh-gray); font-size:11px; font-weight:700; }
+@media(max-width:600px){.leaseaccom-wizard-controls{position:sticky;bottom:0;background:#fff;padding:12px 0;z-index:5}.leaseaccom-wizard-controls .primary-btn,.leaseaccom-wizard-controls .leaseaccom-secondary-btn{min-width:110px}}
+/* LeaseAccom multi-photo uploader */
+.leaseaccom-upload-help{display:block;margin:10px 0 14px;color:var(--lh-gray);font-size:11px;line-height:1.6}.leaseaccom-image-upload-summary{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:12px 0;color:var(--lh-gray);font-size:11px}.leaseaccom-image-upload-summary strong{color:var(--lh-black);font-size:12px}.leaseaccom-upload-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.leaseaccom-upload-thumb{position:relative;min-height:130px;border:1px solid var(--lh-border);border-radius:10px;overflow:hidden;background:#f5f7f6;cursor:grab}.leaseaccom-upload-thumb img{width:100%;height:130px;object-fit:cover;display:block}.leaseaccom-upload-thumb.is-cover{border:2px solid var(--lh-green)}.leaseaccom-cover-label{position:absolute;left:7px;top:7px;padding:4px 6px;border-radius:6px;background:#15945c;color:#fff;font-size:9px;font-weight:800}.leaseaccom-remove-photo{position:absolute;right:6px;top:6px;width:28px;height:28px;border:0;border-radius:50%;background:rgba(16,19,17,.78);color:#fff;cursor:pointer}.leaseaccom-set-cover{position:absolute;left:6px;right:6px;bottom:6px;border:0;border-radius:6px;padding:7px;background:rgba(255,255,255,.94);color:var(--lh-black);font-size:9px;font-weight:800;cursor:pointer}.leaseaccom-upload-thumb.is-cover .leaseaccom-set-cover{background:#e9f7ef;color:#0d7547}@media(max-width:800px){.leaseaccom-upload-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:520px){.leaseaccom-upload-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.leaseaccom-image-upload-summary{align-items:flex-start;flex-direction:column}}
 /* Live reveal motion */
 .lh-reveal{opacity:0;transform:translateY(14px);transition:opacity .65s ease,transform .65s ease}.lh-reveal.is-visible{opacity:1;transform:none}.lh-word-line{display:inline-block;overflow:hidden;vertical-align:bottom}.lh-word{display:inline-block;opacity:0;transform:translateY(105%);transition:opacity .55s ease,transform .55s cubic-bezier(.2,.75,.25,1);transition-delay:calc(var(--word-index,0) * 55ms)}.lh-heading-visible .lh-word{opacity:1;transform:none}.lh-heading-visible .lh-word-line:nth-child(1) .lh-word:nth-child(1){--word-index:0}.lh-heading-visible .lh-word:nth-child(1) .lh-word:nth-child(2){--word-index:1}.lh-heading-visible .lh-word:nth-child(1) .lh-word:nth-child(3){--word-index:2}.lh-heading-visible .lh-word:nth-child(1) .lh-word:nth-child(4){--word-index:3}.lh-heading-visible .lh-word:nth-child(1) .lh-word:nth-child(5){--word-index:4}.lh-heading-visible .lh-word-line:nth-child(2) .lh-word{--word-index:5}.lh-scroll-reveal{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease}.lh-scroll-visible{opacity:1;transform:none}.property-grid .lh-scroll-reveal:nth-child(2),.categories-section .lh-scroll-reveal:nth-child(2){transition-delay:.06s}.property-grid .lh-scroll-reveal:nth-child(3),.categories-section .lh-scroll-reveal:nth-child(3){transition-delay:.12s}.property-grid .lh-scroll-reveal:nth-child(4),.categories-section .lh-scroll-reveal:nth-child(4){transition-delay:.18s}.property-grid .lh-scroll-reveal:nth-child(5),.categories-section .lh-scroll-reveal:nth-child(5){transition-delay:.24s}.property-grid .lh-scroll-reveal:nth-child(6),.categories-section .lh-scroll-reveal:nth-child(6){transition-delay:.30s}
-@media(max-width:820px){.navbar .menu-btn{font-size:0!important}.navbar .menu-btn i{font-size:22px}.navbar.leasehub-mobile-open .nav-links{top:calc(100% + 8px)}.navbar.leasehub-mobile-open .nav-actions{top:calc(100% + 8px);margin-top:300px}.navbar.leasehub-mobile-open .nav-links,.navbar.leasehub-mobile-open .nav-actions{display:flex!important;position:absolute;left:14px;right:14px;width:auto;z-index:2100}.navbar.leasehub-mobile-open .nav-actions{padding:10px 12px 12px;border-top:0}.navbar.leasehub-mobile-open .nav-actions a{display:block}}
+@media(max-width:820px){.navbar .menu-btn{font-size:0!important}.navbar .menu-btn i{font-size:22px}.navbar.leaseaccom-mobile-open .nav-links{top:calc(100% + 8px)}.navbar.leaseaccom-mobile-open .nav-actions{top:calc(100% + 8px);margin-top:300px}.navbar.leaseaccom-mobile-open .nav-links,.navbar.leaseaccom-mobile-open .nav-actions{display:flex!important;position:absolute;left:14px;right:14px;width:auto;z-index:2100}.navbar.leaseaccom-mobile-open .nav-actions{padding:10px 12px 12px;border-top:0}.navbar.leaseaccom-mobile-open .nav-actions a{display:block}}
 @media(prefers-reduced-motion:reduce){.lh-reveal,.lh-scroll-reveal,.lh-word{opacity:1!important;transform:none!important;transition:none!important}}
 /* Full gallery controls */
-.leasehub-gallery-main{position:relative}.gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border:1px solid rgba(255,255,255,.35);border-radius:50%;background:rgba(16,19,17,.68);color:#fff;display:grid;place-items:center;cursor:pointer;z-index:2}.gallery-prev{left:12px}.gallery-next{right:12px}.gallery-nav:hover{background:rgba(21,148,92,.92)}.gallery-swap{animation:gallerySwap .28s ease}.leasehub-lightbox figure{margin:0;display:grid;place-items:center;gap:10px}.leasehub-lightbox figcaption{color:#fff;font-size:11px;font-weight:700}.leasehub-lightbox img{transition:opacity .2s ease}.leasehub-lightbox button i{font-size:21px}
+.leaseaccom-gallery-main{position:relative}.gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border:1px solid rgba(255,255,255,.35);border-radius:50%;background:rgba(16,19,17,.68);color:#fff;display:grid;place-items:center;cursor:pointer;z-index:2}.gallery-prev{left:12px}.gallery-next{right:12px}.gallery-nav:hover{background:rgba(21,148,92,.92)}.gallery-swap{animation:gallerySwap .28s ease}.leaseaccom-lightbox figure{margin:0;display:grid;place-items:center;gap:10px}.leaseaccom-lightbox figcaption{color:#fff;font-size:11px;font-weight:700}.leaseaccom-lightbox img{transition:opacity .2s ease}.leaseaccom-lightbox button i{font-size:21px}
 @keyframes gallerySwap{from{opacity:.55;transform:scale(.995)}to{opacity:1;transform:scale(1)}}
-@media(max-width:600px){.leasehub-gallery-main,.leasehub-gallery-main img{min-height:320px}.gallery-nav{width:38px;height:38px}.leasehub-gallery-thumbs{padding-bottom:3px}.leasehub-gallery-thumbs button{height:64px}}
+@media(max-width:600px){.leaseaccom-gallery-main,.leaseaccom-gallery-main img{min-height:320px}.gallery-nav{width:38px;height:38px}.leaseaccom-gallery-thumbs{padding-bottom:3px}.leaseaccom-gallery-thumbs button{height:64px}}
 /* Reliable mobile navigation override */
-@media(max-width:820px){.navbar.leasehub-mobile-open{height:auto!important;min-height:90px!important;display:flex!important;flex-wrap:wrap!important;align-content:flex-start!important;padding-bottom:10px}.navbar.leasehub-mobile-open .logo{order:1}.navbar.leasehub-mobile-open .menu-btn{order:2;margin-left:auto}.navbar.leasehub-mobile-open .nav-links,.navbar.leasehub-mobile-open .nav-actions{position:static!important;left:auto!important;right:auto!important;top:auto!important;width:100%!important;max-height:none!important;margin:0!important;order:3;display:flex!important;pointer-events:auto!important;opacity:1!important;overflow:visible!important}.navbar.leasehub-mobile-open .nav-links{padding:12px 0 4px!important;border-top:1px solid var(--lh-border)}.navbar.leasehub-mobile-open .nav-actions{order:4;padding:8px 0 10px!important;border-top:0}.navbar.leasehub-mobile-open .nav-links a,.navbar.leasehub-mobile-open .nav-actions a{display:block;width:100%;padding:11px 10px!important;border-radius:9px}.navbar.leasehub-mobile-open .nav-links a:hover,.navbar.leasehub-mobile-open .nav-actions a:hover{background:var(--lh-green-light)}}
+@media(max-width:820px){.navbar.leaseaccom-mobile-open{height:auto!important;min-height:90px!important;display:flex!important;flex-wrap:wrap!important;align-content:flex-start!important;padding-bottom:10px}.navbar.leaseaccom-mobile-open .logo{order:1}.navbar.leaseaccom-mobile-open .menu-btn{order:2;margin-left:auto}.navbar.leaseaccom-mobile-open .nav-links,.navbar.leaseaccom-mobile-open .nav-actions{position:static!important;left:auto!important;right:auto!important;top:auto!important;width:100%!important;max-height:none!important;margin:0!important;order:3;display:flex!important;pointer-events:auto!important;opacity:1!important;overflow:visible!important}.navbar.leaseaccom-mobile-open .nav-links{padding:12px 0 4px!important;border-top:1px solid var(--lh-border)}.navbar.leaseaccom-mobile-open .nav-actions{order:4;padding:8px 0 10px!important;border-top:0}.navbar.leaseaccom-mobile-open .nav-links a,.navbar.leaseaccom-mobile-open .nav-actions a{display:block;width:100%;padding:11px 10px!important;border-radius:9px}.navbar.leaseaccom-mobile-open .nav-links a:hover,.navbar.leaseaccom-mobile-open .nav-actions a:hover{background:var(--lh-green-light)}}
 .chat-owner-trigger{appearance:none;border:0;background:transparent;color:inherit;font:inherit;text-align:left;padding:0;display:flex;align-items:center;gap:10px;cursor:pointer}.chat-owner-trigger:hover .chat-person-name{color:var(--lh-green)}.chat-action{display:grid;place-items:center}.chat-action i{font-size:18px}.owner-profile-panel{position:fixed;inset:0;z-index:8000;display:none;justify-content:flex-end;background:rgba(16,19,17,.45)}.owner-profile-panel.is-open{display:flex}.owner-profile-card{width:min(430px,92vw);height:100%;overflow:auto;background:#fff;padding:26px;box-shadow:-20px 0 60px rgba(0,0,0,.16);animation:ownerPanelIn .25s ease}.owner-profile-close{float:right;width:36px;height:36px;border:1px solid var(--lh-border);border-radius:50%;background:#fff;cursor:pointer}.owner-profile-head{clear:both;display:flex;gap:14px;align-items:center;padding:24px 0 18px}.owner-profile-avatar{width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid var(--lh-green-light)}.owner-profile-head h2{margin:0 0 4px;font-size:20px}.owner-profile-head p{margin:0;color:var(--lh-gray);font-size:11px}.owner-profile-bio{padding:14px;border-radius:10px;background:var(--lh-soft);color:var(--lh-gray);font-size:12px;line-height:1.6}.owner-profile-list{display:grid;gap:10px;margin-top:18px}.owner-profile-property{display:grid;grid-template-columns:80px 1fr;gap:10px;padding:9px;border:1px solid var(--lh-border);border-radius:10px}.owner-profile-property img{width:80px;height:68px;object-fit:cover;border-radius:7px}.owner-profile-property strong{display:block;font-size:11px}.owner-profile-property span{display:block;margin-top:4px;color:var(--lh-gray);font-size:10px}.owner-profile-viewmore{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:16px;padding:12px;border:0;border-radius:9px;background:var(--lh-green);color:#fff;font:inherit;font-size:12px;font-weight:800;cursor:pointer}@keyframes ownerPanelIn{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}@media(prefers-reduced-motion:reduce){.owner-profile-card{animation:none}}
-.leasehub-standard-footer{margin-top:50px}.site-footer .footer-bottom{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:20px 6%;border-top:1px solid var(--lh-border);color:var(--lh-gray);font-size:11px}.leasehub-upload-thumb button{font-family:inherit}.chat-person-name{transition:color .2s ease}
+.leaseaccom-standard-footer{margin-top:50px}.site-footer .footer-bottom{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:20px 6%;border-top:1px solid var(--lh-border);color:var(--lh-gray);font-size:11px}.leaseaccom-upload-thumb button{font-family:inherit}.chat-person-name{transition:color .2s ease}
 
 
 /* =========================================================
-   LEASEHUB — STABLE NAV + PROFESSIONAL MOTION OVERRIDES
+   LEASEACCOM — STABLE NAV + PROFESSIONAL MOTION OVERRIDES
    ========================================================= */
 
 /* The menu button already contains a Boxicon. Never render a
@@ -5293,7 +5337,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         display: none !important;
     }
 
-    .navbar.leasehub-mobile-open {
+    .navbar.leaseaccom-mobile-open {
         height: auto !important;
         min-height: 90px !important;
         flex-wrap: wrap !important;
@@ -5301,16 +5345,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         padding-bottom: 12px;
     }
 
-    .navbar.leasehub-mobile-open .logo {
+    .navbar.leaseaccom-mobile-open .logo {
         order: 1;
     }
 
-    .navbar.leasehub-mobile-open .menu-btn {
+    .navbar.leaseaccom-mobile-open .menu-btn {
         order: 2;
     }
 
-    .navbar.leasehub-mobile-open .nav-links,
-    .navbar.leasehub-mobile-open .nav-actions {
+    .navbar.leaseaccom-mobile-open .nav-links,
+    .navbar.leaseaccom-mobile-open .nav-actions {
         position: static !important;
         display: flex !important;
         flex: 0 0 100%;
@@ -5329,19 +5373,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         box-sizing: border-box;
     }
 
-    .navbar.leasehub-mobile-open .nav-links {
+    .navbar.leaseaccom-mobile-open .nav-links {
         order: 3;
         border-top: 1px solid var(--lh-border);
     }
 
-    .navbar.leasehub-mobile-open .nav-actions {
+    .navbar.leaseaccom-mobile-open .nav-actions {
         order: 4;
         padding-top: 4px !important;
         border-top: 0;
     }
 
-    .navbar.leasehub-mobile-open .nav-links a,
-    .navbar.leasehub-mobile-open .nav-actions a {
+    .navbar.leaseaccom-mobile-open .nav-links a,
+    .navbar.leaseaccom-mobile-open .nav-actions a {
         display: flex !important;
         align-items: center;
         width: 100%;
@@ -5351,8 +5395,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         box-sizing: border-box;
     }
 
-    .navbar.leasehub-mobile-open .nav-links a:hover,
-    .navbar.leasehub-mobile-open .nav-actions a:hover {
+    .navbar.leaseaccom-mobile-open .nav-links a:hover,
+    .navbar.leaseaccom-mobile-open .nav-actions a:hover {
         background: var(--lh-green-light);
     }
 }
@@ -5425,7 +5469,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* Gallery image transition should not interfere with reveal. */
-.leasehub-gallery-main img {
+.leaseaccom-gallery-main img {
     will-change: opacity, transform;
 }
 
@@ -5448,7 +5492,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* =========================================================
-   LEASEHUB MESSAGES — CHAT LAYOUT FIX
+   LEASEACCOM MESSAGES — CHAT LAYOUT FIX
    ========================================================= */
 
 /* Main messaging application */
@@ -5671,7 +5715,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* =========================================================
-   LEASEHUB MESSAGES — MOBILE APP LAYOUT
+   LEASEACCOM MESSAGES — MOBILE APP LAYOUT
    ========================================================= */
 
 @media (max-width: 700px) {
@@ -5976,7 +6020,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* =========================================================
-   OWNER LOUNGE (Plazore-style structure, LeaseHub colors)
+   OWNER LOUNGE (Plazore-style structure, LeaseAccom colors)
    ========================================================= */
 .owner-lounge-body {
   background: var(--light);
@@ -6336,6 +6380,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   display: grid;
   grid-template-columns: 1.2fr .9fr;
   gap: 18px;
+    align-items: start;
+}
+.owner-store-panel > .owner-panel-head {
+    display: grid;
+    justify-content: stretch;
+    gap: 6px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+.owner-store-panel > .owner-panel-head small {
+    display: block;
+    max-width: 100%;
+    color: var(--gray);
+    font-size: 12px;
+    line-height: 1.5;
+}
+.owner-store-form h3 {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.25;
+}
+.owner-store-form > .owner-muted {
+    margin: 5px 0 18px;
 }
 .owner-field {
   display: grid;
@@ -6347,6 +6414,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   letter-spacing: .04em;
 }
 .owner-field input[type="text"] {
+    width: 100%;
+    min-height: 46px;
+    box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px 14px;
@@ -6354,9 +6424,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-weight: 500;
   color: var(--black);
 }
+.owner-field input[type="text"]:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(21, 148, 92, .12);
+}
 .owner-banner-preview {
   position: relative;
-  min-height: 110px;
+    min-height: 118px;
   border-radius: 12px;
   background: linear-gradient(120deg, #1a2a22, #15945c);
   color: #fff;
@@ -6396,6 +6471,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   display: flex;
   align-items: center;
   gap: 12px;
+    min-height: 78px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8faf9;
 }
 .owner-logo-preview {
   width: 64px;
@@ -6420,6 +6500,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   gap: 14px;
   margin-top: 16px;
   flex-wrap: wrap;
+}
+.owner-store-actions .primary-btn {
+    min-height: 44px;
+    padding-inline: 18px;
 }
 .owner-store-preview-wrap h3 { margin: 6px 0; font-size: 18px; }
 .owner-phone-preview {
@@ -6521,6 +6605,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .owner-stat-row,
   .owner-action-grid { grid-template-columns: 1fr; }
   .owner-welcome-row h2 { font-size: 22px; }
+    .owner-store-layout { gap: 22px; }
+    .owner-store-preview-wrap {
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+    .owner-store-preview-wrap h3 { font-size: 17px; }
+    .owner-phone-preview {
+        width: min(100%, 290px);
+        margin-right: auto;
+        margin-left: auto;
+    }
+    .owner-store-actions { gap: 10px; }
+    .owner-store-actions .primary-btn { flex: 1 1 100%; }
 }
 
 /* ===== Add property wizard + live preview ===== */
@@ -6530,13 +6627,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   gap: 18px;
   align-items: start;
 }
-.leasehub-wizard-bar {
+.leaseaccom-wizard-bar {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 14px;
 }
-.leasehub-wizard-bar button {
+.leaseaccom-wizard-bar button {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -6546,13 +6643,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   cursor: pointer;
   color: var(--gray);
 }
-.leasehub-wizard-bar button.active {
+.leaseaccom-wizard-bar button.active {
   background: var(--green);
   border-color: var(--green);
   color: #fff;
 }
 .wizard-hidden { display: none !important; }
-.leasehub-wizard-controls {
+.leaseaccom-wizard-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -6560,7 +6657,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   margin-top: 18px;
   flex-wrap: wrap;
 }
-.leasehub-secondary-btn {
+.leaseaccom-secondary-btn {
   border: 1px solid var(--border);
   background: #fff;
   border-radius: 10px;
@@ -6652,7 +6749,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .owner-notif-item strong { display: block; font-size: 13px; }
 .owner-notif-item p { margin-top: 4px; font-size: 12px; color: var(--gray); }
 
-/* Storefront public hero */
+/* storefront public hero */
 .storefront-hero {
   border-radius: 16px;
   min-height: 180px;
@@ -6844,7 +6941,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 
-/* === LEASEHUB MOBILE FIXES OCT 2026 === */
+/* === LEASEACCOM MOBILE FIXES OCT 2026 === */
 
 /* Sticky / fixed navbar always reachable on mobile */
 @media (max-width: 850px) {
@@ -7676,7 +7773,7 @@ body:not(.is-landing-page) .navbar .logo {
 }
 
 
-/* Owner topbar: mobile = menu + LeaseHub text + notifications only */
+/* Owner topbar: mobile = menu + LeaseAccom text + notifications only */
 .owner-brand-text {
   display: inline-flex;
   align-items: baseline;
@@ -7709,8 +7806,8 @@ html.lh-preload-lock body {
 html.lh-loader-on body {
   visibility: visible !important;
 }
-html.lh-preload-lock body #leasehubPageLoader,
-html.lh-loader-on body #leasehubPageLoader {
+html.lh-preload-lock body #leaseaccomPageLoader,
+html.lh-loader-on body #leaseaccomPageLoader {
   visibility: visible !important;
 }
 
@@ -7779,4 +7876,884 @@ html.lh-loader-on body #leasehubPageLoader {
 @media (max-width: 700px) {
   .owner-verify-banner-inner { flex-wrap: wrap; padding-right: 28px; }
   .owner-verify-cta { width: 100%; text-align: center; }
+}
+
+/* =========================================================
+   LEASEACCOM — brand + mobile-first refinements
+   ========================================================= */
+
+.logo img,
+a.logo img {
+  max-height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logo img[src*="leaseaccom-logo"] {
+  height: 48px;
+  width: auto;
+}
+
+.footer-main > div:first-child > .logo {
+    width: 108px;
+    height: 43.2px;
+}
+
+.footer-main > div:first-child > .logo img {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+}
+
+/* Tenant mobile bottom navigation (ChatGPT plan + messaging mockup) */
+.la-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .la-bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3000;
+    background: #ffffff;
+    border-top: 1px solid var(--lh-border, #e3e8e5);
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -8px 24px rgba(16, 19, 17, 0.06);
+  }
+
+  .la-bottom-nav a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    text-decoration: none;
+    color: #66706a;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 4px;
+    border-radius: 10px;
+  }
+
+  .la-bottom-nav a i {
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .la-bottom-nav a.is-active,
+  .la-bottom-nav a:hover {
+    color: #0d7547;
+  }
+
+  .la-bottom-nav a.is-active {
+    background: #e9f7ef;
+  }
+
+  /* room for bottom nav */
+  body.la-has-bottom-nav {
+    padding-bottom: 72px;
+  }
+
+  body.la-has-bottom-nav footer {
+    margin-bottom: 8px;
+  }
+
+  /* tighter property cards on phone */
+  .property-card {
+    border-radius: 14px;
+  }
+
+  .property-card img {
+    aspect-ratio: 16 / 11;
+    object-fit: cover;
+  }
+
+  /* touch-friendly buttons */
+  .primary-btn,
+  .owner-btn,
+  .login-btn {
+    min-height: 44px;
+  }
+
+  .navbar {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* Brand wordmark helper if text logo used */
+.la-wordmark {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #101311;
+}
+.la-wordmark span {
+  color: #0d7547;
+}
+
+/* Owner dashboard responsive shell */
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-content {
+    gap: 16px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-panel {
+    min-width: 0;
+    border-radius: 10px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-card {
+    align-items: flex-start;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-option {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-option.is-popular {
+    border-color: var(--green);
+    box-shadow: inset 0 3px 0 var(--green);
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-option-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-option > p {
+    flex: 1;
+    margin: 10px 0 14px;
+    color: var(--gray);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-button {
+    width: 100%;
+    min-height: 42px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--green-dark);
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-notice {
+    margin-top: 12px;
+    color: var(--gray);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-featured-video {
+    display: block;
+    width: 100%;
+    max-height: 260px;
+    margin-top: 16px;
+    border-radius: 10px;
+    background: #101311;
+    object-fit: cover;
+}
+
+.owner-bottom-nav {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-stat-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-options {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-topbar {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 1000;
+        min-height: 62px;
+        padding: 10px 14px;
+        box-sizing: border-box;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-main {
+        min-width: 0;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-content {
+        gap: 14px;
+        padding: 78px 14px calc(32px + env(safe-area-inset-bottom));
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-welcome-row {
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-welcome-row h2 {
+        font-size: 23px;
+        line-height: 1.2;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-primary-cta {
+        flex: 0 0 auto;
+        min-height: 42px;
+        padding: 0 12px;
+        font-size: 12px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-grid-2,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-store-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-stat-row,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-action-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-stat {
+        min-width: 0;
+        padding: 12px;
+        border-radius: 9px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-stat strong {
+        margin: 6px 0 3px;
+        font-size: 23px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-panel {
+        padding: 14px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-action-tile {
+        min-height: 76px;
+        padding: 12px 8px;
+        border-radius: 9px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-action-tile i {
+        margin-bottom: 5px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-tip-card {
+        gap: 10px;
+        padding: 13px;
+        border-radius: 10px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-store-layout {
+        gap: 18px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-store-preview-wrap {
+        padding-top: 18px;
+        border-top: 1px solid var(--border);
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-options {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-option {
+        padding: 14px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-featured-video {
+        max-height: 190px;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-sidebar {
+        z-index: 1100;
+        max-height: 100dvh;
+        overflow-y: auto;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-lounge.sidebar-open .owner-sidebar-overlay {
+        z-index: 1050;
+    }
+}
+
+@media (max-width: 820px) {
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-bottom-nav {
+        position: fixed;
+        inset: auto 0 0;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        gap: 4px;
+        padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+        border-top: 1px solid var(--border);
+        background: rgba(255, 255, 255, .97);
+        box-shadow: 0 -8px 24px rgba(16, 19, 17, .06);
+        backdrop-filter: blur(12px);
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-bottom-nav a {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 4px 2px;
+        border-radius: 10px;
+        color: var(--gray);
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.15;
+        text-decoration: none;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-bottom-nav a i {
+        font-size: 21px;
+        line-height: 1;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-bottom-nav a.is-active {
+        background: var(--green-light);
+        color: var(--green-dark);
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-content {
+        padding-bottom: calc(94px + env(safe-area-inset-bottom));
+    }
+}
+
+@keyframes owner-dashboard-enter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-welcome-row,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-tip-card,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-grid-2,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-stat-row,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-panel {
+        animation: owner-dashboard-enter 360ms ease-out both;
+    }
+
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-grid-2:nth-of-type(2) { animation-delay: 60ms; }
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-stat-row { animation-delay: 100ms; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-welcome-row,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-tip-card,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-grid-2,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-stat-row,
+    body.owner-lounge-body[data-owner-page="dashboard"] .owner-panel {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* ===== LeaseAccom mobile-friendly patch (2026-10) ===== */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 8px 12px !important;
+    gap: 8px;
+  }
+  .nav-links {
+    display: none !important;
+  }
+  .hero {
+    min-height: 52vh !important;
+  }
+  .hero-content h1 {
+    font-size: clamp(1.45rem, 6vw, 1.9rem) !important;
+    line-height: 1.25 !important;
+  }
+  .hero-content p {
+    font-size: 0.95rem !important;
+  }
+  .property-grid,
+  .featured-grid,
+  #featuredProperties {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+  .property-card {
+    border-radius: 14px;
+  }
+  .search-box,
+  .hero-search,
+  .search-bar {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .search-box input,
+  .search-box select,
+  .search-box button {
+    width: 100% !important;
+  }
+  body.la-has-bottom-nav,
+  body:has(.la-bottom-nav) {
+    padding-bottom: 72px !important;
+  }
+  .la-bottom-nav {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: #fff;
+    border-top: 1px solid #e3e8e5;
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 20px rgba(0,0,0,.06);
+  }
+  .la-bottom-nav a {
+    flex: 1;
+    text-align: center;
+    text-decoration: none;
+    color: #66706a;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .la-bottom-nav a i { font-size: 20px; }
+  .la-bottom-nav a.is-active { color: #0d7547; }
+}
+@media (min-width: 769px) {
+  .la-bottom-nav { display: none !important; }
+}
+/* Hero without video still looks fine */
+.hero-video:not([src]) { display: none; }
+.hero { background: linear-gradient(160deg, #0b3d2e 0%, #0d7547 50%, #15945c 100%); }
+
+
+/* LeaseAccom landing-page responsive header and hero fallback */
+@media (max-width: 1100px) {
+    .navbar { padding: 0 3%; gap: 16px; }
+    .nav-links { gap: 14px; font-size: 13px; }
+    .nav-actions { gap: 10px; }
+}
+@media (max-width: 850px) {
+    .navbar { height: 76px; padding: 0 18px; gap: 12px; }
+    .navbar > .logo:first-child { width: 150px; height: 64px; flex: 0 0 150px; }
+    .nav-links { display: none; }
+    .nav-actions { margin-left: auto; gap: 10px; }
+    .nav-actions .login-btn { font-size: 13px; }
+    .owner-btn { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+    .menu-btn { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: 0 0 38px; }
+    .hero { min-height: 600px; }
+    .hero-content { padding: 72px 6%; }
+}
+@media (max-width: 480px) {
+    .navbar { padding: 0 12px; }
+    .navbar > .logo:first-child { width: 128px; flex-basis: 128px; }
+    .nav-actions .login-btn { display: none; }
+    .owner-btn { padding: 9px 10px; }
+    .hero { min-height: 570px; }
+    .hero-content { padding: 58px 20px; }
+}
+
+/* hero-video missing file */
+.hero-video { background: transparent; }
+.hero { background: linear-gradient(160deg, #0b3d2e 0%, #0d7547 55%, #15945c 100%); }
+
+
+/* hero video permanent play override */
+.hero {
+  background: #0a2f24 !important;
+  isolation: isolate;
+}
+.hero-video {
+  position: absolute !important;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  z-index: 0 !important;
+  opacity: 1 !important;
+  display: block !important;
+  pointer-events: none;
+  filter: brightness(0.85) !important;
+  animation: none !important;
+  transform: none !important;
+}
+.hero::before { display: none !important; content: none !important; }
+.hero::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.4)) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+}
+.hero-content, .hero .hero-badge, .hero h1, .hero p, .hero .search-box, .hero-search {
+  position: relative;
+  z-index: 2;
+}
+
+
+/* owner store mobile polish */
+.owner-store-panel {
+  background: #fff;
+  border: 1px solid #e3e8e5;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 16px;
+}
+.owner-store-panel .owner-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.owner-store-panel .owner-panel-head > span {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0d7547;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.owner-store-panel .owner-panel-head small {
+  color: #66706a;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+.owner-store-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.owner-store-form h3 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  color: #101311;
+}
+.owner-store-form > .owner-muted {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #66706a;
+}
+.owner-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.owner-field > span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #66706a;
+}
+.owner-field input[type="text"] {
+  border: 1px solid #e3e8e5;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  background: #fbfcfb;
+}
+.owner-banner-preview {
+  position: relative;
+  min-height: 100px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0b3d2e, #0d7547);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+.owner-banner-preview .owner-change-btn,
+.owner-logo-row .owner-change-btn {
+  border: 0;
+  background: #fff;
+  color: #0d7547;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.owner-banner-preview .owner-change-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+}
+.owner-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.owner-logo-preview {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #e9f7ef;
+  color: #0d7547;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+.owner-store-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.owner-store-actions .primary-btn {
+  background: #0d7547;
+  color: #fff;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.owner-store-preview-wrap {
+  background: #f7faf8;
+  border: 1px solid #e3e8e5;
+  border-radius: 16px;
+  padding: 14px;
+}
+.owner-store-preview-wrap .owner-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: #0d7547;
+  text-transform: uppercase;
+}
+.owner-phone-preview {
+  margin-top: 10px;
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e3e8e5;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(16,19,17,.06);
+}
+@media (max-width: 820px) {
+  .owner-store-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .owner-store-panel {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .owner-main, .owner-lounge, .owner-content {
+    padding-bottom: 88px !important;
+  }
+}
+
+
+/* Owner mobile bottom nav — all owner pages */
+.la-owner-bottom-nav,
+.la-bottom-nav.la-owner-bottom-nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 1000;
+  display: none;
+  justify-content: space-around;
+  align-items: center;
+  background: #fff;
+  border-top: 1px solid #e3e8e5;
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 20px rgba(0,0,0,.06);
+}
+.la-owner-bottom-nav a {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  color: #66706a;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+}
+.la-owner-bottom-nav a i { font-size: 20px; }
+.la-owner-bottom-nav a.is-active { color: #0d7547; }
+@media (max-width: 900px) {
+  .la-owner-bottom-nav { display: flex !important; }
+  body.la-has-bottom-nav {
+    padding-bottom: 72px !important;
+  }
+}
+@media (min-width: 901px) {
+  .la-owner-bottom-nav { display: none !important; }
+}
+
+/* Add-property media preview */
+.leaseaccom-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.leaseaccom-upload-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e3e8e5;
+  background: #f4f7f5;
+}
+.leaseaccom-upload-thumb img,
+.leaseaccom-upload-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.leaseaccom-upload-thumb.is-cover {
+  outline: 2px solid #0d7547;
+}
+.leaseaccom-cover-label {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  background: #0d7547;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+.leaseaccom-remove-photo {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  border: 0;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.leaseaccom-set-cover {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 0;
+  background: rgba(255,255,255,.92);
+  color: #0d7547;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 5px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.leaseaccom-image-upload-summary {
+  background: #e9f7ef;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.leaseaccom-image-upload-summary strong { display: block; color: #0d7547; }
+.leaseaccom-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  background: #0d7547;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.form-status.is-visible { display: block; margin-top: 10px; font-weight: 600; }
+.form-status.is-success { color: #0d7547; }
+.form-status.is-error { color: #c0392b; }
+
+/* Owner engagement chart */
+.owner-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  min-height: 140px;
+  padding: 12px 4px 4px;
+}
+.owner-chart-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.owner-chart-bar .bar {
+  width: 100%;
+  max-width: 36px;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, #15945c, #0d7547);
+  min-height: 4px;
+  transition: height .35s ease;
+}
+.owner-chart-bar span {
+  font-size: 10px;
+  color: #66706a;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.owner-chart-empty {
+  color: #66706a;
+  font-size: 13px;
+  padding: 20px;
+  text-align: center;
 }

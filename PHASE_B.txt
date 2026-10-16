@@ -1,0 +1,18 @@
+Phase B — Owner loop
+====================
+Flow: Account → Verify → Add property → Pending → Admin Approve → Live
+
+Rules:
+- New listings start as listingStatus = pending
+- Unverified owners cannot appear as Live on marketplace
+- isPropertyPublic requires live + photos + owner verified (when owner known)
+- Owner dashboard shows journey checklist
+- Admin listings: Approve → Live / Reject
+
+Test:
+1. Owner unverified → banner + verification page
+2. Submit verification → pending
+3. (Simulate) set user verificationStatus = verified in localStorage or admin
+4. Add property → appears Pending on owner dashboard
+5. admin-listings.html → Approve → Live
+6. properties.html → listing visible to tenants

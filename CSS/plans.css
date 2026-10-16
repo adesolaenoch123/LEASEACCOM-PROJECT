@@ -1,22 +1,199 @@
+/* LeaseAccom — Owner subscription plans + tenant payments */
+:root {
+  --lh-green: #15945c;
+  --lh-green-dark: #0d7547;
+  --lh-green-light: #e9f7ef;
+  --lh-black: #101311;
+  --lh-gray: #66706a;
+  --lh-border: #e3e8e5;
+  --lh-purple: #5b4fc7;
+  --lh-purple-soft: #f0eefc;
+}
 
-.owner-plan-pill { text-transform: uppercase; font-weight: 700; }
-.owner-plan-summary { margin-top: 10px; font-size: 13px; }
-.owner-plan-meter {
-  height: 8px; background: #e8eee9; border-radius: 99px; overflow: hidden; margin: 8px 0 12px;
+.la-plans-page { background: #f7faf8; min-height: 100vh; }
+.la-plans-hero {
+  background: linear-gradient(135deg, #0b3d2e 0%, #0d7547 55%, #15945c 100%);
+  color: #fff; padding: 48px 20px 56px; position: relative; overflow: hidden;
 }
-.owner-plan-meter span { display: block; height: 100%; background: #1a7f4b; }
-.is-plan-locked { position: relative; opacity: 0.92; }
-.plan-lock-msg {
-  margin-top: 10px; padding: 10px 12px; border-radius: 10px;
-  background: #fff8e6; border: 1px solid #f0d78c; font-size: 13px;
+.la-plans-hero .badge {
+  display: inline-block; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
+  padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; margin-bottom: 14px;
 }
-.plan-upgrade-hint { margin-top: 8px; }
-.owner-plans-section { padding: 24px 16px 48px; max-width: 960px; margin: 0 auto; }
-.owner-plans-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 16px;
+.la-plans-hero h1 {
+  margin: 0 0 12px; font-size: clamp(1.6rem, 4vw, 2.4rem); line-height: 1.2; max-width: 640px;
 }
-.owner-plan-option {
-  border: 1px solid #dfe7e1; border-radius: 14px; padding: 16px; background: #fff;
+.la-plans-hero h1 span { color: #8ce0b2; }
+.la-plans-hero p { margin: 0; max-width: 560px; opacity: .92; font-size: 15px; line-height: 1.55; }
+.la-plans-hero-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.la-plans-hero-pills span {
+  background: rgba(255,255,255,.12); padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 600;
 }
-.owner-plan-option.is-active { border-color: #1a7f4b; box-shadow: 0 0 0 2px rgba(26,127,75,.2); }
-.owner-plan-option .price { font-size: 1.25rem; font-weight: 700; color: #1a7f4b; }
+
+.la-plans-wrap { max-width: 1100px; margin: -28px auto 0; padding: 0 16px 64px; position: relative; z-index: 2; }
+.la-plans-heading { text-align: center; margin: 36px 0 8px; }
+.la-plans-heading h2 { margin: 0 0 8px; font-size: clamp(1.35rem, 3vw, 1.85rem); color: var(--lh-black); }
+.la-plans-heading p { margin: 0; color: var(--lh-gray); font-size: 14px; }
+
+.la-billing-toggle {
+  display: flex; justify-content: center; gap: 8px; margin: 18px 0 28px;
+}
+.la-billing-toggle button {
+  border: 1px solid var(--lh-border); background: #fff; padding: 10px 18px; border-radius: 999px;
+  font-weight: 700; font-size: 13px; cursor: pointer; color: var(--lh-gray);
+}
+.la-billing-toggle button.is-active {
+  background: var(--lh-green-dark); color: #fff; border-color: var(--lh-green-dark);
+}
+.la-billing-toggle .save-hint { font-size: 11px; color: var(--lh-green-dark); font-weight: 700; margin-left: 4px; }
+
+.la-plans-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch;
+}
+@media (max-width: 900px) {
+  .la-plans-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+}
+
+.la-plan-card {
+  background: #fff; border: 1px solid var(--lh-border); border-radius: 18px; padding: 22px 20px 20px;
+  display: flex; flex-direction: column; position: relative; box-shadow: 0 8px 24px rgba(16,19,17,.04);
+}
+.la-plan-card.is-popular {
+  border-color: var(--lh-green-dark);
+  box-shadow: 0 12px 36px rgba(13,117,71,.15);
+  transform: translateY(-4px);
+}
+.la-plan-card .popular-tag {
+  position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+  background: var(--lh-green-dark); color: #fff; font-size: 11px; font-weight: 800;
+  padding: 4px 12px; border-radius: 999px; white-space: nowrap;
+}
+.la-plan-card .plan-icon {
+  width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--lh-green-light); color: var(--lh-green-dark); font-size: 22px; margin-bottom: 12px;
+}
+.la-plan-card.is-enterprise .plan-icon { background: var(--lh-purple-soft); color: var(--lh-purple); }
+.la-plan-card h3 { margin: 0 0 4px; font-size: 1.25rem; color: var(--lh-black); }
+.la-plan-card .audience { margin: 0 0 14px; font-size: 13px; color: var(--lh-gray); line-height: 1.4; }
+.la-plan-card .price-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.la-plan-card .price { font-size: 2rem; font-weight: 800; color: var(--lh-black); letter-spacing: -.03em; }
+.la-plan-card.is-enterprise .price { color: var(--lh-purple); }
+.la-plan-card .period { font-size: 13px; color: var(--lh-gray); font-weight: 600; }
+.la-plan-card .annual-note {
+  font-size: 12px; font-weight: 700; color: var(--lh-green-dark); margin-bottom: 14px;
+}
+.la-plan-card .cta {
+  display: block; text-align: center; width: 100%; border: 0; border-radius: 12px;
+  padding: 12px 16px; font-weight: 800; font-size: 14px; cursor: pointer; margin-bottom: 16px;
+  background: var(--lh-green-dark); color: #fff; text-decoration: none;
+}
+.la-plan-card .cta:hover { filter: brightness(1.05); }
+.la-plan-card.is-enterprise .cta { background: var(--lh-purple); }
+.la-plan-card ul {
+  list-style: none; margin: 0; padding: 0; flex: 1;
+}
+.la-plan-card li {
+  display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #333;
+  padding: 6px 0; border-bottom: 1px solid #f0f3f1; line-height: 1.4;
+}
+.la-plan-card li:last-child { border-bottom: 0; }
+.la-plan-card li i { color: var(--lh-green-dark); font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.la-plan-card.is-enterprise li i { color: var(--lh-purple); }
+.la-plan-card .footer-note {
+  margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: var(--lh-green-light);
+  font-size: 12px; color: var(--lh-green-dark); font-weight: 600; line-height: 1.4;
+}
+.la-plan-card.is-enterprise .footer-note { background: var(--lh-purple-soft); color: var(--lh-purple); }
+
+.la-plans-extras {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 28px;
+}
+@media (max-width: 700px) { .la-plans-extras { grid-template-columns: 1fr; } }
+.la-plans-extras .ex {
+  background: #fff; border: 1px solid var(--lh-border); border-radius: 14px; padding: 16px;
+  font-size: 13px; color: var(--lh-gray);
+}
+.la-plans-extras .ex strong { display: block; color: var(--lh-black); margin-bottom: 4px; font-size: 14px; }
+
+.la-plans-current {
+  max-width: 1100px; margin: 0 auto 24px; padding: 0 16px;
+}
+.la-plans-current .box {
+  background: #fff; border: 1px solid var(--lh-border); border-radius: 14px; padding: 14px 16px;
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+  font-size: 14px;
+}
+.la-plans-current .chip {
+  background: var(--lh-green-light); color: var(--lh-green-dark); font-weight: 800;
+  padding: 4px 10px; border-radius: 999px; font-size: 12px;
+}
+
+/* Tenant payments */
+.la-pay-page { background: #f5f7f6; min-height: 100vh; padding-bottom: 88px; }
+.la-pay-hero {
+  background: #fff; border-bottom: 1px solid var(--lh-border); padding: 18px 16px 12px;
+}
+.la-pay-hero h1 { margin: 0 0 4px; font-size: 1.35rem; }
+.la-pay-hero p { margin: 0; color: var(--lh-gray); font-size: 13px; }
+.la-pay-wallet {
+  margin: 16px; background: linear-gradient(135deg, #0b3d2e, #0d7547); color: #fff;
+  border-radius: 18px; padding: 20px; box-shadow: 0 12px 28px rgba(13,117,71,.2);
+}
+.la-pay-wallet .label { font-size: 12px; opacity: .85; font-weight: 600; }
+.la-pay-wallet .balance { font-size: 1.8rem; font-weight: 800; margin: 6px 0 12px; letter-spacing: -.02em; }
+.la-pay-wallet .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.la-pay-wallet button, .la-pay-wallet a {
+  border: 0; background: rgba(255,255,255,.18); color: #fff; font-weight: 700; font-size: 12px;
+  padding: 10px 14px; border-radius: 10px; cursor: pointer; text-decoration: none;
+}
+.la-pay-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 16px 16px;
+}
+.la-pay-stats .s {
+  background: #fff; border: 1px solid var(--lh-border); border-radius: 14px; padding: 12px;
+  text-align: center;
+}
+.la-pay-stats .s strong { display: block; font-size: 1.1rem; color: var(--lh-green-dark); }
+.la-pay-stats .s span { font-size: 11px; color: var(--lh-gray); font-weight: 600; }
+.la-pay-section { margin: 0 16px 20px; }
+.la-pay-section h2 { font-size: 15px; margin: 0 0 10px; }
+.la-pay-filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; }
+.la-pay-filters button {
+  flex-shrink: 0; border: 1px solid var(--lh-border); background: #fff; border-radius: 999px;
+  padding: 8px 14px; font-size: 12px; font-weight: 700; color: var(--lh-gray); cursor: pointer;
+}
+.la-pay-filters button.is-active { background: var(--lh-green-dark); color: #fff; border-color: var(--lh-green-dark); }
+.la-pay-list { display: flex; flex-direction: column; gap: 10px; }
+.la-pay-item {
+  background: #fff; border: 1px solid var(--lh-border); border-radius: 14px; padding: 14px;
+  display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center;
+}
+.la-pay-item .ico {
+  width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--lh-green-light); color: var(--lh-green-dark); font-size: 18px;
+}
+.la-pay-item .ico.failed { background: #fff0f0; color: #e14c4c; }
+.la-pay-item .ico.refund { background: #f0f0f0; color: #66706a; }
+.la-pay-item .meta strong { display: block; font-size: 14px; }
+.la-pay-item .meta span { font-size: 12px; color: var(--lh-gray); }
+.la-pay-item .amt { text-align: right; font-weight: 800; font-size: 14px; }
+.la-pay-item .amt small { display: block; font-weight: 700; font-size: 11px; margin-top: 2px; }
+.la-pay-item .amt .ok { color: var(--lh-green-dark); }
+.la-pay-item .amt .bad { color: #e14c4c; }
+.la-pay-empty {
+  text-align: center; padding: 36px 16px; background: #fff; border: 1px dashed var(--lh-border);
+  border-radius: 14px; color: var(--lh-gray);
+}
+.la-pay-empty a {
+  display: inline-block; margin-top: 12px; background: var(--lh-green-dark); color: #fff;
+  padding: 10px 16px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 13px;
+}
+.la-pay-ideas {
+  margin: 0 16px 24px; background: #fff; border: 1px solid var(--lh-border); border-radius: 16px; padding: 16px;
+}
+.la-pay-ideas h3 { margin: 0 0 10px; font-size: 14px; }
+.la-pay-ideas .idea {
+  display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f3f1; font-size: 13px;
+}
+.la-pay-ideas .idea:last-child { border-bottom: 0; }
+.la-pay-ideas .idea i { color: var(--lh-green-dark); font-size: 20px; }

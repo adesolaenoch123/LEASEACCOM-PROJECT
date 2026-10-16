@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments — LeaseAccom</title>
+  <link rel="stylesheet" href="CSS/style.css">
+  <link rel="stylesheet" href="CSS/plans.css">
+  <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
+</head>
+<body class="la-pay-page la-has-bottom-nav">
+  <div class="la-pay-hero">
+    <h1>Payments</h1>
+    <p>History, receipts, and smart tools for your rent journey.</p>
+  </div>
+
+  <div class="la-pay-wallet">
+    <div class="label">Total successfully paid on LeaseAccom</div>
+    <div class="balance" id="payBalance">₦0</div>
+    <div class="row">
+      <button type="button" onclick="alert('Paystack checkout connects here when payments go live.')">Pay a fee</button>
+      <button type="button" onclick="window.print()">Download statement</button>
+      <a href="properties.html">Find a home</a>
+    </div>
+  </div>
+
+  <div class="la-pay-stats">
+    <div class="s"><strong id="statPaid">₦0</strong><span>Paid total</span></div>
+    <div class="s"><strong id="statFailed">0</strong><span>Failed</span></div>
+    <div class="s"><strong id="statCount">0</strong><span>Transactions</span></div>
+  </div>
+
+  <div class="la-pay-section">
+    <h2>Transaction history</h2>
+    <div class="la-pay-filters">
+      <button type="button" data-pay-filter="all" class="is-active">All</button>
+      <button type="button" data-pay-filter="paid">Paid</button>
+      <button type="button" data-pay-filter="failed">Failed</button>
+      <button type="button" data-pay-filter="refunded">Refunds</button>
+    </div>
+    <div class="la-pay-list" id="payList"></div>
+  </div>
+
+  <div class="la-pay-ideas">
+    <h3>Coming with live payments</h3>
+    <div class="idea"><i class="bx bx-wallet"></i><div><strong>Rent wallet</strong><br>Top up once, pay application fees and deposits faster.</div></div>
+    <div class="idea"><i class="bx bx-group"></i><div><strong>Split rent</strong><br>Share a payment link with flatmates for one unit.</div></div>
+    <div class="idea"><i class="bx bx-receipt"></i><div><strong>Receipt vault</strong><br>PDF receipts for every successful Paystack charge.</div></div>
+    <div class="idea"><i class="bx bx-bell"></i><div><strong>Due reminders</strong><br>Get notified before rent or fee deadlines.</div></div>
+  </div>
+
+  <nav class="la-bottom-nav" aria-label="Mobile">
+    <a href="index.html"><i class="bx bx-home-alt"></i><span>Home</span></a>
+    <a href="properties.html"><i class="bx bx-search"></i><span>Properties</span></a>
+    <a href="messages.html"><i class="bx bx-message-rounded-dots"></i><span>Messages</span></a>
+    <a href="tenant-dashboard.html" class="is-active"><i class="bx bx-user"></i><span>Profile</span></a>
+  </nav>
+
+  <script src="JS/tenant-payments.js"></script>
+  <script src="JS/leaseaccom-mobile-nav.js"></script>
+</body>
+</html>

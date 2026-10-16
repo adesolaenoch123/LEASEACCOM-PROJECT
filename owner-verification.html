@@ -3,194 +3,189 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Owner verification — LeaseHub</title>
-  <meta name="description" content="Verify your identity as a property owner on LeaseHub before listing homes.">
+  <title>Owner verification — LeaseAccom</title>
+  <meta name="description" content="Submit identity and ownership documents to list properties on LeaseAccom.">
   <link rel="stylesheet" href="CSS/style.css">
+  <link rel="stylesheet" href="CSS/verification.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
-  <style>
-    .ov-page { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
-    .ov-hero { margin-bottom: 20px; }
-    .ov-kicker { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #15945c; margin: 0 0 6px; }
-    .ov-hero h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -0.5px; color: #101311; }
-    .ov-hero p { margin: 0; color: #5f6b64; font-size: 14px; line-height: 1.5; }
-    .ov-status {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 14px 16px; border-radius: 14px; margin-bottom: 18px;
-      border: 1px solid #d7e3dc; background: #f4faf6;
-    }
-    .ov-status i { font-size: 22px; color: #15945c; margin-top: 2px; }
-    .ov-status.pending { background: #fff8e8; border-color: #f0e0b0; }
-    .ov-status.pending i { color: #b8860b; }
-    .ov-status.rejected { background: #fff1f0; border-color: #f0c4c0; }
-    .ov-status.rejected i { color: #c0392b; }
-    .ov-status.verified { background: #e9f7ef; border-color: #b7e4c7; }
-    .ov-status strong { display: block; font-size: 14px; margin-bottom: 4px; }
-    .ov-status p { margin: 0; font-size: 13px; color: #5f6b64; line-height: 1.45; }
-    .ov-card {
-      background: #fff; border: 1px solid #e3ebe6; border-radius: 16px;
-      padding: 18px 16px 20px; margin-bottom: 16px;
-      box-shadow: 0 8px 24px rgba(16,19,17,.04);
-    }
-    .ov-card h2 { margin: 0 0 4px; font-size: 16px; }
-    .ov-card .ov-card-sub { margin: 0 0 14px; font-size: 12px; color: #6b746e; }
-    .ov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media (max-width: 560px) { .ov-grid { grid-template-columns: 1fr; } }
-    .ov-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-    .ov-field label { font-size: 12px; font-weight: 700; color: #2c3330; }
-    .ov-field input, .ov-field select, .ov-field textarea {
-      border: 1px solid #d5ddd8; border-radius: 10px; padding: 11px 12px;
-      font-size: 14px; background: #fbfcfb; color: #101311;
-    }
-    .ov-field textarea { min-height: 88px; resize: vertical; }
-    .ov-field input:focus, .ov-field select:focus, .ov-field textarea:focus {
-      outline: none; border-color: #15945c; box-shadow: 0 0 0 3px rgba(21,148,92,.15);
-    }
-    .ov-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #3a433e; line-height: 1.45; margin: 8px 0 16px; }
-    .ov-check input { margin-top: 3px; }
-    .ov-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-    .ov-actions .primary-btn { min-height: 48px; border-radius: 12px; padding: 12px 18px; font-weight: 800; }
-    .ov-actions .owner-ghost-btn, .ov-ghost {
-      min-height: 48px; border-radius: 12px; padding: 12px 16px;
-      border: 1px solid #d5ddd8; background: #fff; font-weight: 700; cursor: pointer; text-decoration: none; color: #2c3330;
-      display: inline-flex; align-items: center;
-    }
-    .ov-note { font-size: 12px; color: #6b746e; margin-top: 12px; line-height: 1.45; }
-    .ov-locked .ov-card input:disabled, .ov-locked .ov-card select:disabled, .ov-locked .ov-card textarea:disabled {
-      opacity: .75; background: #f3f5f4;
-    }
-    body.owner-lounge-body .ov-page { padding-top: 8px; }
-  </style>
 </head>
-<body class="owner-lounge-body" data-owner-page="verification" data-owner-title="Verification">
-
-<div id="ownerShellMount">
-  <div class="ov-page" id="ownerVerificationPage">
-
-    <div class="ov-hero">
-      <p class="ov-kicker">Trust &amp; safety</p>
-      <h1>Verify as a property owner</h1>
-      <p>Complete this once. LeaseHub reviews your details before you can publish listings. Verified owners get a badge tenants can trust.</p>
+<body style="background:#f5f7f6;margin:0;font-family:system-ui,-apple-system,sans-serif">
+  <div class="ov-shell">
+    <div class="ov-top">
+      <a href="owner-dashboard.html">← Owner Lounge</a>
+      <a href="admin-owner-verification.html">Admin review queue</a>
     </div>
 
-    <div id="ovStatusBanner" class="ov-status" hidden></div>
+    <p class="ov-kicker">Trust &amp; safety</p>
+    <h1>Landlord verification</h1>
+    <p class="ov-lead">Submit your identity and proof of authority to list. Listings stay <strong>pending</strong> until both you and each property are approved.</p>
 
-    <form id="ownerVerificationForm">
+    <div class="ov-steps" id="ovSteps">
+      <div class="ov-step-pill is-active" data-step-indicator="1"><span class="n">1</span> Identity</div>
+      <div class="ov-step-pill" data-step-indicator="2"><span class="n">2</span> ID document</div>
+      <div class="ov-step-pill" data-step-indicator="3"><span class="n">3</span> Ownership proof</div>
+      <div class="ov-step-pill" data-step-indicator="4"><span class="n">4</span> Review</div>
+    </div>
 
-      <section class="ov-card">
-        <h2>1. Personal details</h2>
-        <p class="ov-card-sub">Must match your government ID.</p>
-        <div class="ov-grid">
-          <div class="ov-field">
-            <label for="ovFullName">Full legal name</label>
-            <input id="ovFullName" name="fullName" type="text" required placeholder="As on your ID" maxlength="120">
-          </div>
-          <div class="ov-field">
-            <label for="ovPhone">Phone number</label>
-            <input id="ovPhone" name="phone" type="tel" required placeholder="e.g. 0803 000 0000" maxlength="20">
-          </div>
-        </div>
-        <div class="ov-grid">
-          <div class="ov-field">
-            <label for="ovEmail">Email</label>
-            <input id="ovEmail" name="email" type="email" required placeholder="you@example.com" maxlength="120">
-          </div>
-          <div class="ov-field">
-            <label for="ovCity">City</label>
-            <input id="ovCity" name="city" type="text" required placeholder="e.g. Lagos" maxlength="80">
-          </div>
-        </div>
-        <div class="ov-field">
-          <label for="ovAddress">Residential address</label>
-          <input id="ovAddress" name="address" type="text" required placeholder="Street, area, LGA" maxlength="200">
-        </div>
-        <div class="ov-field">
-          <label for="ovState">State</label>
-          <select id="ovState" name="state" required>
-            <option value="">Select state</option>
-            <option>Lagos</option><option>Abuja FCT</option><option>Rivers</option><option>Oyo</option>
-            <option>Ogun</option><option>Kano</option><option>Kaduna</option><option>Enugu</option>
-            <option>Anambra</option><option>Delta</option><option>Edo</option><option>Other</option>
-          </select>
-        </div>
-      </section>
+    <div id="ovBanner" class="ov-banner" hidden></div>
 
-      <section class="ov-card">
-        <h2>2. Identity document</h2>
-        <p class="ov-card-sub">Used only for verification. Demo stores data in this browser.</p>
-        <div class="ov-grid">
+    <form id="ovForm">
+      <!-- STEP 1 -->
+      <div class="ov-panel is-active" data-panel="1">
+        <div class="ov-card">
+          <h2>Personal / business identity</h2>
+          <p class="ov-card-sub">Use the same name that appears on your ID and ownership documents.</p>
+          <div class="ov-grid">
+            <div class="ov-field">
+              <label>Full legal name <span class="req">*</span></label>
+              <input id="ovFullName" type="text" required placeholder="As on government ID" autocomplete="name">
+            </div>
+            <div class="ov-field">
+              <label>Phone <span class="req">*</span></label>
+              <input id="ovPhone" type="tel" required placeholder="080…" autocomplete="tel">
+            </div>
+            <div class="ov-field">
+              <label>Email <span class="req">*</span></label>
+              <input id="ovEmail" type="email" required placeholder="you@email.com" autocomplete="email">
+            </div>
+            <div class="ov-field">
+              <label>Listing role <span class="req">*</span></label>
+              <select id="ovRole" required>
+                <option value="">Select…</option>
+                <option value="individual_owner">Individual property owner</option>
+                <option value="agent">Licensed agent / broker</option>
+                <option value="agency">Agency / company</option>
+                <option value="caretaker">Caretaker / authorized manager</option>
+              </select>
+            </div>
+            <div class="ov-field">
+              <label>Business / agency name</label>
+              <input id="ovBusiness" type="text" placeholder="If applicable">
+            </div>
+            <div class="ov-field">
+              <label>City <span class="req">*</span></label>
+              <input id="ovCity" type="text" required placeholder="e.g. Lagos">
+            </div>
+            <div class="ov-field">
+              <label>State <span class="req">*</span></label>
+              <select id="ovState" required>
+                <option value="">Select state…</option>
+                <option>Lagos</option><option>Abuja FCT</option><option>Rivers</option>
+                <option>Oyo</option><option>Kano</option><option>Ogun</option>
+                <option>Delta</option><option>Enugu</option><option>Other</option>
+              </select>
+            </div>
+            <div class="ov-field" style="grid-column:1/-1">
+              <label>Residential / office address <span class="req">*</span></label>
+              <input id="ovAddress" type="text" required placeholder="Street, area">
+            </div>
+          </div>
+          <div class="ov-actions">
+            <button type="button" class="ov-btn ov-btn-primary" data-next="2">Continue →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="ov-panel" data-panel="2">
+        <div class="ov-card">
+          <h2>Government-issued ID</h2>
+          <p class="ov-card-sub">Clear photo or scan. Max 5MB. JPG, PNG or PDF.</p>
+          <div class="ov-grid">
+            <div class="ov-field">
+              <label>ID type <span class="req">*</span></label>
+              <select id="ovIdType" required>
+                <option value="">Select…</option>
+                <option value="nin">National Identity (NIN) slip / card</option>
+                <option value="passport">International passport</option>
+                <option value="drivers_license">Driver’s licence</option>
+                <option value="voters_card">Voter’s card</option>
+                <option value="cac">CAC documents (companies)</option>
+              </select>
+            </div>
+            <div class="ov-field">
+              <label>ID number <span class="req">*</span></label>
+              <input id="ovIdNumber" type="text" required placeholder="As on the document">
+            </div>
+          </div>
+          <div class="ov-upload" id="ovIdDrop" data-upload="id">
+            <i class="bx bx-id-card"></i>
+            <strong>Upload ID document</strong>
+            <span>Tap or drop file here</span>
+            <input type="file" id="ovIdFile" accept="image/*,.pdf">
+          </div>
+          <div id="ovIdPreview"></div>
+          <div class="ov-actions" style="margin-top:16px">
+            <button type="button" class="ov-btn ov-btn-ghost" data-prev="1">← Back</button>
+            <button type="button" class="ov-btn ov-btn-primary" data-next="3">Continue →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="ov-panel" data-panel="3">
+        <div class="ov-card">
+          <h2>Proof of ownership or authority</h2>
+          <p class="ov-card-sub">Show you can list the property. One document is enough to start.</p>
           <div class="ov-field">
-            <label for="ovIdType">ID type</label>
-            <select id="ovIdType" name="idType" required>
-              <option value="">Select ID</option>
-              <option value="nin">NIN slip / National ID</option>
-              <option value="voters">Voter’s card</option>
-              <option value="passport">International passport</option>
-              <option value="drivers">Driver’s licence</option>
+            <label>Document type <span class="req">*</span></label>
+            <select id="ovProofType" required>
+              <option value="">Select…</option>
+              <option value="title_deed">Title / deed / C of O extract</option>
+              <option value="utility_bill">Utility bill in your name (property address)</option>
+              <option value="tenancy_authority">Letter of authority from owner</option>
+              <option value="agency_mandate">Agency mandate / management agreement</option>
+              <option value="receipt">Purchase receipt / allocation letter</option>
+              <option value="other">Other supporting document</option>
             </select>
           </div>
-          <div class="ov-field">
-            <label for="ovIdNumber">ID number</label>
-            <input id="ovIdNumber" name="idNumber" type="text" required placeholder="Enter ID number" maxlength="40">
+          <div class="ov-upload" id="ovProofDrop" data-upload="proof">
+            <i class="bx bx-file"></i>
+            <strong>Upload ownership / authority proof</strong>
+            <span>JPG, PNG or PDF · max 5MB</span>
+            <input type="file" id="ovProofFile" accept="image/*,.pdf">
+          </div>
+          <div id="ovProofPreview"></div>
+          <div class="ov-field" style="margin-top:14px">
+            <label>Optional note for reviewers</label>
+            <textarea id="ovProofNote" placeholder="e.g. I manage this property for the family trust…"></textarea>
+          </div>
+          <div class="ov-actions">
+            <button type="button" class="ov-btn ov-btn-ghost" data-prev="2">← Back</button>
+            <button type="button" class="ov-btn ov-btn-primary" data-next="4">Continue →</button>
           </div>
         </div>
-        <div class="ov-field">
-          <label for="ovIdFile">Upload ID photo (optional in demo)</label>
-          <input id="ovIdFile" name="idFile" type="file" accept="image/*,.pdf">
-        </div>
-      </section>
+      </div>
 
-      <section class="ov-card">
-        <h2>3. Listing authority</h2>
-        <p class="ov-card-sub">Tell us how you are allowed to list properties.</p>
-        <div class="ov-field">
-          <label for="ovRole">I am listing as</label>
-          <select id="ovRole" name="listingRole" required>
-            <option value="">Select</option>
-            <option value="owner">Property owner</option>
-            <option value="manager">Property manager (authorized)</option>
-            <option value="agent">Agent (will be disclosed on listings)</option>
-          </select>
+      <!-- STEP 4 -->
+      <div class="ov-panel" data-panel="4">
+        <div class="ov-card">
+          <h2>Review &amp; submit</h2>
+          <p class="ov-card-sub">Confirm everything is correct. False documents can lead to suspension.</p>
+          <ul class="ov-checklist" id="ovReviewList"></ul>
+          <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:14px 0;cursor:pointer">
+            <input type="checkbox" id="ovConsent" required style="margin-top:3px">
+            <span>I confirm these documents are genuine and I am authorized to list properties on LeaseAccom.</span>
+          </label>
+          <div class="ov-actions">
+            <button type="button" class="ov-btn ov-btn-ghost" data-prev="3">← Back</button>
+            <button type="submit" class="ov-btn ov-btn-primary" id="ovSubmitBtn">Submit for verification</button>
+          </div>
+          <div class="ov-msg" id="ovMsg" role="status"></div>
         </div>
-        <div class="ov-field">
-          <label for="ovBusiness">Business / company name (optional)</label>
-          <input id="ovBusiness" name="businessName" type="text" placeholder="If you list under a company" maxlength="120">
+        <div class="ov-card">
+          <h2>What happens next</h2>
+          <ul class="ov-checklist">
+            <li><i class="bx bx-time-five"></i> Status becomes <strong>Pending</strong> while staff review</li>
+            <li><i class="bx bx-check-shield"></i> If approved, status becomes <strong>Verified</strong> — you can publish listings</li>
+            <li><i class="bx bx-error-circle"></i> If rejected, you’ll see the reason and can resubmit</li>
+            <li><i class="bx bx-buildings"></i> Each property still goes through listing approval</li>
+          </ul>
         </div>
-        <div class="ov-field">
-          <label for="ovProofNote">Proof of authority (optional note)</label>
-          <textarea id="ovProofNote" name="proofNote" placeholder="e.g. I own the property / I manage for the family / agency agreement" maxlength="500"></textarea>
-        </div>
-        <div class="ov-field">
-          <label for="ovProofFile">Upload proof document (optional)</label>
-          <input id="ovProofFile" name="proofFile" type="file" accept="image/*,.pdf">
-        </div>
-      </section>
-
-      <section class="ov-card">
-        <h2>4. Declaration</h2>
-        <label class="ov-check">
-          <input type="checkbox" id="ovAgreeTruth" required>
-          <span>I confirm the information is true. I understand false details can lead to removal and ban from LeaseHub.</span>
-        </label>
-        <label class="ov-check">
-          <input type="checkbox" id="ovAgreeTerms" required>
-          <span>I agree to list only properties I own or am authorized to rent out, and to keep chat and viewings honest.</span>
-        </label>
-
-        <div class="ov-actions">
-          <button type="submit" class="primary-btn" id="ovSubmitBtn">Submit for verification</button>
-          <a class="ov-ghost" href="owner-dashboard.html">Back to dashboard</a>
-        </div>
-        <p class="ov-note">After you submit, status becomes <strong>Pending</strong>. You can list properties only when status is <strong>Verified</strong>. An admin reviews requests in the Verification Center.</p>
-        <p id="ovFormStatus" class="form-status" role="status" aria-live="polite"></p>
-      </section>
+      </div>
     </form>
-
   </div>
-</div>
-
-<script src="JS/owner-shell.js"></script>
-<script src="JS/data.js"></script>
-<script src="JS/owner-verification.js"></script>
-<script src="JS/leasehub-polish.js"></script>
+  <script src="JS/owner-verification.js"></script>
+<script src="JS/owner-mobile-nav.js"></script>
 </body>
 </html>

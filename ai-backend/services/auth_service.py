@@ -11,9 +11,9 @@ class AuthService:
     """Server-side authentication support for verifying signed-in users."""
 
     DEMO_USERS = {
-        "demo-tenant-token": {"id": "demo-tenant", "email": "tenant@leasehub.local", "role": "tenant"},
-        "demo-owner-token": {"id": "demo-owner", "email": "owner@leasehub.local", "role": "owner"},
-        "demo-admin-token": {"id": "demo-admin", "email": "admin@leasehub.local", "role": "admin"},
+        "demo-tenant-token": {"id": "demo-tenant", "email": "tenant@leaseaccom.local", "role": "tenant"},
+        "demo-owner-token": {"id": "demo-owner", "email": "owner@leaseaccom.local", "role": "owner"},
+        "demo-admin-token": {"id": "demo-admin", "email": "admin@leaseaccom.local", "role": "admin"},
     }
 
     def __init__(self) -> None:
