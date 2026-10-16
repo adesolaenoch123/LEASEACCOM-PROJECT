@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signing you in — LeaseAccom</title>
+  <link rel="stylesheet" href="CSS/style.css">
+  <style>
+    .auth-container { max-width: 420px; margin: 40px auto; padding: 24px; }
+    .role-grid { display: grid; gap: 12px; margin: 20px 0; }
+    .role-btn {
+      border: 2px solid #e3e8e5; background: #fff; border-radius: 14px; padding: 16px;
+      text-align: left; cursor: pointer; font-weight: 700;
+    }
+    .role-btn:hover, .role-btn.is-selected { border-color: #0d7547; background: #e9f7ef; }
+    .role-btn small { display: block; font-weight: 500; color: #66706a; margin-top: 4px; }
+    .form-status { margin-top: 12px; font-weight: 600; }
+    .is-success { color: #0d7547; }
+    .is-error { color: #c0392b; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<header class="navbar">
+  <a href="index.html" class="logo">
+    <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom">
+  </a>
+</header>
+<main class="auth-page">
+  <div class="auth-container">
+    <div id="loadingBlock">
+      <h1>Finishing sign-in…</h1>
+      <p>Connecting your Google account to LeaseAccom.</p>
+    </div>
+    <div id="roleBlock" class="hidden">
+      <span class="section-label">ALMOST DONE</span>
+      <h1>How will you use LeaseAccom?</h1>
+      <p>Choose once. You can contact support later if you need both roles.</p>
+      <div class="role-grid">
+        <button type="button" class="role-btn" data-role="tenant">
+          Tenant / Buyer
+          <small>Search homes, request viewings, apply to rent</small>
+        </button>
+        <button type="button" class="role-btn" data-role="owner">
+          Owner / Landlord
+          <small>List properties, manage viewings and applications</small>
+        </button>
+      </div>
+      <label>
+        Optional: set a password (so you can also log in with email)
+        <input type="password" id="optionalPassword" minlength="8" placeholder="Min. 8 characters (optional)" style="width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid #e3e8e5">
+      </label>
+      <button type="button" id="finishBtn" class="primary-btn auth-submit" style="margin-top:16px;width:100%">Continue</button>
+    </div>
+    <p id="authStatus" class="form-status" role="status"></p>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="JS/supabase-client.js"></script>
+<script>
+(function () {
+  var status = document.getElementById("authStatus");
+  var loading = document.getElementById("loadingBlock");
+  var roleBlock = document.getElementById("roleBlock");
+  var selectedRole = sessionStorage.getItem("leaseaccom_pending_account_type") || "";
+  function show(msg, ok) {
+    status.textContent = msg;
+    status.className = "form-status " + (ok ? "is-success" : "is-error");
+  }
+  function routeUser(accountType) {
+    var t = String(accountType || "tenant").toLowerCase();
+    if (t === "admin") location.href = "admin/admin.html";
+    else if (t === "owner") location.href = "owner-dashboard.html";
+    else location.href = "tenant-dashboard.html";
+  }
+  function saveLocalUser(user, profile) {
+    var accountType = (profile && profile.account_type) || user.user_metadata && user.user_metadata.account_type || "tenant";
+    var local = {
+      id: user.id,
+      email: user.email,
+      name: (profile && profile.full_name) || user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || user.email,
+      accountType: accountType,
+      verificationStatus: (profile && profile.verification_status) || "unverified"
+    };
+    try {
+      localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(local));
+      localStorage.setItem("leasehubCurrentUser", JSON.stringify(local));
+    } catch (e) {}
+    return local;
+  }
+  document.querySelectorAll(".role-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".role-btn").forEach(function (b) { b.classList.remove("is-selected"); });
+      btn.classList.add("is-selected");
+      selectedRole = btn.getAttribute("data-role");
+    });
+  });
+  document.getElementById("finishBtn").addEventListener("click", async function () {
+    if (!selectedRole) return show("Choose Tenant or Owner.");
+    var client = window.leaseaccomSupabase || window.leasehubSupabase;
+    if (!client) return show("Supabase not loaded.");
+    show("Saving your profile…", true);
+    try {
+      var { data: u } = await client.auth.getUser();
+      var user = u && u.user;
+      if (!user) return show("Session expired. Try Google sign-in again.");
+      var pwd = document.getElementById("optionalPassword").value;
+      if (pwd && pwd.length >= 8) {
+        await client.auth.updateUser({ password: pwd });
+      }
+      await client.auth.updateUser({ data: { account_type: selectedRole } });
+      await client.from("profiles").upsert({
+        id: user.id,
+        account_type: selectedRole,
+        full_name: user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || "",
+        updated_at: new Date().toISOString()
+      });
+      var local = saveLocalUser(user, { account_type: selectedRole, full_name: user.user_metadata && user.user_metadata.name });
+      try { sessionStorage.removeItem("leaseaccom_pending_account_type"); } catch (e) {}
+      routeUser(local.accountType);
+    } catch (err) {
+      show(err.message || "Could not finish setup");
+    }
+  });
+
+  async function boot() {
+    var client = window.leaseaccomSupabase || window.leasehubSupabase;
+    if (!client) {
+      show("Supabase client missing. Check JS/supabase-client.js keys.");
+      return;
+    }
+    // Exchange hash tokens if present
+    try {
+      await client.auth.getSession();
+    } catch (e) {}
+    var { data } = await client.auth.getUser();
+    var user = data && data.user;
+    if (!user) {
+      show("Could not complete Google sign-in. Try again from the login page.");
+      loading.classList.add("hidden");
+      return;
+    }
+    var profile = null;
+    try {
+      var pr = await client.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      profile = pr.data;
+    } catch (e) {}
+    var accountType = (profile && profile.account_type) || (user.user_metadata && user.user_metadata.account_type) || "";
+    // New Google users often default to tenant from trigger — ask if no explicit choice stored
+    var needsRole = !accountType || accountType === "tenant" && !profile;
+    // Better: always ask if pending role in session, or profile missing account preference
+    var pending = sessionStorage.getItem("leaseaccom_pending_account_type");
+    if (pending) {
+      selectedRole = pending;
+      accountType = pending;
+    }
+    if (!profile || !profile.account_type || pending) {
+      // If they already picked on login screen, save and go
+      if (pending === "tenant" || pending === "owner") {
+        try {
+          await client.from("profiles").upsert({
+            id: user.id,
+            account_type: pending,
+            full_name: user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name) || "",
+            updated_at: new Date().toISOString()
+          });
+          await client.auth.updateUser({ data: { account_type: pending } });
+          var local = saveLocalUser(user, { account_type: pending });
+          sessionStorage.removeItem("leaseaccom_pending_account_type");
+          routeUser(local.accountType);
+          return;
+        } catch (e) {}
+      }
+      loading.classList.add("hidden");
+      roleBlock.classList.remove("hidden");
+      return;
+    }
+    var localUser = saveLocalUser(user, profile);
+    routeUser(localUser.accountType);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+</body>
+</html>
