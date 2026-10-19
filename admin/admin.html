@@ -16,7 +16,7 @@
     <img src="../IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom" onerror="this.style.display='none'">
     <span class="admin-eyebrow">Private staff area</span>
     <h1>LeaseAccom Admin</h1>
-    <p id="adminLoginHint">Sign in with staff credentials. First visit: create Super Admin (min 8-character code).</p>
+    <p id="adminLoginHint">Sign in with staff credentials. Use your Supabase admin email and password. Only admin role can enter.</p>
     <div id="adminSetupBox" hidden>
       <form id="adminSetupForm">
         <label>Admin name<input id="setupName" type="text" placeholder="Your name" required></label>
@@ -29,7 +29,7 @@
     </div>
     <form id="adminLoginForm">
       <label>Email<input id="adminEmail" type="email" required autocomplete="username" placeholder="staff@leaseaccom.ng"></label>
-      <label>Access code<input id="adminCode" type="password" required autocomplete="current-password"></label>
+      <label>Password<input id="adminCode" type="password" required autocomplete="current-password"></label>
       <button class="admin-primary" type="submit">Enter command centre</button>
       <div id="adminLoginError" class="login-error" role="alert"></div>
     </form>

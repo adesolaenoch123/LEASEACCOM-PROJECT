@@ -375,14 +375,28 @@ function refreshOwnerPlanUI() {
     if (!chart) return;
     let viewsMap = {};
     try { viewsMap = JSON.parse(localStorage.getItem("leaseaccomPropertyViews") || "{}") || {}; } catch (e) {}
+    // Prefer live views_count from cloud-loaded properties if present
+    try {
+      const cloudProps = JSON.parse(localStorage.getItem("leaseaccomProperties") || "[]");
+      if (Array.isArray(cloudProps)) {
+        cloudProps.forEach(function (p) {
+          if (p && p.id != null && (p.views_count != null || p.views != null)) {
+            const key = String(p.id);
+            const total = Number(p.views_count != null ? p.views_count : p.views) || 0;
+            if (!viewsMap[key]) viewsMap[key] = { total: total, byDay: {} };
+            else viewsMap[key].total = Math.max(Number(viewsMap[key].total) || 0, total);
+          }
+        });
+      }
+    } catch (e) {}
     let props = [];
     try {
-      props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leaseaccomProperties") || "[]") || [];
+      props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leasehubProperties") || "[]") || [];
     } catch (e) {}
     const user = (function () {
       try {
         return JSON.parse(
-          localStorage.getItem("leaseaccomCurrentUser") ||
+          localStorage.getItem("leasehubCurrentUser") ||
             localStorage.getItem("leaseaccomCurrentUser") ||
             "null"
         );

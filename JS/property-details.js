@@ -1445,6 +1445,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                     "viewingRequests",
                     JSON.stringify(requests)
                 );
+                if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.createViewing === "function") {
+                    try {
+                        await window.LeaseAccomCloud.createViewing({
+                            propertyId: viewingRequest.propertyId || property.id,
+                            ownerId: viewingRequest.ownerId || property.ownerId,
+                            date: viewingRequest.date || viewingRequest.preferredDate,
+                            time: viewingRequest.time || viewingRequest.preferredTime,
+                            message: viewingRequest.message || ""
+                        });
+                    } catch (cloudErr) {
+                        console.warn("LeaseAccom cloud viewing:", cloudErr);
+                    }
+                }
+
 
                 localStorage.setItem(
                     "leaseaccomCurrentUser",
@@ -1844,6 +1858,23 @@ LeaseAccom will process your request.`
                     "rentalApplications",
                     JSON.stringify(applications)
                 );
+                if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.createApplication === "function") {
+                    try {
+                        await window.LeaseAccomCloud.createApplication({
+                            propertyId: rentalApplication.propertyId || property.id,
+                            ownerId: rentalApplication.ownerId || property.ownerId,
+                            name: rentalApplication.name || rentalApplication.applicantName,
+                            email: rentalApplication.email || rentalApplication.applicantEmail,
+                            phone: rentalApplication.phone || rentalApplication.applicantPhone,
+                            moveInDate: rentalApplication.moveInDate,
+                            message: rentalApplication.message || "",
+                            propertyTitle: rentalApplication.propertyTitle || property.title
+                        });
+                    } catch (cloudErr) {
+                        console.warn("LeaseAccom cloud application:", cloudErr);
+                    }
+                }
+
 
                 if (!Array.isArray(currentUser.applications)) {
                     currentUser.applications = [];
@@ -2179,7 +2210,7 @@ LeaseAccom will process your request.`
     }
     // also bump on stored property list if present
     try {
-      var props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leaseaccomProperties") || "[]");
+      var props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leasehubProperties") || "[]");
       if (Array.isArray(props)) {
         props.forEach(function (p) {
           if (String(p.id) === String(id)) {

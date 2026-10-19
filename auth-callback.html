@@ -84,7 +84,7 @@
     };
     try {
       localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(local));
-      localStorage.setItem("leasehubCurrentUser", JSON.stringify(local));
+      localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(local));
     } catch (e) {}
     return local;
   }
@@ -97,7 +97,7 @@
   });
   document.getElementById("finishBtn").addEventListener("click", async function () {
     if (!selectedRole) return show("Choose Tenant or Owner.");
-    var client = window.leaseaccomSupabase || window.leasehubSupabase;
+    var client = window.leaseaccomSupabase || window.leaseaccomSupabase;
     if (!client) return show("Supabase not loaded.");
     show("Saving your profile…", true);
     try {
@@ -124,7 +124,7 @@
   });
 
   async function boot() {
-    var client = window.leaseaccomSupabase || window.leasehubSupabase;
+    var client = window.leaseaccomSupabase || window.leaseaccomSupabase;
     if (!client) {
       show("Supabase client missing. Check JS/supabase-client.js keys.");
       return;

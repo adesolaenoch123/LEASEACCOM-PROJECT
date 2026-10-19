@@ -2,7 +2,7 @@
  * LeaseAccom owner viewing requests
  * Hybrid: Supabase/API when available, otherwise localStorage "viewingRequests"
  */
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
   const container = document.getElementById("ownerViewingRequests");
   if (!container) return;
 
@@ -27,6 +27,35 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+
+  function mapCloudViewing(row) {
+    return {
+      id: row.id,
+      propertyId: row.property_id,
+      ownerId: row.owner_id,
+      tenantId: row.tenant_id,
+      status: row.status || "requested",
+      date: row.preferred_date || row.viewing_date,
+      time: row.preferred_time,
+      message: row.message || "",
+      createdAt: row.created_at,
+      preferredDate: row.preferred_date,
+      preferredTime: row.preferred_time
+    };
+  }
+
+  async function loadCloudRequests(owner) {
+    if (!window.LeaseAccomCloud || typeof window.LeaseAccomCloud.listMyViewings !== "function") return null;
+    try {
+      var res = await window.LeaseAccomCloud.listMyViewings("owner");
+      if (!res || !res.ok) return null;
+      return (res.data || []).map(mapCloudViewing);
+    } catch (e) {
+      console.warn(e);
+      return null;
+    }
+  }
+
   function loadLocalRequests() {
     try {
       const v = JSON.parse(localStorage.getItem("viewingRequests") || "[]");
@@ -40,6 +69,16 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.setItem("viewingRequests", JSON.stringify(list));
   }
 
+  async function resolveOwnerViewings(owner) {
+    var cloud = await loadCloudRequests(owner);
+    if (cloud && cloud.length) {
+      saveLocalRequests(cloud);
+      return cloud;
+    }
+    if (cloud && cloud.length === 0) return [];
+    return loadLocalRequests().filter(function (r) { return ownerMatches(r, owner); });
+  }
+
   function canUseLocalFallback() {
     const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
     const apiConfigured = Boolean(
@@ -47,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
       typeof window.LeaseAccomApi.isConfigured === "function" &&
       window.LeaseAccomApi.isConfigured()
     );
-    return isLocalHost || !apiConfigured;
+    return (window.LeaseAccomLiveMode ? window.LeaseAccomLiveMode.allowLocalFallback() : isLocalHost);
   }
 
   function ownerMatches(request, owner) {
@@ -191,7 +230,14 @@ document.addEventListener("DOMContentLoaded", function () {
     if (button) button.disabled = true;
     let updatedRemotely = false;
     try {
-      if (
+      if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.updateViewingStatus === "function") {
+        const mapped = status === "accept" || status === "accepted" ? "accepted"
+          : status === "decline" || status === "declined" ? "declined"
+          : status;
+        const cr = await window.LeaseAccomCloud.updateViewingStatus(id, mapped);
+        if (cr && cr.ok) updatedRemotely = true;
+      }
+      if (!updatedRemotely &&
         window.LeaseAccomApi &&
         window.LeaseAccomApi.isConfigured &&
         window.LeaseAccomApi.isConfigured() &&
@@ -240,8 +286,35 @@ document.addEventListener("DOMContentLoaded", function () {
     let records = [];
     let apiLoaded = false;
 
-    // Try API first
+    // Supabase cloud first
     try {
+      if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.listMyViewings === "function") {
+        const cloud = await window.LeaseAccomCloud.listMyViewings("owner");
+        if (cloud && cloud.ok && Array.isArray(cloud.data)) {
+          records = cloud.data.map(function (row) {
+            return {
+              id: row.id,
+              propertyId: row.property_id,
+              ownerId: row.owner_id,
+              tenantId: row.tenant_id,
+              status: row.status,
+              preferred_date: row.preferred_date,
+              preferred_time: row.preferred_time,
+              message: row.message,
+              created_at: row.created_at,
+              updatedAt: row.updated_at
+            };
+          });
+          apiLoaded = true;
+          saveLocalRequests(records);
+        }
+      }
+    } catch (e) {
+      console.warn("LeaseAccom cloud viewings:", e);
+    }
+
+    // Try API second
+    if (!apiLoaded) try {
       if (
         window.LeaseAccomApi &&
         window.LeaseAccomApi.isConfigured &&

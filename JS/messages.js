@@ -397,7 +397,7 @@ document.addEventListener("DOMContentLoaded", () => {
             typeof window.LeaseAccomApi.isConfigured === "function" &&
             window.LeaseAccomApi.isConfigured()
         );
-        return isLocalHost || !apiConfigured;
+        return (window.LeaseAccomLiveMode ? window.LeaseAccomLiveMode.allowLocalFallback() : isLocalHost);
     }
 
 

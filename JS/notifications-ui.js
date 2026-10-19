@@ -91,8 +91,8 @@
     // Light demo so the panel is never a dead empty void after login path
     try {
       var user = JSON.parse(
-        localStorage.getItem("leaseaccomCurrentUser") ||
-          localStorage.getItem("leaseaccomCurrentUser") ||
+        localStorage.getItem("leasehubCurrentUser") ||
+          localStorage.getItem("leaseHubCurrentUser") ||
           localStorage.getItem("leaseaccomCurrentUser") ||
           localStorage.getItem("currentUser") ||
           "null"
@@ -227,8 +227,8 @@
       var local = seedDemoIfEmpty();
       try {
         var user = JSON.parse(
-          localStorage.getItem("leaseaccomCurrentUser") ||
-            localStorage.getItem("leaseaccomCurrentUser") ||
+          localStorage.getItem("leasehubCurrentUser") ||
+            localStorage.getItem("leaseHubCurrentUser") ||
             localStorage.getItem("leaseaccomCurrentUser") ||
             localStorage.getItem("currentUser") ||
             "null"
@@ -304,8 +304,8 @@
 
     try {
       var user = JSON.parse(
-        localStorage.getItem("leaseaccomCurrentUser") ||
-          localStorage.getItem("leaseaccomCurrentUser") ||
+        localStorage.getItem("leasehubCurrentUser") ||
+          localStorage.getItem("leaseHubCurrentUser") ||
           localStorage.getItem("leaseaccomCurrentUser") ||
           localStorage.getItem("currentUser") ||
           "null"

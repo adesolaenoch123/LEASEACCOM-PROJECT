@@ -234,7 +234,42 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", async function () {
+  try {
+    if (window.LeaseAccomCloud) {
+      if (typeof window.LeaseAccomCloud.listMyViewings === "function") {
+        var v = await window.LeaseAccomCloud.listMyViewings("tenant");
+        if (v && v.ok && Array.isArray(v.data)) {
+          localStorage.setItem("viewingRequests", JSON.stringify(v.data.map(function (r) {
+            return {
+              id: r.id, propertyId: r.property_id, ownerId: r.owner_id, tenantId: r.tenant_id,
+              status: r.status, date: r.preferred_date, time: r.preferred_time, message: r.message,
+              createdAt: r.created_at
+            };
+          })));
+        }
+      }
+      if (typeof window.LeaseAccomCloud.listMyApplications === "function") {
+        var a = await window.LeaseAccomCloud.listMyApplications("tenant");
+        if (a && a.ok && Array.isArray(a.data)) {
+          localStorage.setItem("rentalApplications", JSON.stringify(a.data.map(function (r) {
+            return {
+              id: r.id, propertyId: r.property_id, ownerId: r.owner_id, tenantId: r.tenant_id,
+              status: r.status, name: r.applicant_name, email: r.applicant_email, phone: r.applicant_phone,
+              message: r.message, propertyTitle: r.property_title, createdAt: r.created_at
+            };
+          })));
+        }
+      }
+      if (typeof window.LeaseAccomCloud.listSaved === "function") {
+        var s = await window.LeaseAccomCloud.listSaved();
+        if (s && s.ok && Array.isArray(s.data)) {
+          localStorage.setItem("savedProperties", JSON.stringify(s.data.map(function (x) { return x.property_id; })));
+        }
+      }
+    }
+  } catch (e) { console.warn("tenant cloud hydrate", e); }
+
     try {
       if (global.LeaseAccomRoles && global.LeaseAccomRoles.enforce) {
         global.LeaseAccomRoles.enforce();

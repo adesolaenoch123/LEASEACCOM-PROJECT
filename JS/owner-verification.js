@@ -1,13 +1,13 @@
 /**
  * LeaseAccom — landlord verification & documentation
- * Stores queue in localStorage (leaseaccomOwnerVerifications).
+ * Stores queue in localStorage (leasehubOwnerVerifications).
  * Ready to swap uploads to Supabase Storage later.
  */
 (function () {
   "use strict";
 
-  var QUEUE_KEY = "leaseaccomOwnerVerifications";
-  var CURRENT_KEYS = ["leaseaccomCurrentUser", "leaseaccomCurrentUser", "currentUser"];
+  var QUEUE_KEY = "leasehubOwnerVerifications";
+  var CURRENT_KEYS = ["leasehubCurrentUser", "leaseHubCurrentUser", "currentUser"];
   var MAX_BYTES = 5 * 1024 * 1024;
 
   var step = 1;
@@ -39,14 +39,14 @@
         localStorage.setItem(k, payload);
       } catch (e) {}
     });
-    var users = readJSON("leaseaccomUsers", []);
+    var users = readJSON("leasehubUsers", []);
     if (Array.isArray(users) && user.id) {
       var idx = users.findIndex(function (x) {
         return String(x.id) === String(user.id);
       });
       if (idx >= 0) users[idx] = Object.assign({}, users[idx], user);
       else users.push(user);
-      writeJSON("leaseaccomUsers", users);
+      writeJSON("leasehubUsers", users);
     }
   }
 
@@ -307,7 +307,7 @@
       });
     });
 
-    document.getElementById("ovForm").addEventListener("submit", function (e) {
+    document.getElementById("ovForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       var err = validateStep(1) || validateStep(2) || validateStep(3);
       if (err) {
@@ -336,11 +336,43 @@
         proofFileName: proofFileMeta ? proofFileMeta.name : "",
         hasIdUpload: Boolean(idFileMeta),
         hasProofUpload: Boolean(proofFileMeta),
-        // Keep small preview only in queue for admin (truncated for storage safety)
         idPreview: idFileMeta && String(idFileMeta.type).indexOf("image/") === 0 ? idFileMeta.dataUrl : "",
         proofPreview: proofFileMeta && String(proofFileMeta.type).indexOf("image/") === 0 ? proofFileMeta.dataUrl : "",
         submittedAt: new Date().toISOString()
       };
+
+      var submitBtn = document.getElementById("ovSubmitBtn");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Uploading documents…";
+      }
+      setMsg("Uploading ID & proof to secure storage…", "success");
+
+      // Cloud-first: Storage + owner_verifications table
+      var cloudOk = false;
+      try {
+        if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.submitOwnerVerificationFull === "function") {
+          var cloudPayload = Object.assign({}, application, {
+            idDataUrl: idFileMeta && idFileMeta.dataUrl ? idFileMeta.dataUrl : null,
+            proofDataUrl: proofFileMeta && proofFileMeta.dataUrl ? proofFileMeta.dataUrl : null
+          });
+          var cloud = await window.LeaseAccomCloud.submitOwnerVerificationFull(cloudPayload);
+          if (cloud && cloud.ok) {
+            cloudOk = true;
+            application.cloudId = cloud.data && cloud.data.id;
+            application.idFilePath = cloud.idPath;
+            application.proofFilePath = cloud.proofPath;
+            setMsg("Submitted to LeaseAccom cloud. Status: Pending review.", "success");
+          } else if (cloud && cloud.offline) {
+            setMsg("Offline — saved on this device only. Connect to sync verification.", "error");
+          } else {
+            setMsg("Cloud error: " + ((cloud && cloud.error) || "failed") + ". Saved locally as backup.", "error");
+          }
+        }
+      } catch (ex) {
+        console.warn(ex);
+        setMsg("Cloud error: " + (ex.message || "failed") + ". Saved locally as backup.", "error");
+      }
 
       var current = getCurrentUser() || {
         id: "owner-" + Date.now(),
@@ -357,14 +389,16 @@
       current.verificationNote = "";
       saveCurrentUser(current);
 
+      // Local queue backup for admin offline
       var queue = readJSON(QUEUE_KEY, []);
       var entry = {
-        id: "ov-" + Date.now(),
+        id: application.cloudId || ("ov-" + Date.now()),
         userId: current.id,
         email: current.email,
         status: "pending",
         application: application,
-        createdAt: application.submittedAt
+        createdAt: application.submittedAt,
+        cloudSynced: cloudOk
       };
       queue = (Array.isArray(queue) ? queue : []).filter(function (q) {
         return String(q.userId) !== String(current.id) && String(q.email) !== String(current.email);
@@ -372,10 +406,14 @@
       queue.unshift(entry);
       writeJSON(QUEUE_KEY, queue.slice(0, 100));
 
-      setMsg("Submitted successfully. Status: Pending review.", "success");
+      if (cloudOk) {
+        setMsg("Submitted successfully. Documents stored securely. Status: Pending review.", "success");
+      }
       renderBanner(current);
-      document.getElementById("ovSubmitBtn").disabled = true;
-      document.getElementById("ovSubmitBtn").textContent = "Submitted — pending";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Submitted — pending";
+      }
     });
   });
 })();

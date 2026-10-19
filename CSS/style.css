@@ -7381,7 +7381,7 @@ body:not(.is-landing-page) .messages-topbar .logo img {
   display: inline-flex !important;
 }
 .messages-topbar .logo-text .lh-lease { color: #ffffff; }
-.messages-topbar .logo-text .lh-hub { color: #b7f0d2; }
+.messages-topbar .logo-textleaseaccom { color: #b7f0d2; }
 
 /* Smaller navbar on inner pages */
 body:not(.is-landing-page) .navbar {

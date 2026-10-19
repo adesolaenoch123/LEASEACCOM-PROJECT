@@ -82,3 +82,51 @@
     }
   };
 })();
+
+
+  // Bridge to Supabase when LeaseAccomCloud is available
+  var _orig = global.LeaseAccomMessagesApi || {};
+  global.LeaseAccomMessagesApi = Object.assign({}, _orig, {
+    async listConversations() {
+      if (global.LeaseAccomCloud && global.LeaseAccomCloud.hasSb && global.LeaseAccomCloud.hasSb()) {
+        try {
+          var client = global.leaseaccomSupabase || global.leasehubSupabase;
+          var uid = await global.LeaseAccomCloud.uid();
+          if (client && uid) {
+            var { data, error } = await client.from("conversations").select("*")
+              .or("tenant_id.eq." + uid + ",owner_id.eq." + uid)
+              .order("last_message_at", { ascending: false });
+            if (!error && data) {
+              return data.map(function (c) {
+                return { id: c.id, propertyId: c.property_id, tenantId: c.tenant_id, ownerId: c.owner_id, subject: c.subject, updatedAt: c.last_message_at };
+              });
+            }
+          }
+        } catch (e) { console.warn(e); }
+      }
+      if (_orig.listConversations) return _orig.listConversations();
+      return null;
+    },
+    async sendMessage(conversation, body) {
+      if (global.LeaseAccomCloud && typeof global.LeaseAccomCloud.sendMessage === "function") {
+        var id = conversation && (conversation.id || conversation);
+        var r = await global.LeaseAccomCloud.sendMessage(id, body);
+        if (r && r.ok) return { id: r.data && r.data.id, body: body, createdAt: r.data && r.data.created_at };
+      }
+      if (_orig.sendMessage) return _orig.sendMessage(conversation, body);
+      return null;
+    },
+    async listMessages(conversation) {
+      if (global.LeaseAccomCloud && typeof global.LeaseAccomCloud.listMessages === "function") {
+        var id = conversation && (conversation.id || conversation);
+        var r = await global.LeaseAccomCloud.listMessages(id);
+        if (r && r.ok) {
+          return (r.data || []).map(function (m) {
+            return { id: m.id, body: m.body, senderId: m.sender_id, createdAt: m.created_at };
+          });
+        }
+      }
+      if (_orig.listMessages) return _orig.listMessages(conversation);
+      return null;
+    }
+  });

@@ -4,9 +4,9 @@
 (function () {
   "use strict";
 
-  var QUEUE_KEY = "leaseaccomOwnerVerifications";
-  var USERS_KEY = "leaseaccomUsers";
-  var CURRENT_KEY = "leaseaccomCurrentUser";
+  var QUEUE_KEY = "leasehubOwnerVerifications";
+  var USERS_KEY = "leasehubUsers";
+  var CURRENT_KEY = "leasehubCurrentUser";
   var filter = "pending";
 
   function readJSON(key, fallback) {
@@ -26,6 +26,18 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+
+  async function cloudReview(id, status, note) {
+    if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.reviewOwnerVerification === "function" && id && String(id).indexOf("ov-") !== 0) {
+      try {
+        return await window.LeaseAccomCloud.reviewOwnerVerification(id, status, note);
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+    return { ok: false };
   }
 
   function setUserStatus(email, userId, status, note) {
@@ -54,13 +66,66 @@
         cur.ownerVerificationStatus = status;
         cur.verificationNote = note || "";
         writeJSON(CURRENT_KEY, cur);
-        writeJSON("leaseaccomCurrentUser", cur);
+        writeJSON("leaseHubCurrentUser", cur);
       }
     } catch (e) {}
   }
 
+  async function loadCloudQueue() {
+    if (!window.LeaseAccomCloud || typeof window.LeaseAccomCloud.listOwnerVerifications !== "function") {
+      return null;
+    }
+    try {
+      var res = await window.LeaseAccomCloud.listOwnerVerifications("all");
+      if (!res || !res.ok || !Array.isArray(res.data)) return null;
+      return res.data.map(function (row) {
+        return {
+          id: row.id,
+          userId: row.owner_id,
+          email: row.email || "",
+          status: row.status || "pending",
+          createdAt: row.submitted_at || row.created_at,
+          cloud: true,
+          application: {
+            fullName: row.full_name,
+            phone: row.phone,
+            email: row.email,
+            city: row.city,
+            state: row.state,
+            address: row.address,
+            idType: row.id_type,
+            idNumber: row.id_number,
+            listingRole: row.listing_role,
+            businessName: row.business_name,
+            proofType: row.proof_type,
+            proofNote: row.proof_note,
+            idFileName: row.id_file_path || "",
+            proofFileName: row.proof_file_path || "",
+            idFileUrl: row.id_file_url,
+            proofFileUrl: row.proof_file_url,
+            submittedAt: row.submitted_at
+          }
+        };
+      });
+    } catch (e) {
+      console.warn(e);
+      return null;
+    }
+  }
+
   function render() {
     var queue = readJSON(QUEUE_KEY, []);
+    if (!Array.isArray(queue)) queue = [];
+    paintQueue(queue);
+    loadCloudQueue().then(function (cloudList) {
+      if (cloudList && cloudList.length) {
+        writeJSON(QUEUE_KEY, cloudList.slice(0, 100));
+        paintQueue(cloudList);
+      }
+    });
+  }
+
+  function paintQueue(queue) {
     if (!Array.isArray(queue)) queue = [];
 
     var pending = queue.filter(function (q) { return q.status === "pending"; }).length;
@@ -95,11 +160,11 @@
         if (a.proofType) docs.push(a.proofType);
 
         var previews = "";
-        if (a.idPreview) {
+        if (a.idPreview || a.idFileUrl) {
           previews +=
-            '<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;margin-bottom:4px">ID preview</div><img src="' +
-            a.idPreview +
-            '" alt="ID" style="max-width:180px;border-radius:8px;border:1px solid #e3e8e5"></div>';
+            '<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;margin-bottom:4px">ID document</div><img src="' +
+            (a.idPreview || a.idFileUrl) +
+            '" alt="ID" style="max-width:180px;border-radius:8px;border:1px solid #e3e8e5" onerror="this.style.display=\'none\'"></div>';
         }
         if (a.proofPreview) {
           previews +=
@@ -160,7 +225,7 @@
     });
   }
 
-  function updateItem(id, status, note) {
+  async function updateItem(id, status, note) {
     var queue = readJSON(QUEUE_KEY, []);
     var item = queue.find(function (q) {
       return String(q.id) === String(id);
@@ -171,6 +236,14 @@
     item.reviewNote = note || "";
     writeJSON(QUEUE_KEY, queue);
     setUserStatus(item.email, item.userId, status, note);
+    try {
+      var cr = await cloudReview(id, status, note);
+      if (cr && cr.ok) {
+        console.info("Cloud verification review saved");
+      }
+    } catch (e) {
+      console.warn(e);
+    }
     render();
     alert(
       status === "verified"

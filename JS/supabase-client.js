@@ -256,7 +256,7 @@
 
   /**
    * Load live listings from Supabase when available.
-   * NEVER wipes demo data if Supabase returns empty or fails.
+   * On live hosts, catalog is cloud-only (empty list if offline/error).
    */
   window.loadLeaseAccomPropertyCatalog = function () {
     if (propertyCatalogRequest) return propertyCatalogRequest;
@@ -284,7 +284,8 @@
         }
         return target || [];
       } catch (e) {
-        console.warn("Catalog load failed, keeping demo data.", e);
+        console.warn("Catalog load failed.", e);
+        if (window.LeaseAccomLiveMode && window.LeaseAccomLiveMode.isProduction()) return [];
         return typeof properties !== "undefined" ? properties : [];
       } finally {
         propertyCatalogRequest = null;

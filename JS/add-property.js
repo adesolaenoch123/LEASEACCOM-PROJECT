@@ -19,8 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     function readCurrentUser() {
         try { return JSON.parse(
-            localStorage.getItem("leasehubCurrentUser") ||
-            localStorage.getItem("leaseHubCurrentUser") ||
+            localStorage.getItem("leaseaccomCurrentUser") ||
+            localStorage.getItem("leaseaccomCurrentUser") ||
             localStorage.getItem("leaseaccomCurrentUser") ||
             localStorage.getItem("currentUser") ||
             "null"

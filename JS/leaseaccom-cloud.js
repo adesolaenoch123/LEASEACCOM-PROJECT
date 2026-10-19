@@ -360,6 +360,129 @@
     return { ok: true, data: data || [] };
   }
 
+
+  // ---- Owner verification (NIN + docs to Storage) ----
+  async function uploadVerificationFile(fileOrBlob, kind, fileName) {
+    if (!hasSb()) return { ok: false, offline: true };
+    const userId = await uid();
+    if (!userId) return { ok: false, error: "Not signed in" };
+    var blob = fileOrBlob;
+    if (typeof fileOrBlob === "string" && fileOrBlob.indexOf("data:") === 0) {
+      blob = dataUrlToBlob(fileOrBlob);
+    }
+    if (!blob) return { ok: false, error: "Invalid file" };
+    var ext = "bin";
+    var name = fileName || (kind + ".bin");
+    if (/\.([a-zA-Z0-9]+)$/.test(name)) ext = name.match(/\.([a-zA-Z0-9]+)$/)[1].toLowerCase();
+    else if (blob.type && blob.type.indexOf("jpeg") >= 0) ext = "jpg";
+    else if (blob.type && blob.type.indexOf("png") >= 0) ext = "png";
+    else if (blob.type && blob.type.indexOf("pdf") >= 0) ext = "pdf";
+    var path = userId + "/" + kind + "-" + Date.now() + "." + ext;
+    var up = await uploadMedia("verification-docs", path, blob, blob.type || "application/octet-stream");
+    if (!up.ok) return up;
+    return { ok: true, path: up.path, publicUrl: up.publicUrl };
+  }
+
+  async function submitOwnerVerificationFull(payload) {
+    if (!hasSb()) return { ok: false, offline: true };
+    const userId = await uid();
+    if (!userId) return { ok: false, error: "Not signed in" };
+
+    var idPath = payload.idFilePath || null;
+    var idUrl = payload.idFileUrl || null;
+    var proofPath = payload.proofFilePath || null;
+    var proofUrl = payload.proofFileUrl || null;
+
+    if (payload.idFileBlob || payload.idDataUrl) {
+      var idUp = await uploadVerificationFile(payload.idFileBlob || payload.idDataUrl, "id", payload.idFileName);
+      if (!idUp.ok && !idUp.offline) return { ok: false, error: "ID upload failed: " + (idUp.error || "") };
+      if (idUp.ok) { idPath = idUp.path; idUrl = idUp.publicUrl; }
+    }
+    if (payload.proofFileBlob || payload.proofDataUrl) {
+      var pUp = await uploadVerificationFile(payload.proofFileBlob || payload.proofDataUrl, "proof", payload.proofFileName);
+      if (!pUp.ok && !pUp.offline) return { ok: false, error: "Proof upload failed: " + (pUp.error || "") };
+      if (pUp.ok) { proofPath = pUp.path; proofUrl = pUp.publicUrl; }
+    }
+
+    var row = {
+      owner_id: userId,
+      status: "pending",
+      full_name: payload.fullName || payload.full_name || "",
+      phone: payload.phone || "",
+      email: payload.email || "",
+      city: payload.city || "",
+      state: payload.state || "",
+      address: payload.address || "",
+      listing_role: payload.listingRole || payload.listing_role || "",
+      business_name: payload.businessName || payload.business_name || "",
+      id_type: payload.idType || payload.id_type || "",
+      id_number: payload.idNumber || payload.id_number || "",
+      proof_type: payload.proofType || payload.proof_type || "",
+      proof_note: payload.proofNote || payload.proof_note || "",
+      id_file_path: idPath,
+      proof_file_path: proofPath,
+      id_file_url: idUrl,
+      proof_file_url: proofUrl,
+      notes: payload.notes || ("NIN/ID: " + (payload.idType || "") + " " + (payload.idNumber || "")),
+      submitted_at: new Date().toISOString()
+    };
+
+    // Mark previous pending as superseded is optional; insert new
+    var { data, error } = await sb().from("owner_verifications").insert(row).select().maybeSingle();
+    if (error) {
+      // minimal columns fallback
+      var minimal = {
+        owner_id: userId,
+        status: "pending",
+        full_name: row.full_name,
+        phone: row.phone,
+        id_type: row.id_type,
+        id_number: row.id_number,
+        notes: row.notes
+      };
+      var res2 = await sb().from("owner_verifications").insert(minimal).select().maybeSingle();
+      if (res2.error) return { ok: false, error: error.message || res2.error.message };
+      data = res2.data;
+    }
+
+    try {
+      await sb().from("profiles").update({
+        verification_status: "pending",
+        full_name: row.full_name || undefined,
+        phone: row.phone || undefined
+      }).eq("id", userId);
+    } catch (e) {}
+
+    return { ok: true, data: data, idPath: idPath, proofPath: proofPath };
+  }
+
+  async function listOwnerVerifications(statusFilter) {
+    if (!hasSb()) return { ok: false, offline: true, data: [] };
+    var q = sb().from("owner_verifications").select("*").order("submitted_at", { ascending: false });
+    if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
+    var { data, error } = await q.limit(100);
+    if (error) return { ok: false, error: error.message, data: [] };
+    return { ok: true, data: data || [] };
+  }
+
+  async function reviewOwnerVerification(id, status, reviewNote) {
+    if (!hasSb()) return { ok: false, offline: true };
+    var userId = await uid();
+    var { data, error } = await sb().from("owner_verifications").update({
+      status: status,
+      review_note: reviewNote || null,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: userId
+    }).eq("id", id).select().maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    if (data && data.owner_id) {
+      var profileStatus = status === "verified" ? "verified" : status === "rejected" ? "rejected" : "pending";
+      await sb().from("profiles").update({ verification_status: profileStatus }).eq("id", data.owner_id);
+    }
+    return { ok: true, data: data };
+  }
+
+
   global.LeaseAccomCloud = {
     hasSb: hasSb,
     uid: uid,
@@ -378,6 +501,10 @@
     toggleSaved: toggleSaved,
     listSaved: listSaved,
     submitOwnerVerification: submitOwnerVerification,
+    submitOwnerVerificationFull: submitOwnerVerificationFull,
+    uploadVerificationFile: uploadVerificationFile,
+    listOwnerVerifications: listOwnerVerifications,
+    reviewOwnerVerification: reviewOwnerVerification,
     recordView: recordView,
     getOrCreateConversation: getOrCreateConversation,
     sendMessage: sendMessage,
