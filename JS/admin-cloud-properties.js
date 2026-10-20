@@ -5,7 +5,7 @@
   "use strict";
 
   async function loadPending() {
-    var client = window.leaseaccomSupabase || window.leasehubSupabase;
+    var client = window.leaseaccomSupabase || window.leaseaccomSupabase;
     var box = document.getElementById("adminPendingProperties") || document.getElementById("admPropertyQueue");
     if (!client || !box) return;
 
@@ -48,7 +48,7 @@
   }
 
   async function setPropStatus(id, verification, listing) {
-    var client = window.leaseaccomSupabase || window.leasehubSupabase;
+    var client = window.leaseaccomSupabase || window.leaseaccomSupabase;
     if (!client) return;
     var { error } = await client.from("properties").update({
       verification_status: verification,

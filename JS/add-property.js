@@ -19,8 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     function readCurrentUser() {
         try { return JSON.parse(
-            localStorage.getItem("leaseaccomCurrentUser") ||
-            localStorage.getItem("leaseaccomCurrentUser") ||
+            localStorage.getItem("leasehubCurrentUser") ||
+            localStorage.getItem("leaseHubCurrentUser") ||
             localStorage.getItem("leaseaccomCurrentUser") ||
             localStorage.getItem("currentUser") ||
             "null"
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const gate = window.LeaseAccomPlans.canAddUnit(currentUser);
         if (!gate.ok) {
             showFormStatus(
-                gate.message + " Open Payments / Plans to upgrade (Basic ₦5k · Standard ₦10k · Premium ₦20k).",
+                gate.message + " Open Plans to upgrade (Professional ₦5k · Business ₦10k · Enterprise ₦20k).",
                 "error"
             );
             const upgrade = document.createElement("p");
@@ -255,7 +255,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (typeof enforceUnitLimit === "function" && !enforceUnitLimit()) return;
+        if (window.LeaseAccomPlans && typeof window.LeaseAccomPlans.canAddUnitAsync === "function") {
+            const gateAsync = await window.LeaseAccomPlans.canAddUnitAsync(currentUser);
+            if (!gateAsync.ok) {
+                showFormStatus(gateAsync.message + " Open Plans to upgrade (Professional ₦5k · Business ₦10k · Enterprise ₦20k).", "error");
+                return;
+            }
+        } else if (typeof enforceUnitLimit === "function" && !enforceUnitLimit()) return;
         const title = document.getElementById("propertyTitle")?.value.trim();
         const type = document.getElementById("propertyType")?.value;
         const purpose = document.getElementById("listingPurpose")?.value;

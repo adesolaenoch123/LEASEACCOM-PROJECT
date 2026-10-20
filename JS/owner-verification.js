@@ -1,13 +1,13 @@
 /**
  * LeaseAccom — landlord verification & documentation
- * Stores queue in localStorage (leasehubOwnerVerifications).
+ * Stores queue in localStorage (leaseaccomOwnerVerifications).
  * Ready to swap uploads to Supabase Storage later.
  */
 (function () {
   "use strict";
 
-  var QUEUE_KEY = "leasehubOwnerVerifications";
-  var CURRENT_KEYS = ["leasehubCurrentUser", "leaseHubCurrentUser", "currentUser"];
+  var QUEUE_KEY = "leaseaccomOwnerVerifications";
+  var CURRENT_KEYS = ["leaseaccomCurrentUser", "leaseaccomCurrentUser", "currentUser"];
   var MAX_BYTES = 5 * 1024 * 1024;
 
   var step = 1;
@@ -39,14 +39,14 @@
         localStorage.setItem(k, payload);
       } catch (e) {}
     });
-    var users = readJSON("leasehubUsers", []);
+    var users = readJSON("leaseaccomUsers", []);
     if (Array.isArray(users) && user.id) {
       var idx = users.findIndex(function (x) {
         return String(x.id) === String(user.id);
       });
       if (idx >= 0) users[idx] = Object.assign({}, users[idx], user);
       else users.push(user);
-      writeJSON("leasehubUsers", users);
+      writeJSON("leaseaccomUsers", users);
     }
   }
 

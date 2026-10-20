@@ -4,9 +4,9 @@
 (function () {
   "use strict";
 
-  var QUEUE_KEY = "leasehubOwnerVerifications";
-  var USERS_KEY = "leasehubUsers";
-  var CURRENT_KEY = "leasehubCurrentUser";
+  var QUEUE_KEY = "leaseaccomOwnerVerifications";
+  var USERS_KEY = "leaseaccomUsers";
+  var CURRENT_KEY = "leaseaccomCurrentUser";
   var filter = "pending";
 
   function readJSON(key, fallback) {
@@ -66,7 +66,7 @@
         cur.ownerVerificationStatus = status;
         cur.verificationNote = note || "";
         writeJSON(CURRENT_KEY, cur);
-        writeJSON("leaseHubCurrentUser", cur);
+        writeJSON("leaseaccomCurrentUser", cur);
       }
     } catch (e) {}
   }

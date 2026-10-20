@@ -422,7 +422,7 @@
                 var span = document.createElement("span");
                 span.className = "logo-text";
                 span.setAttribute("aria-label", "LeaseAccom");
-                span.innerHTML = '<span class="lh-lease">Lease</span><span class="lh-hub">Accom</span>';
+                span.innerHTML = '<span class="lh-lease">Lease</span><span class="lh-accom">Accom</span>';
                 logo.appendChild(span);
             });
         } catch (e) {}

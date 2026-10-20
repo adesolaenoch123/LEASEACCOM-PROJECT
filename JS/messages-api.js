@@ -90,7 +90,7 @@
     async listConversations() {
       if (global.LeaseAccomCloud && global.LeaseAccomCloud.hasSb && global.LeaseAccomCloud.hasSb()) {
         try {
-          var client = global.leaseaccomSupabase || global.leasehubSupabase;
+          var client = global.leaseaccomSupabase || global.leaseaccomSupabase;
           var uid = await global.LeaseAccomCloud.uid();
           if (client && uid) {
             var { data, error } = await client.from("conversations").select("*")

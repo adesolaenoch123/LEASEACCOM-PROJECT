@@ -1,11 +1,13 @@
 /**
- * LeaseAccom owner plans — Professional / Business / Enterprise
- * Matches official pricing. Paystack can hook into selectPlan later.
+ * LeaseAccom owner plans + listing limit enforcement
+ * Limits: free 1 · professional 5 · business 10 · enterprise 30
+ * Admin can override via platform_settings.listing_limits
  */
 (function () {
   "use strict";
 
   var PLANS = {
+    free: { id: "free", name: "Free", monthly: 0, annual: 0, maxListings: 1 },
     professional: {
       id: "professional",
       name: "Professional",
@@ -30,16 +32,23 @@
   };
 
   var billing = "monthly";
+  var cachedLimits = null;
 
   function money(n) {
     return "₦" + Number(n).toLocaleString("en-NG");
   }
 
+  function sb() {
+    return window.leaseaccomSupabase || window.leasehubSupabase || null;
+  }
+
   function currentUser() {
     try {
       return JSON.parse(
-        localStorage.getItem("leaseaccomCurrentUser") ||
+        localStorage.getItem("leasehubCurrentUser") ||
+          localStorage.getItem("leaseHubCurrentUser") ||
           localStorage.getItem("leaseaccomCurrentUser") ||
+          localStorage.getItem("currentUser") ||
           "null"
       );
     } catch (e) {
@@ -47,16 +56,161 @@
     }
   }
 
+  function normalizePlanId(raw) {
+    var p = String(raw || "free").toLowerCase().trim();
+    if (p === "basic" || p === "pro") return "professional";
+    if (p === "standard" || p === "premium") return p === "premium" ? "enterprise" : "business";
+    if (PLANS[p]) return p;
+    return "free";
+  }
+
+  function getUserPlanId(user) {
+    var u = user || currentUser() || {};
+    return normalizePlanId(u.plan || u.subscriptionPlan || u.subscription_plan || "free");
+  }
+
+  function defaultLimitsMap() {
+    return {
+      free: PLANS.free.maxListings,
+      professional: PLANS.professional.maxListings,
+      business: PLANS.business.maxListings,
+      enterprise: PLANS.enterprise.maxListings
+    };
+  }
+
+  async function fetchAdminLimits() {
+    if (cachedLimits) return cachedLimits;
+    var client = sb();
+    if (!client) {
+      cachedLimits = defaultLimitsMap();
+      return cachedLimits;
+    }
+    try {
+      var res = await client
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "listing_limits")
+        .maybeSingle();
+      if (res.data && res.data.value) {
+        cachedLimits = Object.assign(defaultLimitsMap(), res.data.value);
+        return cachedLimits;
+      }
+    } catch (e) {}
+    cachedLimits = defaultLimitsMap();
+    return cachedLimits;
+  }
+
+  function getPlanLimitsSync(user) {
+    var id = getUserPlanId(user);
+    var map = cachedLimits || defaultLimitsMap();
+    var max = map[id] != null ? Number(map[id]) : PLANS[id] ? PLANS[id].maxListings : 1;
+    return { planId: id, planName: (PLANS[id] && PLANS[id].name) || id, maxListings: max };
+  }
+
+  function getPlanLimits(user) {
+    return getPlanLimitsSync(user);
+  }
+
+  function countOwnerUnits(user) {
+    var u = user || currentUser();
+    if (!u) return 0;
+    var uid = String(u.id || u.userId || "");
+    var n = 0;
+    try {
+      var all = JSON.parse(localStorage.getItem("leasehubProperties") || localStorage.getItem("properties") || "[]");
+      if (Array.isArray(all)) {
+        n = all.filter(function (p) {
+          return String(p.ownerId || p.owner_id || p.userId || "") === uid;
+        }).length;
+      }
+    } catch (e) {}
+    if (u._cloudListingCount != null) return Number(u._cloudListingCount) || n;
+    return n;
+  }
+
+  async function countOwnerUnitsCloud(user) {
+    var u = user || currentUser();
+    if (!u) return 0;
+    var client = sb();
+    var uid = u.id || u.userId;
+    if (!client || !uid) return countOwnerUnits(u);
+    try {
+      var res = await client
+        .from("properties")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", uid);
+      if (typeof res.count === "number") {
+        u._cloudListingCount = res.count;
+        return res.count;
+      }
+    } catch (e) {}
+    return countOwnerUnits(u);
+  }
+
+  function canAddUnit(user) {
+    var limits = getPlanLimitsSync(user);
+    var used = countOwnerUnits(user);
+    if (used >= limits.maxListings) {
+      return {
+        ok: false,
+        used: used,
+        max: limits.maxListings,
+        planId: limits.planId,
+        message:
+          "Your " +
+          limits.planName +
+          " plan allows " +
+          limits.maxListings +
+          " active listing(s). You have " +
+          used +
+          "."
+      };
+    }
+    return { ok: true, used: used, max: limits.maxListings, planId: limits.planId };
+  }
+
+  async function canAddUnitAsync(user) {
+    await fetchAdminLimits();
+    var u = user || currentUser();
+    if (u) await countOwnerUnitsCloud(u);
+    return canAddUnit(u);
+  }
+
+  function canAccessFeature(key, user) {
+    var id = getUserPlanId(user);
+    if (key === "featured") return id === "business" || id === "enterprise";
+    if (key === "analytics") return id !== "free";
+    if (key === "ad_free") return id === "business" || id === "enterprise";
+    return true;
+  }
+
+  function ensureUserPlan(user) {
+    var u = user || currentUser();
+    if (!u) return null;
+    if (!u.plan && !u.subscriptionPlan) {
+      u.plan = "free";
+      u.subscriptionPlan = "free";
+    }
+    return u;
+  }
+
+  function getCurrentPlan(user) {
+    var id = getUserPlanId(user);
+    return PLANS[id] || PLANS.free;
+  }
+
   function showCurrentPlan() {
     var el = document.getElementById("currentPlanBox");
     if (!el) return;
     var u = currentUser();
-    var plan = (u && (u.plan || u.subscriptionPlan)) || "free";
+    var plan = getUserPlanId(u);
+    var lim = getPlanLimitsSync(u);
     el.innerHTML =
       '<div class="box"><div>Your current plan: <span class="chip">' +
-      String(plan).charAt(0).toUpperCase() +
-      String(plan).slice(1) +
-      "</span></div><div style=\"font-size:13px;color:#66706a\">Limits apply when publishing listings.</div></div>";
+      lim.planName +
+      "</span></div><div style=\"font-size:13px;color:#66706a\">Up to " +
+      lim.maxListings +
+      " active listings.</div></div>";
   }
 
   function setBilling(mode) {
@@ -83,7 +237,7 @@
 
   function selectPlan(planId) {
     var p = PLANS[planId];
-    if (!p) return;
+    if (!p || planId === "free") return;
     var u = currentUser();
     if (!u) {
       alert("Please sign in as an owner to choose a plan.");
@@ -98,7 +252,6 @@
       at: new Date().toISOString()
     };
     localStorage.setItem("leaseaccomPlanIntent", JSON.stringify(intent));
-    // Ready for Paystack: replace alert with gateway when payments go live
     alert(
       "Selected " +
         p.name +
@@ -106,18 +259,21 @@
         billing +
         ") — " +
         money(intent.amount) +
-        ".\n\nPayment gateway will complete this when Paystack is connected. Your choice is saved."
+        ".\n\nPayment gateway will complete this when Paystack is connected. Your choice is saved on this device."
     );
-    if (u) {
-      u.plan = p.id;
-      u.subscriptionPlan = p.id;
+    u.plan = p.id;
+    u.subscriptionPlan = p.id;
+    localStorage.setItem("leasehubCurrentUser", JSON.stringify(u));
+    try {
       localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(u));
-    }
+    } catch (e) {}
     showCurrentPlan();
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    showCurrentPlan();
+    fetchAdminLimits().then(function () {
+      showCurrentPlan();
+    });
     setBilling("monthly");
     document.querySelectorAll("[data-billing]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -131,5 +287,18 @@
     });
   });
 
-  window.LeaseAccomPlans = { PLANS: PLANS, selectPlan: selectPlan };
+  window.LeaseAccomPlans = {
+    PLANS: PLANS,
+    selectPlan: selectPlan,
+    canAddUnit: canAddUnit,
+    canAddUnitAsync: canAddUnitAsync,
+    getPlanLimits: getPlanLimits,
+    getCurrentPlan: getCurrentPlan,
+    countOwnerUnits: countOwnerUnits,
+    countOwnerUnitsCloud: countOwnerUnitsCloud,
+    canAccessFeature: canAccessFeature,
+    ensureUserPlan: ensureUserPlan,
+    fetchAdminLimits: fetchAdminLimits,
+    getUserPlanId: getUserPlanId
+  };
 })();

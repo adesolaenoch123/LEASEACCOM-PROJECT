@@ -19,7 +19,7 @@
   }
   function hasCloud() {
     return !!(global.LeaseAccomCloud && typeof global.LeaseAccomCloud.hasSb === "function" && global.LeaseAccomCloud.hasSb())
-      || !!(global.leaseaccomSupabase || global.leasehubSupabase);
+      || !!(global.leaseaccomSupabase || global.leaseaccomSupabase);
   }
   global.LeaseAccomLiveMode = {
     isLocalHost: isLocalHost,

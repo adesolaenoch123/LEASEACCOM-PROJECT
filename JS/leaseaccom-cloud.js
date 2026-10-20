@@ -6,7 +6,7 @@
   "use strict";
 
   function sb() {
-    return global.leaseaccomSupabase || global.leasehubSupabase || null;
+    return global.leaseaccomSupabase || global.leaseaccomSupabase || null;
   }
   function hasSb() {
     return !!(sb() && typeof sb().from === "function");

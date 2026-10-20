@@ -391,12 +391,12 @@ function refreshOwnerPlanUI() {
     } catch (e) {}
     let props = [];
     try {
-      props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leasehubProperties") || "[]") || [];
+      props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leaseaccomProperties") || "[]") || [];
     } catch (e) {}
     const user = (function () {
       try {
         return JSON.parse(
-          localStorage.getItem("leasehubCurrentUser") ||
+          localStorage.getItem("leaseaccomCurrentUser") ||
             localStorage.getItem("leaseaccomCurrentUser") ||
             "null"
         );

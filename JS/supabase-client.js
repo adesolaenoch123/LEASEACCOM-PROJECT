@@ -9,11 +9,11 @@
   var SUPABASE_URL = "https://jxbraodoqfwagefsynlc.supabase.co";
   var SUPABASE_ANON_KEY = "sb_publishable_Nm3qt7mlkERuA3F-sss9iw_CXTjKBCc";
 
-  var leasehubSupabase = null;
+  var leaseaccomSupabase = null;
 
   try {
     if (window.supabase && typeof window.supabase.createClient === "function") {
-      leasehubSupabase = window.supabase.createClient(
+      leaseaccomSupabase = window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_ANON_KEY
       );
@@ -24,28 +24,28 @@
     }
   } catch (err) {
     console.warn("LeaseAccom: Supabase client could not be created.", err);
-    leasehubSupabase = null;
+    leaseaccomSupabase = null;
   }
 
   // Always expose so LeaseAccomData.hasSb() and other code can check safely
-  window.leasehubSupabase = leasehubSupabase;
-  window.leaseaccomSupabase = leasehubSupabase;
+  window.leaseaccomSupabase = leaseaccomSupabase;
+  window.leaseaccomSupabase = leaseaccomSupabase;
 
   function rememberSessionToken(token) {
     if (token) {
-      localStorage.setItem("leasehub_session_token", String(token));
+      localStorage.setItem("leaseaccom_session_token", String(token));
       return token;
     }
-    localStorage.removeItem("leasehub_session_token");
+    localStorage.removeItem("leaseaccom_session_token");
     return null;
   }
 
   window.LeaseAccomAuth = {
     async signIn(email, password) {
-      if (!leasehubSupabase) {
+      if (!leaseaccomSupabase) {
         return { data: null, error: { message: "Supabase offline — use demo login" } };
       }
-      var result = await leasehubSupabase.auth.signInWithPassword({ email: email, password: password });
+      var result = await leaseaccomSupabase.auth.signInWithPassword({ email: email, password: password });
       if (!result.error && result.data && result.data.session && result.data.session.access_token) {
         rememberSessionToken(result.data.session.access_token);
       }
@@ -53,10 +53,10 @@
     },
 
     async signUp(opts) {
-      if (!leasehubSupabase) {
+      if (!leaseaccomSupabase) {
         return { data: null, error: { message: "Supabase offline — use demo register" } };
       }
-      var result = await leasehubSupabase.auth.signUp({
+      var result = await leaseaccomSupabase.auth.signUp({
         email: opts.email,
         password: opts.password,
         options: {
@@ -74,11 +74,11 @@
     },
 
     async getAccessToken() {
-      var storedToken = localStorage.getItem("leasehub_session_token");
+      var storedToken = localStorage.getItem("leaseaccom_session_token");
       if (storedToken) return storedToken;
-      if (!leasehubSupabase) return null;
+      if (!leaseaccomSupabase) return null;
       try {
-        var result = await leasehubSupabase.auth.getSession();
+        var result = await leaseaccomSupabase.auth.getSession();
         if (result && result.error) throw result.error;
         var token = result && result.data && result.data.session && result.data.session.access_token;
         if (token) rememberSessionToken(token);
@@ -89,14 +89,14 @@
     },
 
     async signOut() {
-      if (leasehubSupabase) {
-        var result = await leasehubSupabase.auth.signOut();
+      if (leaseaccomSupabase) {
+        var result = await leaseaccomSupabase.auth.signOut();
         if (result.error) throw result.error;
       }
       try {
-        localStorage.removeItem("leasehub_session_token");
-        localStorage.removeItem("leasehubCurrentUser");
-        localStorage.removeItem("leaseHubCurrentUser");
+        localStorage.removeItem("leaseaccom_session_token");
+        localStorage.removeItem("leaseaccomCurrentUser");
+        localStorage.removeItem("leaseaccomCurrentUser");
         localStorage.removeItem("leaseaccomCurrentUser");
         localStorage.removeItem("currentUser");
       } catch (e) {}
@@ -104,7 +104,7 @@
 
     /** Send password recovery email */
     async resetPasswordForEmail(email) {
-      if (!leasehubSupabase) {
+      if (!leaseaccomSupabase) {
         return { data: null, error: { message: "Supabase offline" } };
       }
       var redirectTo = window.location.origin + window.location.pathname.replace(/[^/]*$/, "") + "reset-password.html";
@@ -112,20 +112,20 @@
       try {
         redirectTo = new URL("reset-password.html", window.location.href).href;
       } catch (e) {}
-      return leasehubSupabase.auth.resetPasswordForEmail(email, { redirectTo: redirectTo });
+      return leaseaccomSupabase.auth.resetPasswordForEmail(email, { redirectTo: redirectTo });
     },
 
     /** Set new password after recovery link (user must have recovery session) */
     async updatePassword(newPassword) {
-      if (!leasehubSupabase) {
+      if (!leaseaccomSupabase) {
         return { data: null, error: { message: "Supabase offline" } };
       }
-      return leasehubSupabase.auth.updateUser({ password: newPassword });
+      return leaseaccomSupabase.auth.updateUser({ password: newPassword });
     },
 
     /** Google OAuth — redirects away from the page */
     async signInWithGoogle(accountType) {
-      if (!leasehubSupabase) {
+      if (!leaseaccomSupabase) {
         return { data: null, error: { message: "Supabase offline" } };
       }
       try {
@@ -134,7 +134,7 @@
         }
       } catch (e) {}
       var redirectTo = new URL("auth-callback.html", window.location.href).href;
-      return leasehubSupabase.auth.signInWithOAuth({
+      return leaseaccomSupabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: redirectTo,
@@ -144,9 +144,9 @@
     },
 
     async getSession() {
-      if (!leasehubSupabase) return null;
+      if (!leaseaccomSupabase) return null;
       try {
-        var result = await leasehubSupabase.auth.getSession();
+        var result = await leaseaccomSupabase.auth.getSession();
         return result && result.data ? result.data.session : null;
       } catch (e) {
         return null;
@@ -157,10 +157,10 @@
   /* ================= CURRENT USER ================= */
 
   async function getCurrentUser() {
-    if (!leasehubSupabase) return null;
+    if (!leaseaccomSupabase) return null;
 
     try {
-      var authResult = await leasehubSupabase.auth.getUser();
+      var authResult = await leaseaccomSupabase.auth.getUser();
       if (authResult.error) {
         console.error("getCurrentUser error:", authResult.error);
         return null;
@@ -168,7 +168,7 @@
       var user = authResult.data && authResult.data.user;
       if (!user) return null;
 
-      var profileResult = await leasehubSupabase
+      var profileResult = await leaseaccomSupabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
@@ -201,10 +201,10 @@
 
   async function fetchProperties(filters) {
     filters = filters || {};
-    if (!leasehubSupabase) return [];
+    if (!leaseaccomSupabase) return [];
 
     try {
-      var query = leasehubSupabase
+      var query = leaseaccomSupabase
         .from("properties")
         .select("*")
         .or("listing_status.eq.live,verification_status.eq.approved")
@@ -299,10 +299,10 @@
 
   async function getSavedPropertyIds() {
     var user = await getCurrentUser();
-    if (!user || !leasehubSupabase) return null;
+    if (!user || !leaseaccomSupabase) return null;
 
     try {
-      var result = await leasehubSupabase
+      var result = await leaseaccomSupabase
         .from("saved_properties")
         .select("property_id")
         .eq("user_id", user.id);
@@ -323,7 +323,7 @@
 
   async function toggleSave(propertyId) {
     var user = await getCurrentUser();
-    if (!user || !leasehubSupabase) {
+    if (!user || !leaseaccomSupabase) {
       alert("Please log in to save properties");
       window.location.href = "login.html";
       return false;
@@ -332,7 +332,7 @@
     var id = String(propertyId);
 
     try {
-      var existingResult = await leasehubSupabase
+      var existingResult = await leaseaccomSupabase
         .from("saved_properties")
         .select("*")
         .eq("user_id", user.id)
@@ -345,7 +345,7 @@
       }
 
       if (existingResult.data) {
-        var delResult = await leasehubSupabase
+        var delResult = await leaseaccomSupabase
           .from("saved_properties")
           .delete()
           .eq("user_id", user.id)
@@ -357,7 +357,7 @@
         return false;
       }
 
-      var insResult = await leasehubSupabase.from("saved_properties").upsert({
+      var insResult = await leaseaccomSupabase.from("saved_properties").upsert({
         user_id: user.id,
         property_id: id
       }, { onConflict: "user_id,property_id" });
@@ -374,12 +374,12 @@
 
   async function persistSavedProperty(propertyId, shouldSave) {
     var user = await getCurrentUser();
-    if (!user || !leasehubSupabase) return false;
+    if (!user || !leaseaccomSupabase) return false;
     var id = String(propertyId);
 
     try {
       if (shouldSave) {
-        var upsertResult = await leasehubSupabase
+        var upsertResult = await leaseaccomSupabase
           .from("saved_properties")
           .upsert({ user_id: user.id, property_id: id }, { onConflict: "user_id,property_id" });
         if (upsertResult.error) {
@@ -389,7 +389,7 @@
         return true;
       }
 
-      var deleteResult = await leasehubSupabase
+      var deleteResult = await leaseaccomSupabase
         .from("saved_properties")
         .delete()
         .eq("user_id", user.id)
@@ -406,7 +406,7 @@
   }
 
   async function persistViewingRequest(viewingRequest) {
-    if (!viewingRequest || !leasehubSupabase) return false;
+    if (!viewingRequest || !leaseaccomSupabase) return false;
     var user = await getCurrentUser();
     if (!user) return false;
 
@@ -423,7 +423,7 @@
       };
 
       if (viewingRequest.id) {
-        var updateResult = await leasehubSupabase
+        var updateResult = await leaseaccomSupabase
           .from("viewings")
           .update(payload)
           .eq("id", viewingRequest.id)
@@ -432,7 +432,7 @@
         return !updateResult.error && !!updateResult.data;
       }
 
-      var insertResult = await leasehubSupabase
+      var insertResult = await leaseaccomSupabase
         .from("viewings")
         .insert(payload)
         .select()
@@ -454,7 +454,7 @@
   }
 
   async function persistApplication(application) {
-    if (!application || !leasehubSupabase) return false;
+    if (!application || !leaseaccomSupabase) return false;
     var user = await getCurrentUser();
     if (!user) return false;
 
@@ -483,7 +483,7 @@
       };
 
       if (application.id) {
-        var updateResult = await leasehubSupabase
+        var updateResult = await leaseaccomSupabase
           .from("applications")
           .update(payload)
           .eq("id", application.id)
@@ -492,7 +492,7 @@
         return !updateResult.error && !!updateResult.data;
       }
 
-      var insertResult = await leasehubSupabase
+      var insertResult = await leaseaccomSupabase
         .from("applications")
         .insert(payload)
         .select()

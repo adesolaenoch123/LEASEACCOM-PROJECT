@@ -7363,7 +7363,7 @@ button.clear-filters:hover,
   white-space: nowrap;
 }
 .logo-text .lh-lease { color: #15945c; }
-.logo-text .lh-hub { color: #101311; }
+.logo-text .lh-accom { color: #101311; }
 body:not(.is-landing-page) .navbar .logo img {
   display: none !important;
 }

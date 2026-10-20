@@ -2166,14 +2166,32 @@ LeaseAccom will process your request.`
             const key = "leaseaccomListingReports";
             let reports = [];
             try { reports = JSON.parse(localStorage.getItem(key) || "[]") || []; } catch (e) { reports = []; }
-            reports.unshift({
+            const reportRow = {
                 id: "rep-" + Date.now(),
                 propertyId: propertyId,
+                property_id: propertyId,
                 title: property.title || "",
                 reason: reason,
-                at: new Date().toISOString()
-            });
+                status: "open",
+                at: new Date().toISOString(),
+                created_at: new Date().toISOString()
+            };
+            reports.unshift(reportRow);
             localStorage.setItem(key, JSON.stringify(reports.slice(0, 50)));
+            // Cloud
+            (async function () {
+                try {
+                    var client = window.leaseaccomSupabase || window.leasehubSupabase;
+                    if (client) {
+                        await client.from("reports").insert({
+                            property_id: String(propertyId),
+                            reason: reason,
+                            status: "open",
+                            listing_title: property.title || ""
+                        });
+                    }
+                } catch (err) { console.warn("report cloud", err); }
+            })();
             reportBtn.textContent = "Report submitted — thank you";
             reportBtn.disabled = true;
             alert("Thanks. LeaseAccom will review this report: " + reason);
