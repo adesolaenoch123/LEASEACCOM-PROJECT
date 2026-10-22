@@ -160,26 +160,69 @@ function loadFeatured() {
 
     if (!featuredContainer) return;
 
-    const visibleProperties =
-        properties
-            .filter(isLeaseAccomPropertyPublic)
-            .slice(0, 6);
+    function planRank(p) {
+        var plan = String(p.ownerPlan || p.owner_plan || p.plan || "").toLowerCase();
+        var featured = p.featured === true || p.featured === "true" || p.is_featured;
+        // Enterprise partners first, then admin-featured, then Business, then rest
+        if (plan === "enterprise" || featured) return featured && plan === "enterprise" ? 0 : plan === "enterprise" ? 1 : 2;
+        if (plan === "business") return 3;
+        if (plan === "professional") return 4;
+        return 5;
+    }
 
-    if (!visibleProperties.length) {
+    // Enrich with owner plan from profiles cache if present
+    var planByOwner = window.__leaseaccomOwnerPlans || {};
+    var list = properties
+        .filter(isLeaseAccomPropertyPublic)
+        .map(function (p) {
+            var oid = p.ownerId || p.owner_id || p.userId;
+            if (oid && planByOwner[oid] && !p.ownerPlan) {
+                return Object.assign({}, p, { ownerPlan: planByOwner[oid] });
+            }
+            return p;
+        })
+        .sort(function (a, b) {
+            var ra = planRank(a);
+            var rb = planRank(b);
+            if (ra !== rb) return ra - rb;
+            return 0;
+        })
+        .slice(0, 6);
+
+    if (!list.length) {
         featuredContainer.innerHTML =
             '<div class="empty-state" style="padding:28px 16px;text-align:center;color:#66706a;grid-column:1/-1">' +
             '<p style="margin:0 0 8px;font-weight:700;color:#101311">No live listings yet</p>' +
-            '<p style="margin:0;font-size:14px">Approved properties will appear here. Owner listings stay hidden until admin verification.</p>' +
+            '<p style="margin:0;font-size:14px">Approved properties will appear here. Enterprise partners appear first.</p>' +
             '</div>';
         return;
     }
     featuredContainer.innerHTML =
-        visibleProperties
+        list
             .map(createPropertyCard)
             .join("");
 
     activateSaveButtons();
 }
+
+// Load owner plans for featured ranking (non-blocking)
+(function loadOwnerPlansForFeatured() {
+    var client = window.leaseaccomSupabase || window.leasehubSupabase;
+    if (!client) return;
+    client
+        .from("profiles")
+        .select("id, plan, subscription_plan")
+        .eq("account_type", "owner")
+        .then(function (res) {
+            if (!res.data) return;
+            window.__leaseaccomOwnerPlans = {};
+            res.data.forEach(function (row) {
+                window.__leaseaccomOwnerPlans[row.id] = row.plan || row.subscription_plan || "free";
+            });
+            if (typeof loadFeatured === "function") loadFeatured();
+        })
+        .catch(function () {});
+})();
 
     /* ================= SAVE PROPERTY ================= */
 
@@ -1506,7 +1549,7 @@ localStorage.setItem(
         );
 
 
-        /* Update Property Page d user */
+        /* Update stored user */
 
         const users =
             JSON.parse(
@@ -2333,7 +2376,7 @@ if (ownerPropertiesContainer) {
 
         /*
          * For now this reads viewing requests
-         * Property Page d locally.
+         * stored locally.
          *
          * A real backend will connect the
          * tenant and owner accounts.
@@ -2699,7 +2742,7 @@ if (
                     );
 
 
-                    /* UPDATE Property Page D USERS */
+                    /* UPDATE storeD USERS */
 
                     const users =
                         JSON.parse(

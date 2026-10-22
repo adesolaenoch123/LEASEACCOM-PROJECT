@@ -67,8 +67,8 @@
     ${item('owner-dashboard.html#ownerViewings', 'viewings', 'bx-calendar', 'Viewings')}
     ${item('owner-dashboard.html#ownerApplications', 'applications', 'bx-file', 'Applications')}
     ${item('owner-messages.html', 'messages', 'bx-message-dots', 'Messages')}
-    ${item('owner-dashboard.html#ownerProperty Page ', 'Property Page ', 'bx-Property Page ', 'Property Page ')}
-    ${item('owner-Property Page front.html', 'Property Page front', 'bx-Property Page -alt', 'Public Property Page front')}
+    ${item('owner-dashboard.html#ownerStore', 'propertypage', 'bx-buildings', 'Property page appearance')}
+    ${item('owner-storefront.html', 'public-propertypage', 'bx-store-alt', 'Public property page')}
     ${item('owner-payments.html', 'payments', 'bx-wallet', 'Payments')}
     ${item('owner-dashboard.html#ownerPlan', 'plan', 'bx-diamond', 'Plan')}
   </nav>
@@ -222,7 +222,7 @@
       dashboard: 'dashboard',
       messages: 'messages',
       add: 'add',
-      storefront: 'storefront',
+      propertypage: 'public-propertypage',
       payments: 'payments'
     };
     const active = activeMap[page] || page;

@@ -40,6 +40,9 @@
       <a href="#verification" data-section="verification"><i class="bx bx-shield-quarter"></i> Verification</a>
       <a href="#payments" data-section="payments"><i class="bx bx-credit-card"></i> Payments</a>
       <a href="#reports" data-section="reports"><i class="bx bx-flag"></i> Reports</a>
+      <a href="#audit" data-section="audit"><i class="bx bx-history"></i> Audit</a>
+      <a href="#email-queue" data-section="email-queue"><i class="bx bx-envelope"></i> Email</a>
+      <a href="#cms" data-section="cms"><i class="bx bx-palette"></i> CMS</a>
       <a href="#settings" data-section="settings"><i class="bx bx-cog"></i> Settings</a>
     </nav>
     <div class="sidebar-foot">
@@ -359,6 +362,95 @@
         </div>
         <p class="table-meta" id="reportMeta">Showing 0 reports</p>
         <div class="panel"><div class="admin-table-wrap"><div id="reportsTable"></div></div></div>
+      </section>
+
+      
+      
+      <section class="admin-section" id="section-audit" data-section-panel="audit">
+        <div class="section-intro">
+          <h2>Audit log</h2>
+          <p>Every important admin action is recorded here (approve, reject, suspend, verification, plan assign).</p>
+        </div>
+        <p class="table-meta" id="auditMeta">Showing 0 events</p>
+        <div class="panel"><div class="admin-table-wrap"><div id="auditTable"></div></div></div>
+      </section>
+
+      <section class="admin-section" id="section-email-queue" data-section-panel="email-queue">
+        <div class="section-intro">
+          <h2>Email queue</h2>
+          <p>Messages queued for real email (Resend Edge Function). Pending rows send when the function runs.</p>
+        </div>
+        <p class="table-meta" id="emailMeta">Showing 0 emails</p>
+        <div class="panel"><div class="admin-table-wrap"><div id="emailTable"></div></div></div>
+        <div class="panel">
+          <div class="panel-head"><h3>How to enable real email</h3></div>
+          <ol style="margin:0;padding-left:18px;font-size:13px;line-height:1.6;color:var(--la-muted)">
+            <li>Run <code>admin/SQL-audit-and-email.sql</code> in Supabase.</li>
+            <li>Create a free <a href="https://resend.com" target="_blank" rel="noopener">Resend</a> API key.</li>
+            <li>Deploy Edge Function <code>supabase/functions/send-email-queue</code>.</li>
+            <li>Set secrets: <code>RESEND_API_KEY</code>, <code>RESEND_FROM</code>.</li>
+            <li>Invoke the function on a schedule (or manually) to flush pending mail.</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="admin-section" id="section-cms" data-section-panel="cms">
+        <div class="section-intro">
+          <h2>Content &amp; brand (CMS)</h2>
+          <p>Control landing page text, colours, hero video/banner, and ads. Enterprise subscribers’ listings appear first on the homepage.</p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Hero text</h3></div>
+          <div class="limits-grid" style="grid-template-columns:1fr">
+            <label>Badge <input id="cmsHeroBadge" type="text" placeholder="Nigeria Built for Nigeria"></label>
+            <label>Title (first line) <input id="cmsHeroTitle" type="text" placeholder="Find your place."></label>
+            <label>Title highlight <input id="cmsHeroTitleSpan" type="text" placeholder="Skip the unnecessary stress."></label>
+            <label>Subtitle <textarea id="cmsHeroSubtitle" rows="3" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--la-border)"></textarea></label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Hero media</h3></div>
+          <div class="limits-grid" style="grid-template-columns:1fr">
+            <label>Video URL (mp4) <input id="cmsHeroVideo" type="text" placeholder="hero-banner.mp4 or https://..."></label>
+            <label>Fallback image URL <input id="cmsHeroImage" type="text" placeholder="https://..."></label>
+          </div>
+          <p class="muted-note">Prefer video for the homepage hero. Image is used if video is empty.</p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Brand colours</h3></div>
+          <div class="admin-filters">
+            <label>Primary <input id="cmsPrimary" type="color" value="#0d7547" style="width:60px;height:40px;padding:0;border:0"></label>
+            <label>Accent <input id="cmsAccent" type="color" value="#8ce0b2" style="width:60px;height:40px;padding:0;border:0"></label>
+            <input id="cmsPrimaryHex" type="text" value="#0d7547" style="width:110px">
+            <input id="cmsAccentHex" type="text" value="#8ce0b2" style="width:110px">
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Homepage ad strip</h3></div>
+          <label class="flag-row"><input type="checkbox" id="cmsAdEnabled"> Show advertisement on homepage</label>
+          <div class="limits-grid" style="grid-template-columns:1fr;margin-top:10px">
+            <label>Headline <input id="cmsAdHeadline" type="text"></label>
+            <label>Body <input id="cmsAdBody" type="text"></label>
+            <label>Link URL <input id="cmsAdLink" type="text" placeholder="https://..."></label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Featured section &amp; footer</h3></div>
+          <div class="limits-grid" style="grid-template-columns:1fr">
+            <label>Featured heading <input id="cmsFeaturedTitle" type="text" value="Featured properties"></label>
+            <label>Featured subtext <input id="cmsFeaturedSub" type="text"></label>
+            <label>Footer text <input id="cmsFooterText" type="text"></label>
+          </div>
+          <p class="muted-note">Enterprise plan owners’ approved listings are sorted to the top of Featured on the landing page.</p>
+        </div>
+
+        <button type="button" class="btn btn-primary" id="btnSaveCms">Publish CMS to site</button>
+        <div id="cmsMsg" class="muted-note"></div>
       </section>
 
       <section class="admin-section" id="section-settings" data-section-panel="settings">

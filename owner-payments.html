@@ -243,19 +243,31 @@
 
 
 
-<section id="plans" class="lh-pricing-wrap">
-  <h2>LeaseAccom Pricing Plans</h2>
-  <p class="lh-pricing-sub">Choose the plan that fits your portfolio. Switch anytime on this device until Paystack is live.</p>
-  <div class="lh-plans-grid" id="ownerPlansGrid"></div>
-  <p class="lh-pricing-footnote">All plans include 10% platform fee on transactions. Prices in Nigerian Naira.</p>
+<link rel="stylesheet" href="CSS/plans-premium.css">
+<section id="plans" class="op-section" style="padding-top:24px">
+  <div class="op-choose">Choose your plan</div>
+  <h2 class="op-pricing-title" style="text-align:center">Simple, Transparent Pricing</h2>
+  <p class="op-pricing-sub" style="text-align:center;max-width:560px;margin:0 auto 20px;color:#66706a">
+    Professional · Business · Enterprise — same plans as the public Premium Plans page. Paystack checkout comes later.
+  </p>
+  <p style="text-align:center;margin-bottom:20px">
+    <a class="owner-btn" href="owner-plans.html" style="display:inline-flex;padding:12px 20px;background:#0d7547;color:#fff;border-radius:12px;font-weight:800;text-decoration:none">Open full plans page →</a>
+  </p>
+  <div class="op-grid" id="ownerPlansGrid" style="max-width:1100px;margin:0 auto"></div>
+  <div class="op-perks" style="max-width:1100px;margin:28px auto 0">
+    <div class="op-perk"><strong>Transaction fee discounts</strong> Professional 5% · Business 10% · Enterprise 15%</div>
+    <div class="op-perk"><strong>Annual savings</strong> Save 10% when you pay yearly.</div>
+    <div class="op-perk"><strong>Ad policy</strong> Business &amp; Enterprise are ad-free.</div>
+  </div>
 </section>
 <script src="JS/plans.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   if (!window.LeaseAccomPlans) return;
   var grid = document.getElementById("ownerPlansGrid");
-  if (!grid) return;
-  window.LeaseAccomPlans.renderPricingGrid(grid);
+  if (grid && typeof window.LeaseAccomPlans.renderPricingGrid === "function") {
+    window.LeaseAccomPlans.renderPricingGrid(grid);
+  }
 });
 </script>
 

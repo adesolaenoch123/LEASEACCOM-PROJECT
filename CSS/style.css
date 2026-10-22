@@ -7363,7 +7363,7 @@ button.clear-filters:hover,
   white-space: nowrap;
 }
 .logo-text .lh-lease { color: #15945c; }
-.logo-text .lh-accom { color: #101311; }
+.logo-text .lh-hub { color: #101311; }
 body:not(.is-landing-page) .navbar .logo img {
   display: none !important;
 }
@@ -7381,7 +7381,7 @@ body:not(.is-landing-page) .messages-topbar .logo img {
   display: inline-flex !important;
 }
 .messages-topbar .logo-text .lh-lease { color: #ffffff; }
-.messages-topbar .logo-textleaseaccom { color: #b7f0d2; }
+.messages-topbar .logo-text .lh-hub { color: #b7f0d2; }
 
 /* Smaller navbar on inner pages */
 body:not(.is-landing-page) .navbar {
@@ -8756,4 +8756,74 @@ body.owner-lounge-body[data-owner-page="dashboard"] .owner-featured-video {
   font-size: 13px;
   padding: 20px;
   text-align: center;
+}
+
+
+/* Owner plan cards — Professional / Business / Enterprise */
+body.owner-lounge-body .owner-plan-option.is-ent {
+  border-color: #c4b5fd;
+}
+body.owner-lounge-body .owner-plan-option-head small {
+  font-size: 12px;
+  font-weight: 600;
+  color: #66706a;
+  margin-left: 2px;
+}
+body.owner-lounge-body a.owner-plan-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: #0d7547;
+  color: #fff !important;
+  font-weight: 800;
+  font-size: 13px;
+  text-decoration: none;
+  border: 0;
+  box-sizing: border-box;
+}
+body.owner-lounge-body a.owner-plan-button:hover {
+  filter: brightness(1.06);
+}
+body.owner-lounge-body .owner-plan-summary {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f5faf7;
+  border: 1px solid #e3e8e5;
+}
+body.owner-lounge-body .owner-plan-summary p { margin: 0 0 6px; }
+body.owner-lounge-body .owner-plan-meter {
+  height: 8px;
+  background: #e8eee9;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 10px 0 4px;
+}
+body.owner-lounge-body .owner-plan-meter span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #0d7547, #8ce0b2);
+  border-radius: 999px;
+}
+body.owner-lounge-body .owner-plan-notice {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #66706a;
+}
+body.owner-lounge-body .owner-plan-notice a {
+  color: #0d7547;
+  font-weight: 700;
+}
+
+/* Messages empty states — clearer spacing on mobile */
+@media (max-width: 720px) {
+  .chat-empty {
+    padding: 32px 20px 100px !important;
+    min-height: 40vh;
+  }
+  .chat-empty h2 { font-size: 1.15rem !important; }
 }

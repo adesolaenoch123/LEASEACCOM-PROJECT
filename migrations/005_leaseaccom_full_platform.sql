@@ -49,7 +49,7 @@ values
   ('business', 'Business', 10000, 108000, 10, 20, 3, 10,
    '["Up to 10 listings","20 photos","3 videos","Priority search","Everything in Professional","Advanced analytics","Lead tracking","Bulk management","Account manager","Ad-free","10% fee discount"]'::jsonb, 2),
   ('enterprise', 'Enterprise', 20000, 216000, 30, 20, 3, 15,
-   '["Up to 30 listings","Everything in Business","AI assistant (100/mo)","Company storefront","Branded profile","Featured placement","Portfolio analytics","Priority support","15% fee discount"]'::jsonb, 3)
+   '["Up to 30 listings","Everything in Business","AI assistant (100/mo)","Company propertypage","Branded profile","Featured placement","Portfolio analytics","Priority support","15% fee discount"]'::jsonb, 3)
 on conflict (id) do update set
   name = excluded.name,
   price_monthly = excluded.price_monthly,

@@ -7,27 +7,45 @@
   "use strict";
 
   var PLANS = {
-    free: { id: "free", name: "Free", monthly: 0, annual: 0, maxListings: 1 },
+    free: {
+      id: "free",
+      name: "Free",
+      monthly: 0,
+      annual: 0,
+      maxListings: 1,
+      priceLabel: "Free",
+      blurb: "List properties, receive viewings and applications.",
+      billing: "forever"
+    },
     professional: {
       id: "professional",
       name: "Professional",
       monthly: 5000,
       annual: 54000,
-      maxListings: 5
+      maxListings: 5,
+      priceLabel: "₦5,000",
+      blurb: "For individual landlords and small property owners.",
+      billing: "month"
     },
     business: {
       id: "business",
       name: "Business",
       monthly: 10000,
       annual: 108000,
-      maxListings: 10
+      maxListings: 10,
+      priceLabel: "₦10,000",
+      blurb: "For growing landlords and property managers.",
+      billing: "month"
     },
     enterprise: {
       id: "enterprise",
       name: "Enterprise",
       monthly: 20000,
       annual: 216000,
-      maxListings: 30
+      maxListings: 30,
+      priceLabel: "₦20,000",
+      blurb: "For agencies, hotels and large property businesses.",
+      billing: "month"
     }
   };
 
@@ -104,7 +122,7 @@
     var id = getUserPlanId(user);
     var map = cachedLimits || defaultLimitsMap();
     var max = map[id] != null ? Number(map[id]) : PLANS[id] ? PLANS[id].maxListings : 1;
-    return { planId: id, planName: (PLANS[id] && PLANS[id].name) || id, maxListings: max };
+    return { planId: id, planName: (PLANS[id] && PLANS[id].name) || id, maxListings: max, maxUnits: max, features: { analytics: id === 'free' ? 'none' : id === 'professional' ? 'basic' : 'full' } };
   }
 
   function getPlanLimits(user) {
@@ -196,7 +214,57 @@
 
   function getCurrentPlan(user) {
     var id = getUserPlanId(user);
-    return PLANS[id] || PLANS.free;
+    var p = PLANS[id] || PLANS.free;
+    return Object.assign({}, p, {
+      priceLabel: p.priceLabel || (p.monthly ? "₦" + Number(p.monthly).toLocaleString("en-NG") : "Free"),
+      blurb: p.blurb || "",
+      billing: p.billing || (p.monthly ? "month" : "forever")
+    });
+  }
+
+  function renderPricingGrid(container) {
+    if (!container) return;
+    var order = ["professional", "business", "enterprise"];
+    container.innerHTML = order
+      .map(function (id) {
+        var p = PLANS[id];
+        var popular = id === "business" ? " is-popular" : "";
+        var ent = id === "enterprise" ? " is-ent" : "";
+        return (
+          '<article class="op-card' +
+          popular +
+          ent +
+          '">' +
+          (id === "business" ? '<span class="tag">Most Popular</span>' : "") +
+          "<h3>" +
+          p.name +
+          "</h3>" +
+          '<p class="aud">' +
+          p.blurb +
+          "</p>" +
+          '<div><span class="price">' +
+          p.priceLabel +
+          '</span> <span class="period">/ month</span></div>' +
+          '<div class="annual">Annual: ₦' +
+          Number(p.annual).toLocaleString("en-NG") +
+          " (10% off)</div>" +
+          '<button type="button" class="cta' +
+          (id === "enterprise" ? " is-purple" : "") +
+          '" data-select-plan="' +
+          id +
+          '">Get Started →</button>' +
+          "<ul><li>✓ Up to " +
+          p.maxListings +
+          " active listings</li><li>✓ Verification eligibility</li><li>✓ Viewings &amp; applications</li></ul>" +
+          "</article>"
+        );
+      })
+      .join("");
+    container.querySelectorAll("[data-select-plan]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        selectPlan(btn.getAttribute("data-select-plan"));
+      });
+    });
   }
 
   function showCurrentPlan() {
@@ -290,6 +358,7 @@
   window.LeaseAccomPlans = {
     PLANS: PLANS,
     selectPlan: selectPlan,
+    renderPricingGrid: renderPricingGrid,
     canAddUnit: canAddUnit,
     canAddUnitAsync: canAddUnitAsync,
     getPlanLimits: getPlanLimits,

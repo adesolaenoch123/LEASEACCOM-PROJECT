@@ -138,7 +138,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         record.location ||
         (record.property && (record.property.location || record.property.city)) ||
         "",
-      viewerName: record.viewerName || record.tenantName || record.tenant_name || "Tenant",
+      viewerName: record.viewerName || record.tenantName || record.tenant_name || record.tenant_full_name || "Tenant",
+      title: record.title || record.propertyTitle || record.property_title || record.listing_title || "Property",
       tenantEmail: record.tenantEmail || record.tenant_email || "",
       date: record.viewingDate || record.preferred_date || record.viewing_date || record.date,
       time: record.viewingTime || record.preferred_time || record.time || "",
@@ -201,7 +202,7 @@ document.addEventListener("DOMContentLoaded", async function () {
           <div class="viewing-card-top">
             <div>
               <span class="section-label">VIEWING REQUEST</span>
-              <h3>${escapeHtml(viewing.title)}</h3>
+              <h3>${escapeHtml(viewing.title || viewing.propertyTitle || viewing.property_title || "Property viewing")}</h3>
             </div>
             <span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
           </div>

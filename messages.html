@@ -1249,10 +1249,10 @@
   .message-input-area, .chat-input, .composer, form.message-form, .message-compose {
     flex: 0 0 auto !important;
     position: sticky !important;
-    bottom: 64px !important; /* above bottom nav */
+    bottom: 0 !important;
     background: #fff !important;
     z-index: 20 !important;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important;
+    padding: 8px 10px !important;
     border-top: 1px solid #e9edef !important;
   }
   .la-bottom-nav {
@@ -1262,6 +1262,12 @@
   .chat-empty {
     padding: 24px 16px !important;
     min-height: 0 !important;
+  }
+  /* The chat panel already ends at the top of the fixed app navigation. */
+  #messageForm,
+  form.message-form {
+    bottom: 0 !important;
+    padding-bottom: 8px !important;
   }
 }
 </style>

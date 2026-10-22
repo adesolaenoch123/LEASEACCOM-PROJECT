@@ -68,9 +68,22 @@
       }
     }
 
+    const displayName = nameInput?.value || name || "LeaseAccom";
+    const initials = String(displayName)
+      .trim()
+      .split(/\s+/)
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "LA";
+
     if (logo) {
       if (liveLogo) liveLogo.innerHTML = `<img src="${logo}" alt="Logo">`;
       if (logoPreview) logoPreview.innerHTML = `<img src="${logo}" alt="Logo">`;
+    } else {
+      if (liveLogo) liveLogo.textContent = initials;
+      if (logoPreview) logoPreview.textContent = initials;
     }
   }
 
@@ -117,30 +130,26 @@
     if (optionsHost.querySelector(".owner-plan-option")) return;
 
     const planCards = [
-      { name: "Basic", price: "₦5,000", summary: "For growing portfolios", accent: "" },
-      { name: "Standard", price: "₦10,000", summary: "Most popular for active owners", accent: "is-popular" },
-      { name: "Premium", price: "₦20,000", summary: "Unlimited growth and visibility", accent: "" }
+      { id: "professional", name: "Professional", price: "₦5,000", summary: "For individual landlords and small property owners.", accent: "" },
+      { id: "business", name: "Business", price: "₦10,000", summary: "Most popular for growing landlords and managers.", accent: "is-popular" },
+      { id: "enterprise", name: "Enterprise", price: "₦20,000", summary: "For agencies, hotels and large portfolios.", accent: "is-ent" }
     ];
 
     optionsHost.innerHTML = planCards.map((plan) => `
       <article class="owner-plan-option ${plan.accent}">
         <div class="owner-plan-option-head">
           <span>${plan.name}</span>
-          <strong>${plan.price}</strong>
+          <strong>${plan.price}<small>/mo</small></strong>
         </div>
         <p>${plan.summary}</p>
-        <button type="button" class="owner-plan-button" data-plan-name="${plan.name}">Subscribe now</button>
+        <a class="owner-plan-button" href="owner-plans.html">View full plan →</a>
       </article>
     `).join("");
 
     const notice = document.getElementById("ownerPlanNotice");
-    optionsHost.querySelectorAll(".owner-plan-button").forEach((button) => {
-      button.addEventListener("click", () => {
-        if (notice) {
-          notice.textContent = "Checkout is not connected yet. The demo plan selection is saved locally for now.";
-        }
-      });
-    });
+    if (notice) {
+      notice.innerHTML = 'Full feature lists &amp; annual pricing: <a href="owner-plans.html">Open Premium Plans page</a>';
+    }
   }
 
   function ensureFeaturedVideo() {
@@ -309,22 +318,28 @@ function refreshOwnerPlanUI() {
   if (!window.LeaseAccomPlans) return;
   let user = null;
   try {
-    user = JSON.parse(localStorage.getItem("leaseaccomCurrentUser") || "null");
+    user = JSON.parse(
+      localStorage.getItem("leaseaccomCurrentUser") ||
+        localStorage.getItem("leasehubCurrentUser") ||
+        "null"
+    );
   } catch (e) {}
   if (!user) return;
   window.LeaseAccomPlans.ensureUserPlan(user);
-  const plan = window.LeaseAccomPlans.getCurrentPlan(user);
-  const limits = window.LeaseAccomPlans.getPlanLimits(user);
-  const used = window.LeaseAccomPlans.countOwnerUnits(user);
+  const plan = window.LeaseAccomPlans.getCurrentPlan(user) || { name: "Free", id: "free", priceLabel: "Free", blurb: "", billing: "forever" };
+  const limits = window.LeaseAccomPlans.getPlanLimits(user) || { maxListings: 1, maxUnits: 1 };
+  const maxU = limits.maxListings != null ? limits.maxListings : (limits.maxUnits != null ? limits.maxUnits : 1);
+  const used = window.LeaseAccomPlans.countOwnerUnits(user) || 0;
+  const priceLabel = plan.priceLabel || (plan.monthly ? "₦" + Number(plan.monthly).toLocaleString("en-NG") : "Free");
+  const blurb = plan.blurb || "List properties, receive viewings and applications.";
 
   const pill = document.getElementById("ownerPlanPill");
   if (pill) {
-    pill.textContent = plan.name.toUpperCase();
-    pill.dataset.plan = plan.id;
-    pill.title = `${used}/${limits.maxUnits} units · ${plan.priceLabel}/${plan.billing === "forever" ? "free" : "mo"}`;
+    pill.textContent = String(plan.name || "Free").toUpperCase();
+    pill.dataset.plan = plan.id || "free";
+    pill.title = used + "/" + maxU + " listings · " + priceLabel;
   }
 
-  // Subscription panel summary
   let box = document.getElementById("ownerPlanSummary");
   const panel = document.querySelector(".owner-plan-card");
   if (panel && !box) {
@@ -334,13 +349,16 @@ function refreshOwnerPlanUI() {
     panel.appendChild(box);
   }
   if (box) {
-    box.innerHTML = `
-      <p><strong>${plan.name}</strong> · ${plan.priceLabel}${plan.billing === "month" ? "/mo" : ""}</p>
-      <p class="owner-muted">${used} / ${limits.maxUnits === Infinity ? "∞" : limits.maxUnits} units used</p>
-      <p class="owner-muted">${plan.blurb}</p>
-      <div class="owner-plan-meter"><span style="width:${Math.min(100, (limits.maxUnits === Infinity ? 5 : (used / limits.maxUnits) * 100))}%"></span></div>
-      <a class="owner-btn owner-btn-small" href="owner-payments.html#plans">Manage plan</a>
-    `;
+    const pct = maxU > 0 ? Math.min(100, (used / maxU) * 100) : 0;
+    box.innerHTML =
+      "<p><strong>" + (plan.name || "Free") + "</strong> · " + priceLabel +
+      (plan.billing === "month" ? "/mo" : "") + "</p>" +
+      '<p class="owner-muted">' + used + " / " + maxU + " listings used</p>" +
+      '<p class="owner-muted">' + blurb + "</p>" +
+      '<div class="owner-plan-meter"><span style="width:' + pct + '%"></span></div>' +
+      '<div class="owner-plan-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
+      '<a class="owner-btn owner-btn-small" href="owner-plans.html">View plans</a>' +
+      '<a class="owner-btn owner-btn-small" href="owner-payments.html#plans">Manage</a></div>';
   }
 
   // Gate premium / standard features
@@ -365,7 +383,7 @@ function refreshOwnerPlanUI() {
     const level = limits.features.analytics;
     analytics.classList.toggle("is-plan-locked", level === "none");
     if (level === "none") {
-      analytics.innerHTML = `<div class="plan-lock-msg"><p>Analytics unlock on <strong>Standard</strong> and <strong>Premium</strong>.</p><a href="owner-payments.html#plans">Upgrade</a></div>`;
+      analytics.innerHTML = `<div class="plan-lock-msg"><p>Analytics unlock on <strong>Business</strong> and <strong>Enterprise</strong>.</p><a href="owner-payments.html#plans">Upgrade</a></div>`;
     }
   }
 
@@ -391,12 +409,12 @@ function refreshOwnerPlanUI() {
     } catch (e) {}
     let props = [];
     try {
-      props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leaseaccomProperties") || "[]") || [];
+      props = JSON.parse(localStorage.getItem("leaseaccomProperties") || localStorage.getItem("leasehubProperties") || "[]") || [];
     } catch (e) {}
     const user = (function () {
       try {
         return JSON.parse(
-          localStorage.getItem("leaseaccomCurrentUser") ||
+          localStorage.getItem("leasehubCurrentUser") ||
             localStorage.getItem("leaseaccomCurrentUser") ||
             "null"
         );
@@ -462,7 +480,7 @@ function refreshOwnerPlanUI() {
     const ok = limits.features.viewerTracking;
     tracking.classList.toggle("is-plan-locked", !ok);
     if (!ok) {
-      tracking.innerHTML = `<div class="plan-lock-msg"><p>Viewer tracking is a <strong>Premium</strong> feature.</p><a href="owner-payments.html#plans">Upgrade to Premium</a></div>`;
+      tracking.innerHTML = `<div class="plan-lock-msg"><p>Viewer tracking is an <strong>Enterprise</strong> feature.</p><a href="owner-payments.html#plans">Upgrade plan</a></div>`;
     }
   }
 }

@@ -1113,7 +1113,7 @@
                 letter-spacing: -0.3px;
             }
             .messages-logo-text .lh-lease { color: #fff; }
-            .messages-logo-textleaseaccom { color: #25d366; }
+            .messages-logo-text .lh-hub { color: #25d366; }
             .messages-topbar {
                 background: #075e54 !important;
             }
@@ -1128,6 +1128,29 @@
 
 </style>
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
+
+<style id="owner-msg-mobile-fix">
+@media (max-width: 720px) {
+  .chat-panel, .messages-main, .chat-thread {
+    min-height: calc(100vh - 200px);
+  }
+  .chat-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .message-input-bar, .composer, .chat-composer {
+    position: sticky;
+    bottom: 56px;
+    background: #fff;
+    z-index: 5;
+  }
+}
+</style>
+
 </head>
 
 <body data-leaseaccom-page="owner-messages">
@@ -1135,7 +1158,7 @@
 <header class="messages-topbar">
 
     <a href="owner-dashboard.html" class="messages-logo messages-logo-text">
-        <span class="lh-lease">Lease</span><span class="lh-accom">accom</span>
+        <span class="lh-lease">Lease</span><span class="lh-hub">Hub</span>
     </a>
 
     <div class="conversation-search">

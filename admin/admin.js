@@ -24,7 +24,9 @@
     applications: [],
     payments: [],
     subscriptions: [],
-    reports: []
+    reports: [],
+    auditLogs: [],
+    emailQueue: []
   };
   var propertyFilter = "";
   var verFilter = "pending";
@@ -102,7 +104,9 @@
       safeSelect("applications", 200),
       safeSelect("payments", 100),
       safeSelect("subscriptions", 100),
-      safeSelect("reports", 200)
+      safeSelect("reports", 200),
+      safeSelect("audit_logs", 200),
+      safeSelect("email_queue", 100)
     ]);
     state.users = packs[0];
     state.properties = packs[1];
@@ -112,12 +116,17 @@
     state.payments = packs[5];
     state.subscriptions = packs[6];
     state.reports = packs[7] || [];
+    state.auditLogs = packs[8] || [];
+    state.emailQueue = packs[9] || [];
     renderOverview();
     renderProperties();
     renderUsers();
     renderVerification();
     renderPayments();
     renderSettings();
+    renderCms();
+    renderAudit();
+    renderEmailQueue();
     renderReports();
   }
 
@@ -297,6 +306,139 @@
     });
   }
 
+
+  async function notifyOwner(userId, title, message, type, link) {
+    if (!userId) return;
+    var client = sb();
+    try {
+      if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.notify === "function") {
+        await window.LeaseAccomCloud.notify(userId, title, message, type || "info", link || null);
+      } else if (client) {
+        await client.from("notifications").insert({
+          user_id: userId,
+          title: title || "LeaseAccom",
+          message: message || "",
+          type: type || "info",
+          link: link || null,
+          read: false
+        });
+      }
+    } catch (e) {
+      console.warn("notifyOwner", e);
+    }
+    // Queue real email (Edge Function / Resend sends later)
+    try {
+      if (client) {
+        var toEmail = null;
+        try {
+          var pr = await client.from("profiles").select("email").eq("id", userId).maybeSingle();
+          toEmail = pr.data && pr.data.email;
+        } catch (e2) {}
+        await client.from("email_queue").insert({
+          user_id: userId,
+          to_email: toEmail || null,
+          subject: title || "LeaseAccom",
+          body: (message || "") + (link ? "\n\nOpen: " + link : "") + "\n\n— LeaseAccom",
+          status: "pending"
+        });
+      }
+    } catch (e) {
+      console.warn("email_queue", e);
+    }
+  }
+
+  async function writeAudit(action, entityType, entityId, detail) {
+    var client = sb();
+    if (!client) return;
+    try {
+      var actorId = state.profile && state.profile.id;
+      var actorEmail = state.profile && state.profile.email;
+      await client.from("audit_logs").insert({
+        actor_id: actorId || null,
+        actor_email: actorEmail || null,
+        action: action,
+        entity_type: entityType || null,
+        entity_id: entityId != null ? String(entityId) : null,
+        detail: detail || null
+      });
+    } catch (e) {
+      console.warn("audit", e);
+    }
+  }
+
+  function renderAudit() {
+    var list = (state.auditLogs || []).slice().sort(function (a, b) {
+      return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+    });
+    var meta = document.getElementById("auditMeta");
+    if (meta) meta.textContent = "Showing " + list.length + " event(s)";
+    var box = document.getElementById("auditTable");
+    if (!box) return;
+    if (!list.length) {
+      box.innerHTML = '<p class="ov-adm-empty">No audit events yet. Approve a listing or suspend a user to create one.</p>';
+      return;
+    }
+    box.innerHTML =
+      '<table class="admin-table"><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead><tbody>' +
+      list
+        .map(function (r) {
+          return (
+            "<tr><td>" +
+            esc(String(r.created_at || "").replace("T", " ").slice(0, 19)) +
+            "</td><td>" +
+            esc(r.actor_email || (r.actor_id ? String(r.actor_id).slice(0, 8) + "…" : "—")) +
+            "</td><td><strong>" +
+            esc(r.action) +
+            "</strong></td><td>" +
+            esc((r.entity_type || "") + (r.entity_id ? " · " + String(r.entity_id).slice(0, 8) : "")) +
+            "</td><td>" +
+            esc(r.detail || "—") +
+            "</td></tr>"
+          );
+        })
+        .join("") +
+      "</tbody></table>";
+  }
+
+  function renderEmailQueue() {
+    var list = (state.emailQueue || []).slice().sort(function (a, b) {
+      return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+    });
+    var meta = document.getElementById("emailMeta");
+    if (meta) meta.textContent = "Showing " + list.length + " email(s)";
+    var box = document.getElementById("emailTable");
+    if (!box) return;
+    if (!list.length) {
+      box.innerHTML = '<p class="ov-adm-empty">No emails queued yet. Admin notifications also create email_queue rows.</p>';
+      return;
+    }
+    box.innerHTML =
+      '<table class="admin-table"><thead><tr><th>Status</th><th>To</th><th>Subject</th><th>Created</th><th>Error</th></tr></thead><tbody>' +
+      list
+        .map(function (r) {
+          var st = String(r.status || "pending").toLowerCase();
+          var pill = st === "sent" ? "approved" : st === "failed" ? "rejected" : "pending";
+          return (
+            "<tr><td><span class='status-pill " +
+            pill +
+            "'>" +
+            esc(r.status || "pending") +
+            "</span></td><td>" +
+            esc(r.to_email || (r.user_id ? String(r.user_id).slice(0, 8) + "…" : "—")) +
+            "</td><td>" +
+            esc(r.subject || "—") +
+            "</td><td>" +
+            esc(String(r.created_at || "").slice(0, 16)) +
+            "</td><td>" +
+            esc(r.error || "—") +
+            "</td></tr>"
+          );
+        })
+        .join("") +
+      "</tbody></table>";
+  }
+
+
   async function setPropertyStatus(id, verification, listing) {
     var client = sb();
     if (!client) return;
@@ -323,6 +465,35 @@
       listing_status: listing
     }).eq("id", id);
     if (res.error) { alert(res.error.message); return; }
+    try {
+      var prop = state.properties.find(function (x) { return String(x.id) === String(id); });
+      var ownerId = prop && (prop.owner_id || prop.user_id);
+      var title = (prop && prop.title) || "Your listing";
+      if (ownerId && verification === "approved") {
+        await notifyOwner(
+          ownerId,
+          "Listing approved",
+          '"' + title + '" is now live on LeaseAccom.',
+          "success",
+          "property-details.html?id=" + encodeURIComponent(id)
+        );
+      }
+      if (ownerId && verification === "rejected") {
+        await notifyOwner(
+          ownerId,
+          "Listing not approved",
+          '"' + title + '" was not approved. Please review details and resubmit if needed.',
+          "warning",
+          "owner-dashboard.html"
+        );
+      }
+      await writeAudit(
+        verification === "approved" ? "property.approve" : "property.reject",
+        "property",
+        id,
+        title
+      );
+    } catch (e) {}
     await loadOverviewData();
   }
 
@@ -429,6 +600,14 @@
     var next = u.account_status === "suspended" ? "active" : "suspended";
     var res = await client.from("profiles").update({ account_status: next }).eq("id", id);
     if (res.error) { alert(res.error.message); return; }
+    try {
+      if (next === "suspended") {
+        await notifyOwner(id, "Account suspended", "Your LeaseAccom account was suspended. Contact support if you believe this is a mistake.", "warning", "index.html");
+      } else {
+        await notifyOwner(id, "Account reactivated", "Your LeaseAccom account is active again.", "success", "index.html");
+      }
+      await writeAudit(next === "suspended" ? "user.suspend" : "user.unsuspend", "profile", id, "");
+    } catch (e) {}
     await loadOverviewData();
   }
 
@@ -569,6 +748,30 @@
           .update({ verification_status: "rejected" })
           .eq("id", row.owner_id);
       }
+      if (row && row.owner_id && status === "approved") {
+        await notifyOwner(
+          row.owner_id,
+          "Owner verification approved",
+          "Your identity documents were verified. You can list properties on LeaseAccom.",
+          "success",
+          "owner-dashboard.html"
+        );
+      }
+      if (row && row.owner_id && status === "rejected") {
+        await notifyOwner(
+          row.owner_id,
+          "Owner verification rejected",
+          "Your verification was not approved. Please resubmit clear documents.",
+          "warning",
+          "owner-verification.html"
+        );
+      }
+      await writeAudit(
+        status === "approved" ? "verification.approve" : "verification.reject",
+        "owner_verification",
+        id,
+        row && row.full_name ? row.full_name : ""
+      );
     } catch (e) {}
     await loadOverviewData();
   }
@@ -916,6 +1119,7 @@
       }
     }
     if (msg) msg.textContent = "Plan saved as “" + plan + "” for this owner.";
+    try { await writeAudit("plan.assign", "profile", ownerId, plan); } catch (e) {}
     await loadOverviewData();
   }
 
@@ -1131,6 +1335,76 @@
   }
 
 
+
+  async function renderCms() {
+    var cms = (await loadSettingsRow("cms")) || {};
+    var map = {
+      cmsHeroBadge: cms.heroBadge,
+      cmsHeroTitle: cms.heroTitle,
+      cmsHeroTitleSpan: cms.heroTitleSpan,
+      cmsHeroSubtitle: cms.heroSubtitle,
+      cmsHeroVideo: cms.heroVideoUrl,
+      cmsHeroImage: cms.heroImageUrl,
+      cmsAdHeadline: cms.adHeadline,
+      cmsAdBody: cms.adBody,
+      cmsAdLink: cms.adLink,
+      cmsFeaturedTitle: cms.featuredSectionTitle,
+      cmsFeaturedSub: cms.featuredSectionSub,
+      cmsFooterText: cms.footerText
+    };
+    Object.keys(map).forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && map[id] != null) el.value = map[id];
+    });
+    var ad = document.getElementById("cmsAdEnabled");
+    if (ad) ad.checked = !!cms.adEnabled;
+    if (cms.primaryColor) {
+      var pc = document.getElementById("cmsPrimary");
+      var ph = document.getElementById("cmsPrimaryHex");
+      if (pc) pc.value = cms.primaryColor;
+      if (ph) ph.value = cms.primaryColor;
+    }
+    if (cms.accentColor) {
+      var ac = document.getElementById("cmsAccent");
+      var ah = document.getElementById("cmsAccentHex");
+      if (ac) ac.value = cms.accentColor;
+      if (ah) ah.value = cms.accentColor;
+    }
+  }
+
+  async function saveCms() {
+    var msg = document.getElementById("cmsMsg");
+    var primary = (document.getElementById("cmsPrimaryHex") || {}).value || (document.getElementById("cmsPrimary") || {}).value;
+    var accent = (document.getElementById("cmsAccentHex") || {}).value || (document.getElementById("cmsAccent") || {}).value;
+    var value = {
+      heroBadge: ((document.getElementById("cmsHeroBadge") || {}).value || "").trim(),
+      heroTitle: ((document.getElementById("cmsHeroTitle") || {}).value || "").trim(),
+      heroTitleSpan: ((document.getElementById("cmsHeroTitleSpan") || {}).value || "").trim(),
+      heroSubtitle: ((document.getElementById("cmsHeroSubtitle") || {}).value || "").trim(),
+      heroVideoUrl: ((document.getElementById("cmsHeroVideo") || {}).value || "").trim(),
+      heroImageUrl: ((document.getElementById("cmsHeroImage") || {}).value || "").trim(),
+      primaryColor: primary || "#0d7547",
+      accentColor: accent || "#8ce0b2",
+      adEnabled: !!(document.getElementById("cmsAdEnabled") || {}).checked,
+      adHeadline: ((document.getElementById("cmsAdHeadline") || {}).value || "").trim(),
+      adBody: ((document.getElementById("cmsAdBody") || {}).value || "").trim(),
+      adLink: ((document.getElementById("cmsAdLink") || {}).value || "").trim(),
+      featuredSectionTitle: ((document.getElementById("cmsFeaturedTitle") || {}).value || "").trim(),
+      featuredSectionSub: ((document.getElementById("cmsFeaturedSub") || {}).value || "").trim(),
+      footerText: ((document.getElementById("cmsFooterText") || {}).value || "").trim()
+    };
+    var res = await saveSettingsRow("cms", value);
+    if (res.error) {
+      if (msg) msg.textContent = res.error.message;
+      return;
+    }
+    try {
+      localStorage.setItem("leaseaccomCmsPublished", JSON.stringify(value));
+    } catch (e) {}
+    if (msg) msg.textContent = "CMS published. Refresh the homepage to see changes.";
+  }
+
+
   function bindNav() {
     document.querySelectorAll(".admin-nav [data-section]").forEach(function (a) {
       a.addEventListener("click", function (e) {
@@ -1229,6 +1503,20 @@
     if (btnF) btnF.addEventListener("click", saveFlags);
     var btnS = document.getElementById("btnSaveSupport");
     if (btnS) btnS.addEventListener("click", saveSupport);
+    var btnCms = document.getElementById("btnSaveCms");
+    if (btnCms) btnCms.addEventListener("click", saveCms);
+    var cp = document.getElementById("cmsPrimary");
+    var cph = document.getElementById("cmsPrimaryHex");
+    if (cp && cph) {
+      cp.addEventListener("input", function () { cph.value = cp.value; });
+      cph.addEventListener("change", function () { if (/^#/.test(cph.value)) cp.value = cph.value; });
+    }
+    var ca = document.getElementById("cmsAccent");
+    var cah = document.getElementById("cmsAccentHex");
+    if (ca && cah) {
+      ca.addEventListener("input", function () { cah.value = ca.value; });
+      cah.addEventListener("change", function () { if (/^#/.test(cah.value)) ca.value = cah.value; });
+    }
 
 
     var form = document.getElementById("adminLoginForm");
