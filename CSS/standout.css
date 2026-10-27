@@ -1,0 +1,189 @@
+.la-safe-pay-tip {
+  background: #ecf8f1;
+  border: 1px solid #b8e0c8;
+  color: #0d4f32;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 10px 0 14px;
+}
+.la-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.la-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.la-badge-verified { background: #d1fae5; color: #065f46; }
+.la-badge-safe { background: #e0f2fe; color: #075985; }
+.la-badge-risk { background: #fee2e2; color: #991b1b; }
+.la-badge-quality { background: #f3f4f6; color: #374151; }
+.la-slot-hint, .la-quality, .la-next-steps {
+  font-size: 12px;
+  color: #5b6560;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+.la-next-steps span { font-weight: 800; color: #0d7547; }
+
+/* Verified badge on property cards */
+.badge.la-verified-badge {
+  background: #0d7547 !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(13, 117, 71, 0.35);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.compare-card-btn {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 2;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(255,255,255,0.95);
+  color: #0d7547;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.compare-card-btn.selected {
+  background: #0d7547;
+  color: #fff;
+}
+.la-time-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+.la-slot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #cfe5d9;
+  background: #f6fbf8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.la-slot-chip:has(input:checked) {
+  background: #0d7547;
+  color: #fff;
+  border-color: #0d7547;
+}
+.la-slot-note {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #5b6560;
+  margin-top: 4px;
+}
+
+/* Response time */
+.la-response-badge {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #eef6ff;
+  color: #1d4f91;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Owner portfolio plus */
+.la-portfolio-plus { margin-top: 16px; }
+.la-portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.la-portfolio-card {
+  background: #f6fbf8;
+  border: 1px solid #d7ebe0;
+  border-radius: 14px;
+  padding: 14px 12px;
+  text-align: center;
+}
+.la-portfolio-card strong {
+  display: block;
+  font-size: 22px;
+  color: #0d7547;
+}
+.la-portfolio-card span {
+  font-size: 12px;
+  color: #5b6560;
+  font-weight: 600;
+}
+.la-portfolio-note {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 10px 0 0;
+}
+@media (max-width: 640px) {
+  .la-portfolio-grid { grid-template-columns: 1fr; }
+}
+
+/* Application tracker */
+.la-app-tracker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.la-app-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+}
+.la-app-step .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d1d5db;
+}
+.la-app-step.done { color: #0d7547; }
+.la-app-step.done .dot { background: #0d7547; }
+.la-app-step.current { color: #0d7547; }
+.la-app-step.current .dot {
+  background: #0d7547;
+  box-shadow: 0 0 0 4px rgba(13, 117, 71, 0.2);
+}
+.la-app-line {
+  width: 18px;
+  height: 2px;
+  background: #e5e7eb;
+}
+
+/* Enterprise spotlight */
+.la-enterprise-note {
+  font-size: 13px;
+  color: #374151;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #ecf8f1, #f5f3ff);
+  border: 1px solid #d7ebe0;
+}
+.property-card.la-spotlight-card {
+  outline: 2px solid rgba(13, 117, 71, 0.35);
+  outline-offset: 2px;
+}

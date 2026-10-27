@@ -834,6 +834,19 @@ select {
     transition: opacity .25s ease, transform .25s ease;
 }
 
+/* Keep the assistant launcher and panel clear of the fixed mobile navigation. */
+@media (max-width: 820px) {
+    .assistant-launcher {
+        right: 16px;
+        bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .assistant-panel {
+        right: 16px;
+        bottom: calc(136px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
 .assistant-panel.is-open {
     opacity: 1;
     pointer-events: auto;
@@ -8826,4 +8839,78 @@ body.owner-lounge-body .owner-plan-notice a {
     min-height: 40vh;
   }
   .chat-empty h2 { font-size: 1.15rem !important; }
+}
+
+/* Responsive safety and touch sizing shared across public and account pages. */
+img,
+video,
+canvas,
+svg {
+  max-inline-size: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-inline-size: 100%;
+}
+
+.la-bottom-nav,
+.la-owner-bottom-nav {
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.la-bottom-nav a,
+.la-owner-bottom-nav a {
+  min-width: 0;
+  min-height: 48px;
+  justify-content: center;
+  padding: 4px 2px;
+}
+
+.la-bottom-nav a span,
+.la-owner-bottom-nav a span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  body.la-has-bottom-nav {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .admin-main,
+  .owner-main,
+  .owner-content,
+  .chat-layout,
+  .dashboard-grid,
+  .property-grid,
+  .compare-grid {
+    min-width: 0;
+  }
+
+  .table-responsive,
+  .admin-table-wrap,
+  .pay-table-wrap,
+  .compare-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 360px) {
+  .la-bottom-nav a,
+  .la-owner-bottom-nav a {
+    font-size: 9px;
+  }
+
+  .la-bottom-nav a i,
+  .la-owner-bottom-nav a i {
+    font-size: 19px;
+  }
 }

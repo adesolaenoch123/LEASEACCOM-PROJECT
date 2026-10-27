@@ -475,13 +475,24 @@ document.addEventListener("DOMContentLoaded", () => {
         conversations =
             getConversations();
 
-        const conversation =
+        let conversation =
             conversations.find(
-                item => item.id === id
+                item => String(item.id) === String(id)
             );
 
+        if (!conversation) {
+            conversation = conversations.find(
+                item =>
+                    String(item.propertyId) === String(id) ||
+                    String(id) === "property-" + String(item.propertyId || "")
+            );
+        }
 
         if (!conversation) {
+            console.warn("Owner conversation not found, reloading list", id);
+            try {
+                if (typeof renderConversations === "function") renderConversations();
+            } catch (e) {}
             return;
         }
 

@@ -1,0 +1,16 @@
+/* LeaseAccom — response-time badge placeholder (additive) */
+.la-response-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f4f7f5;
+  color: #0d7547;
+  border: 1px solid #d0e8dc;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.la-response-badge i { font-size: 12px; }

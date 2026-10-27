@@ -69,14 +69,14 @@ function createPropertyCard(property) {
                     isVerified
                     ?
                     `
-                    <div class="badge">
+                    <div class="badge la-verified-badge" title="Reviewed and approved on LeaseAccom">
                         ✓ Verified
                     </div>
                     `
                     :
                     `
                     <div class="badge pending-badge">
-                        Pending Verification
+                        Under review
                     </div>
                     `
                 }
@@ -157,6 +157,8 @@ function createPropertyCard(property) {
 /* ================= LOAD FEATURED ================= */
 
 function loadFeatured() {
+    // Enterprise spotlight: owners on enterprise plan + featured flag rank first
+
 
     if (!featuredContainer) return;
 
@@ -1061,12 +1063,33 @@ if (marketplaceContainer) {
 
     saveSearchButton?.addEventListener("click", () => {
         const savedSearches = JSON.parse(localStorage.getItem("leaseaccomSavedSearches")) || [];
+        const matchIds = (Array.isArray(properties) ? properties : [])
+            .filter(function (property) {
+                if (typeof isLeaseAccomPropertyPublic === "function" && !isLeaseAccomPropertyPublic(property)) return false;
+                const search = searchInput.value.trim().toLowerCase();
+                const type = typeFilter.value;
+                const maxBudget = budgetFilter.value === "all" ? Infinity : Number(budgetFilter.value);
+                const verified = verifiedFilter.checked;
+                const searchMatch = !search ||
+                    String(property.title || "").toLowerCase().includes(search) ||
+                    String(property.location || "").toLowerCase().includes(search) ||
+                    String(property.city || "").toLowerCase().includes(search);
+                const typeMatch = type === "all" || property.type === type;
+                const budgetMatch = Number(property.price) <= maxBudget;
+                const verifiedMatch = !verified || (typeof isLeaseAccomPropertyVerified === "function" && isLeaseAccomPropertyVerified(property));
+                return searchMatch && typeMatch && budgetMatch && verifiedMatch;
+            })
+            .map(function (p) { return String(p.id); });
+
         const search = {
             text: searchInput.value.trim(),
             type: typeFilter.value,
             budget: budgetFilter.value,
             verified: verifiedFilter.checked,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            matchIds: matchIds,
+            lastCheckedAt: new Date().toISOString(),
+            alertsEnabled: true
         };
 
         const duplicate = savedSearches.some(item =>
@@ -1078,8 +1101,53 @@ if (marketplaceContainer) {
 
         if (!duplicate) savedSearches.unshift(search);
         localStorage.setItem("leaseaccomSavedSearches", JSON.stringify(savedSearches.slice(0, 10)));
-        showMarketplaceToast(duplicate ? "This search is already saved." : "Search saved to your LeaseAccom profile.");
+        showMarketplaceToast(
+            duplicate
+                ? "This search is already saved. We will alert you when new matches appear."
+                : "Search saved. We will alert you when new listings match."
+        );
     });
+
+    function checkSavedSearchAlerts() {
+        try {
+            var savedSearches = JSON.parse(localStorage.getItem("leaseaccomSavedSearches") || "[]") || [];
+            if (!Array.isArray(savedSearches) || !savedSearches.length || !Array.isArray(properties)) return;
+            var totalNew = 0;
+            var updated = savedSearches.map(function (s) {
+                if (!s || s.alertsEnabled === false) return s;
+                var maxBudget = s.budget === "all" || s.budget == null ? Infinity : Number(s.budget);
+                var ids = properties.filter(function (property) {
+                    if (typeof isLeaseAccomPropertyPublic === "function" && !isLeaseAccomPropertyPublic(property)) return false;
+                    var text = String(s.text || "").toLowerCase();
+                    var searchMatch = !text ||
+                        String(property.title || "").toLowerCase().includes(text) ||
+                        String(property.location || "").toLowerCase().includes(text) ||
+                        String(property.city || "").toLowerCase().includes(text);
+                    var typeMatch = !s.type || s.type === "all" || property.type === s.type;
+                    var budgetMatch = Number(property.price) <= maxBudget;
+                    var verifiedMatch = !s.verified || (typeof isLeaseAccomPropertyVerified === "function" && isLeaseAccomPropertyVerified(property));
+                    return searchMatch && typeMatch && budgetMatch && verifiedMatch;
+                }).map(function (p) { return String(p.id); });
+                var prev = Array.isArray(s.matchIds) ? s.matchIds.map(String) : [];
+                var news = ids.filter(function (id) { return prev.indexOf(id) === -1; });
+                totalNew += news.length;
+                return Object.assign({}, s, {
+                    matchIds: ids,
+                    lastCheckedAt: new Date().toISOString(),
+                    newCount: news.length
+                });
+            });
+            localStorage.setItem("leaseaccomSavedSearches", JSON.stringify(updated.slice(0, 10)));
+            if (totalNew > 0) {
+                showMarketplaceToast(totalNew + " new listing(s) match your saved search" + (totalNew > 1 ? "es" : "") + ".");
+            }
+        } catch (e) {
+            console.warn("saved search alerts", e);
+        }
+    }
+
+    // Run after first marketplace paint
+    setTimeout(checkSavedSearchAlerts, 800);
 
     document.getElementById("compareBtn")?.addEventListener("click", openComparison);
     document.getElementById("compareClose")?.addEventListener("click", closeComparison);
@@ -4063,16 +4131,31 @@ String(application.status || "pending").toLowerCase() ===
 
 function getLeaseAccomVerificationStatus(property) {
     if (typeof normalizeVerificationStatus === "function") {
-        return normalizeVerificationStatus(property);
+        try {
+            var n = normalizeVerificationStatus(property);
+            if (n) return n;
+        } catch (e) {}
     }
 
-    const status = String(property?.verificationStatus || "")
+    const status = String(
+        property?.verificationStatus ||
+        property?.verification_status ||
+        property?.listing_status ||
+        property?.listingStatus ||
+        ""
+    )
         .trim()
         .toLowerCase();
 
     if (status === "rejected") return "rejected";
-    if (status === "pending" || status === "pending verification") return "pending";
-    if (status === "approved" || status === "verified" || property?.verified === true) {
+    if (status === "pending" || status === "pending verification" || status === "review") return "pending";
+    if (
+        status === "approved" ||
+        status === "verified" ||
+        status === "live" ||
+        property?.verified === true ||
+        property?.verified === "true"
+    ) {
         return "approved";
     }
 

@@ -312,30 +312,36 @@
       location.href = "login.html";
       return;
     }
+    var amount = billing === "annual" ? p.annual : p.monthly;
     var intent = {
       planId: p.id,
       planName: p.name,
       billing: billing,
-      amount: billing === "annual" ? p.annual : p.monthly,
+      amount: amount,
       at: new Date().toISOString()
     };
     localStorage.setItem("leaseaccomPlanIntent", JSON.stringify(intent));
+
+    if (window.LeaseAccomPaystack && typeof window.LeaseAccomPaystack.startPlanCheckout === "function") {
+      window.LeaseAccomPaystack.startPlanCheckout({
+        planId: p.id,
+        planName: p.name,
+        amountNaira: amount,
+        billing: billing,
+        email: u.email || u.userEmail || ""
+      });
+      return;
+    }
+
     alert(
       "Selected " +
         p.name +
         " (" +
         billing +
         ") — " +
-        money(intent.amount) +
-        ".\n\nPayment gateway will complete this when Paystack is connected. Your choice is saved on this device."
+        money(amount) +
+        ".\n\nPaystack script not loaded. Include JS/paystack-checkout.js"
     );
-    u.plan = p.id;
-    u.subscriptionPlan = p.id;
-    localStorage.setItem("leasehubCurrentUser", JSON.stringify(u));
-    try {
-      localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(u));
-    } catch (e) {}
-    showCurrentPlan();
   }
 
   document.addEventListener("DOMContentLoaded", function () {

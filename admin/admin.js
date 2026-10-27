@@ -26,7 +26,9 @@
     subscriptions: [],
     reports: [],
     auditLogs: [],
-    emailQueue: []
+    emailQueue: [],
+    disputes: [],
+    announcements: []
   };
   var propertyFilter = "";
   var verFilter = "pending";
@@ -106,7 +108,9 @@
       safeSelect("subscriptions", 100),
       safeSelect("reports", 200),
       safeSelect("audit_logs", 200),
-      safeSelect("email_queue", 100)
+      safeSelect("email_queue", 100),
+      safeSelect("disputes", 200),
+      safeSelect("announcements", 50)
     ]);
     state.users = packs[0];
     state.properties = packs[1];
@@ -118,6 +122,8 @@
     state.reports = packs[7] || [];
     state.auditLogs = packs[8] || [];
     state.emailQueue = packs[9] || [];
+    state.disputes = packs[10] || [];
+    state.announcements = packs[11] || [];
     renderOverview();
     renderProperties();
     renderUsers();
@@ -128,6 +134,8 @@
     renderAudit();
     renderEmailQueue();
     renderReports();
+    renderDisputes();
+    renderBroadcast();
   }
 
   function goSection(id) {
@@ -139,102 +147,289 @@
   }
 
   function renderOverview() {
-    var users = state.users;
-    var props = state.properties;
-    var pendingProps = props.filter(function (p) {
-      return String(p.verification_status || p.listing_status || "").toLowerCase().indexOf("pending") !== -1;
-    });
-    var liveProps = props.filter(function (p) {
-      var v = String(p.verification_status || "").toLowerCase();
-      var l = String(p.listing_status || "").toLowerCase();
-      return v === "approved" || l === "live";
-    });
-    var rejectedProps = props.filter(function (p) {
-      return String(p.verification_status || "").toLowerCase() === "rejected";
-    });
-    var pendingVer = state.verifications.filter(function (v) {
-      return String(v.status || "").toLowerCase() === "pending";
-    });
-    var tenants = users.filter(function (u) { return u.account_type === "tenant"; }).length;
-    var owners = users.filter(function (u) { return u.account_type === "owner"; }).length;
+    var users = state.users || [];
+    var props = state.properties || [];
+    var vers = state.verifications || [];
+    var viewings = state.viewings || [];
+    var apps = state.applications || [];
+    var reports = state.reports || [];
+    var emails = state.emailQueue || [];
 
-    var kpis = [
-      { label: "Total users", value: users.length, icon: "bx-group" },
-      { label: "Live listings", value: liveProps.length, icon: "bx-buildings" },
-      { label: "Pending verifications", value: pendingVer.length, icon: "bx-shield-quarter" },
-      { label: "Viewings", value: state.viewings.length, icon: "bx-calendar" },
-      { label: "Applications", value: state.applications.length, icon: "bx-file" },
-      { label: "Tenants", value: tenants, icon: "bx-user" },
-      { label: "Owners", value: owners, icon: "bx-home" },
-      { label: "Pending listings", value: pendingProps.length, icon: "bx-time" }
-    ];
-    var grid = document.getElementById("kpiGrid");
-    if (grid) {
-      grid.innerHTML = kpis.map(function (k) {
-        return '<div class="kpi-card"><div class="kpi-icon"><i class="bx ' + k.icon +
-          '"></i></div><div class="kpi-value">' + esc(k.value) +
-          '</div><div class="kpi-label">' + esc(k.label) + "</div></div>";
-      }).join("");
+    var owners = users.filter(function (u) {
+      return String(u.account_type || u.role || "").toLowerCase().indexOf("owner") !== -1 ||
+        String(u.account_type || "").toLowerCase() === "landlord";
+    }).length;
+    var tenants = users.filter(function (u) {
+      var t = String(u.account_type || u.role || "").toLowerCase();
+      return t === "tenant" || t === "buyer" || t === "renter";
+    }).length;
+
+    var pendingProps = props.filter(function (p) {
+      return propertyStatus(p).indexOf("pending") !== -1;
+    }).length;
+    var liveProps = props.filter(function (p) {
+      var st = propertyStatus(p);
+      return st === "approved" || st === "live";
+    }).length;
+    var pendingVer = vers.filter(function (v) {
+      var s = String(v.status || "pending").toLowerCase();
+      return s === "pending" || s === "submitted" || s === "review";
+    }).length;
+    var openReports = reports.filter(function (r) {
+      var s = String(r.status || "open").toLowerCase();
+      return s === "open" || s === "pending";
+    }).length;
+    var failedEmail = emails.filter(function (e) {
+      return String(e.status || "").toLowerCase() === "failed";
+    }).length;
+    var pendingEmail = emails.filter(function (e) {
+      return String(e.status || "").toLowerCase() === "pending";
+    }).length;
+    var openDisputes = (state.disputes || []).filter(function (d) {
+      var s = String(d.status || "open").toLowerCase();
+      return s === "open" || s === "investigating";
+    }).length;
+
+    var kpi = document.getElementById("kpiGrid");
+    if (kpi) {
+      kpi.innerHTML =
+        kpiCard(users.length, "Total users") +
+        kpiCard(owners, "Owners") +
+        kpiCard(tenants, "Tenants") +
+        kpiCard(liveProps, "Live listings") +
+        kpiCard(pendingProps, "Pending listings") +
+        kpiCard(viewings.length, "Viewings") +
+        kpiCard(apps.length, "Applications") +
+        kpiCard(openReports, "Open reports");
     }
 
     var chart = document.getElementById("chartTraffic");
     if (chart) {
-      var vals = [
-        Math.max(2, users.length), Math.max(2, props.length),
-        Math.max(2, state.viewings.length + 1), Math.max(2, state.applications.length + 1),
-        Math.max(2, pendingVer.length + 2), Math.max(2, liveProps.length + 1),
-        Math.max(2, tenants + 1), Math.max(2, owners + 1),
-        Math.max(2, props.length + users.length),
-        Math.max(2, state.viewings.length + state.applications.length + 2)
+      var bars = [
+        { label: "Users", n: users.length },
+        { label: "Listings", n: props.length },
+        { label: "Viewings", n: viewings.length },
+        { label: "Applications", n: apps.length },
+        { label: "Reports", n: reports.length },
+        { label: "Emails", n: emails.length }
       ];
-      var max = Math.max.apply(null, vals) || 1;
-      chart.innerHTML = vals.map(function (v) {
-        return '<div class="traffic-bar" style="height:' + Math.round((v / max) * 100) + '%"></div>';
-      }).join("");
+      var max = Math.max.apply(null, bars.map(function (b) { return b.n; }).concat([1]));
+      chart.innerHTML = bars
+        .map(function (b) {
+          var h = Math.max(8, Math.round((b.n / max) * 100));
+          return (
+            '<div class="traffic-bar-wrap"><div class="traffic-bar" style="height:' +
+            h +
+            '%"></div><span>' +
+            esc(b.label) +
+            "</span><small>" +
+            b.n +
+            "</small></div>"
+          );
+        })
+        .join("");
     }
 
-    var totalP = props.length || 1;
     var pipe = document.getElementById("propertyPipeline");
     if (pipe) {
-      var stages = [
-        { name: "Pending", n: pendingProps.length },
-        { name: "Live", n: liveProps.length },
-        { name: "Rejected", n: rejectedProps.length },
-        { name: "All", n: props.length }
-      ];
-      pipe.innerHTML = stages.map(function (s) {
-        var pct = s.name === "All" ? 100 : Math.round((s.n / totalP) * 100);
-        return '<div class="pipeline-row"><span>' + esc(s.name) +
-          '</span><div class="pipeline-track"><div class="pipeline-fill" style="width:' + pct +
-          '%"></div></div><strong>' + s.n + "</strong></div>";
-      }).join("");
+      pipe.innerHTML =
+        pipelineRow("Pending review", pendingProps, "properties") +
+        pipelineRow("Live / approved", liveProps, "properties") +
+        pipelineRow("Owner verifications pending", pendingVer, "verification") +
+        pipelineRow("Open reports", openReports, "reports");
     }
 
     var alerts = document.getElementById("overviewAlerts");
     if (alerts) {
       var items = [];
-      if (pendingVer.length) items.push({ level: "high", title: "Verification backlog", text: pendingVer.length + " waiting" });
-      if (pendingProps.length) items.push({ level: "med", title: "Listings pending", text: pendingProps.length + " need approval" });
-      if (!items.length) items.push({ level: "low", title: "All clear", text: "No critical alerts" });
-      alerts.innerHTML = '<ul class="alert-list">' + items.map(function (a) {
-        return '<li class="alert-item"><span class="alert-dot ' + a.level +
-          '"></span><div><strong>' + esc(a.title) + "</strong><span>" + esc(a.text) + "</span></div></li>";
-      }).join("") + "</ul>";
+      if (pendingProps) items.push(pendingProps + " listing(s) awaiting approval");
+      if (pendingVer) items.push(pendingVer + " owner verification(s) pending");
+      if (openReports) items.push(openReports + " open report(s)");
+      if (failedEmail) items.push(failedEmail + " failed email(s)");
+      if (!items.length) {
+        alerts.innerHTML = '<p class="ov-adm-empty">No urgent alerts. Platform looks clear.</p>';
+      } else {
+        alerts.innerHTML =
+          "<ul style='margin:0;padding-left:18px;line-height:1.7'>" +
+          items.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") +
+          "</ul>";
+      }
     }
 
     var pay = document.getElementById("overviewPayments");
     if (pay) {
-      pay.innerHTML = state.payments.length
+      pay.innerHTML = (state.payments || []).length
         ? "<p><strong>" + state.payments.length + "</strong> payment(s).</p>"
         : "<p style='color:var(--la-muted);font-size:13px'>No payments yet.</p>";
     }
     var subs = document.getElementById("overviewSubs");
     if (subs) {
-      subs.innerHTML = state.subscriptions.length
+      subs.innerHTML = (state.subscriptions || []).length
         ? "<p><strong>" + state.subscriptions.length + "</strong> subscription(s).</p>"
         : "<p style='color:var(--la-muted);font-size:13px'>No subscriptions yet.</p>";
     }
+
+    renderActionInbox({
+      pendingProps: pendingProps,
+      pendingVer: pendingVer,
+      openReports: openReports,
+      failedEmail: failedEmail,
+      pendingEmail: pendingEmail,
+      openDisputes: openDisputes
+    });
   }
+
+  function kpiCard(n, label) {
+    return (
+      '<div class="kpi-card"><div class="kpi-value">' +
+      n +
+      '</div><div class="kpi-label">' +
+      esc(label) +
+      "</div></div>"
+    );
+  }
+
+  function pipelineRow(label, n, section) {
+    return (
+      '<div class="pipeline-item"><span>' +
+      esc(label) +
+      '</span><strong>' +
+      n +
+      '</strong> <button type="button" class="link-btn" data-go="' +
+      section +
+      '">Open</button></div>'
+    );
+  }
+
+  function renderActionInbox(counts) {
+    var box = document.getElementById("actionInbox");
+    var chip = document.getElementById("inboxCountChip");
+    if (!box) return;
+    var total =
+      (counts.pendingProps || 0) +
+      (counts.pendingVer || 0) +
+      (counts.openReports || 0) +
+      (counts.failedEmail || 0) +
+      (counts.pendingEmail || 0) + (counts.openDisputes || 0);
+    if (chip) chip.textContent = total + " open";
+
+    var rows = [];
+    if (counts.pendingProps) {
+      rows.push(inboxItem("Pending listings", counts.pendingProps + " need approve/reject", "properties", "Review listings"));
+    }
+    if (counts.pendingVer) {
+      rows.push(inboxItem("Owner verification", counts.pendingVer + " document set(s)", "verification", "Review KYC"));
+    }
+    if (counts.openReports) {
+      rows.push(inboxItem("Listing reports", counts.openReports + " open", "reports", "Open reports"));
+    }
+    if (counts.failedEmail) {
+      rows.push(inboxItem("Failed emails", counts.failedEmail + " failed", "email-queue", "View email queue"));
+    }
+    if (counts.pendingEmail) {
+      rows.push(inboxItem("Pending emails", counts.pendingEmail + " not sent", "email-queue", "View email queue"));
+    }
+    if (counts.openDisputes) {
+      rows.push(inboxItem("Open disputes", counts.openDisputes + " case(s)", "disputes", "Open disputes"));
+    }
+    if (!rows.length) {
+      box.innerHTML = '<p class="ov-adm-empty">Inbox clear — nothing waiting for you.</p>';
+      return;
+    }
+    box.innerHTML = '<div class="action-inbox-list">' + rows.join("") + "</div>";
+    box.querySelectorAll("[data-go]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        goSection(b.getAttribute("data-go"));
+      });
+    });
+  }
+
+  function inboxItem(title, meta, section, btnLabel) {
+    return (
+      '<div class="action-inbox-item"><div><strong>' +
+      esc(title) +
+      '</strong><span class="meta">' +
+      esc(meta) +
+      '</span></div><div class="inbox-actions"><button type="button" class="btn btn-primary" data-go="' +
+      section +
+      '">' +
+      esc(btnLabel) +
+      "</button></div></div>"
+    );
+  }
+
+  function downloadCsv(filename, rows) {
+    if (!rows || !rows.length) {
+      alert("Nothing to export.");
+      return;
+    }
+    var keys = Object.keys(rows[0]);
+    function cell(v) {
+      var s = v == null ? "" : String(v);
+      if (/[",\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }
+    var lines = [keys.join(",")].concat(
+      rows.map(function (r) {
+        return keys.map(function (k) { return cell(r[k]); }).join(",");
+      })
+    );
+    var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function exportUsersCsv() {
+    var rows = (state.users || []).map(function (u) {
+      return {
+        id: u.id,
+        email: u.email || "",
+        full_name: u.full_name || u.name || "",
+        account_type: u.account_type || u.role || "",
+        plan: u.plan || u.subscription_plan || "",
+        verification_status: u.verification_status || "",
+        account_status: u.account_status || "",
+        created_at: u.created_at || ""
+      };
+    });
+    downloadCsv("leaseaccom-users.csv", rows);
+  }
+
+  function exportPropertiesCsv() {
+    var rows = (state.properties || []).map(function (p) {
+      return {
+        id: p.id,
+        title: p.title || "",
+        city: p.city || p.location || "",
+        price: p.price || "",
+        verification_status: p.verification_status || "",
+        listing_status: p.listing_status || "",
+        featured: p.featured === true || p.featured === "true" ? "yes" : "no",
+        owner_id: p.owner_id || p.user_id || "",
+        created_at: p.created_at || ""
+      };
+    });
+    downloadCsv("leaseaccom-listings.csv", rows);
+  }
+
+  function exportAuditCsv() {
+    var rows = (state.auditLogs || []).map(function (r) {
+      return {
+        created_at: r.created_at || "",
+        actor_email: r.actor_email || "",
+        action: r.action || "",
+        entity_type: r.entity_type || "",
+        entity_id: r.entity_id || "",
+        detail: r.detail || ""
+      };
+    });
+    downloadCsv("leaseaccom-audit.csv", rows);
+  }
+
 
   function propertyStatus(p) {
     return String(p.verification_status || p.listing_status || "pending").toLowerCase();
@@ -283,8 +478,11 @@
           '" data-prop-feature="' + esc(p.id) + '">' + (featured ? "★" : "☆") +
           '</button></td><td class="admin-row-actions">' +
           '<button type="button" class="btn btn-primary" data-prop-approve="' + esc(p.id) + '">Approve</button> ' +
-          '<a class="btn" href="../property-details.html?id=' + encodeURIComponent(p.id) + '" target="_blank" rel="noopener">View on site</a> ' +
-          '<button type="button" class="btn btn-danger" data-prop-reject="' + esc(p.id) + '">Reject</button></td></tr>'
+          '<button type="button" class="btn btn-danger" data-prop-reject="' + esc(p.id) + '">Reject</button> ' +
+          '<button type="button" class="btn" data-risk-prop="' + esc(p.id) + '" data-risked="' +
+          (p.risk_flag === true || p.risk_flag === "true" ? "1" : "0") + '">' +
+          (p.risk_flag === true || p.risk_flag === "true" ? "Clear risk" : "Flag risk") + "</button> " +
+          '<a class="btn" href="../property-details.html?id=' + encodeURIComponent(p.id) + '" target="_blank" rel="noopener">View on site</a></td></tr>'
         );
       }).join("") +
       "</tbody></table>";
@@ -566,7 +764,11 @@
           '<button type="button" class="btn btn-primary" data-user-profile="' + esc(u.id) + '">View profile</button> ' +
           '<button type="button" class="btn" data-user-role="' + esc(u.id) + '">Change role</button> ' +
           '<button type="button" class="btn btn-danger" data-user-suspend="' + esc(u.id) + '">' +
-          (u.account_status === "suspended" ? "Unsuspend" : "Suspend") + "</button></td></tr>"
+          (u.account_status === "suspended" ? "Unsuspend" : "Suspend") + "</button> " +
+          '<button type="button" class="btn" data-risk-user="' + esc(u.id) + '" data-risked="' +
+          (u.risk_flag === true || u.risk_flag === "true" ? "1" : "0") + '">' +
+          (u.risk_flag === true || u.risk_flag === "true" ? "Clear risk" : "Flag risk") +
+          "</button></td></tr>"
         );
       }).join("") +
       "</tbody></table>";
@@ -1405,6 +1607,241 @@
   }
 
 
+  document.addEventListener("click", function (ev) {
+    var riskP = ev.target && ev.target.closest && ev.target.closest("[data-risk-prop]");
+    if (riskP) {
+      ev.preventDefault();
+      toggleRiskFlag("properties", riskP.getAttribute("data-risk-prop"), riskP.getAttribute("data-risked") === "1");
+      return;
+    }
+    var riskU = ev.target && ev.target.closest && ev.target.closest("[data-risk-user]");
+    if (riskU) {
+      ev.preventDefault();
+      toggleRiskFlag("profiles", riskU.getAttribute("data-risk-user"), riskU.getAttribute("data-risked") === "1");
+      return;
+    }
+    var t = ev.target && ev.target.closest && ev.target.closest("[data-go]");
+    if (!t) return;
+    var id = t.getAttribute("data-go");
+    if (id && typeof goSection === "function") {
+      ev.preventDefault();
+      goSection(id);
+    }
+  });
+
+
+  var disputeFilter = "open";
+
+  function renderDisputes() {
+    var list = (state.disputes || []).filter(function (d) {
+      var st = String(d.status || "open").toLowerCase();
+      if (!disputeFilter) return true;
+      if (disputeFilter === "open") return st === "open" || st === "investigating";
+      return st === disputeFilter;
+    });
+    var meta = document.getElementById("disputeMeta");
+    if (meta) meta.textContent = "Showing " + list.length + " case(s)";
+    var box = document.getElementById("disputesTable");
+    if (!box) return;
+    if (!list.length) {
+      box.innerHTML = '<p class="ov-adm-empty">No cases in this filter.</p>';
+      return;
+    }
+    box.innerHTML =
+      '<table class="admin-table"><thead><tr><th>Subject</th><th>Priority</th><th>Status</th><th>Property</th><th>Created</th><th>Actions</th></tr></thead><tbody>' +
+      list
+        .map(function (d) {
+          var st = String(d.status || "open").toLowerCase();
+          var pill = st === "resolved" ? "approved" : st === "investigating" ? "pending" : "rejected";
+          return (
+            "<tr><td><strong>" +
+            esc(d.subject || "—") +
+            "</strong><br><small>" +
+            esc((d.description || "").slice(0, 80)) +
+            "</small></td><td>" +
+            esc(d.priority || "normal") +
+            '</td><td><span class="status-pill ' +
+            pill +
+            '">' +
+            esc(d.status || "open") +
+            "</span></td><td>" +
+            esc(d.property_id || "—") +
+            "</td><td>" +
+            esc(String(d.created_at || "").slice(0, 10)) +
+            '</td><td class="admin-row-actions">' +
+            (st !== "resolved"
+              ? '<button type="button" class="btn" data-dispute-status="investigating" data-dispute-id="' +
+                esc(d.id) +
+                '">Investigating</button> <button type="button" class="btn btn-primary" data-dispute-status="resolved" data-dispute-id="' +
+                esc(d.id) +
+                '">Resolve</button>'
+              : "—") +
+            "</td></tr>"
+          );
+        })
+        .join("") +
+      "</tbody></table>";
+    box.querySelectorAll("[data-dispute-status]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        setDisputeStatus(b.getAttribute("data-dispute-id"), b.getAttribute("data-dispute-status"));
+      });
+    });
+  }
+
+  async function setDisputeStatus(id, status) {
+    var client = sb();
+    if (!client) return;
+    var res = await client
+      .from("disputes")
+      .update({ status: status, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (res.error) alert(res.error.message);
+    try {
+      await writeAudit("dispute." + status, "dispute", id, "");
+    } catch (e) {}
+    await loadOverviewData();
+  }
+
+  async function createDispute() {
+    var subject = ((document.getElementById("disputeSubject") || {}).value || "").trim();
+    var description = ((document.getElementById("disputeBody") || {}).value || "").trim();
+    var property_id = ((document.getElementById("disputePropertyId") || {}).value || "").trim() || null;
+    var against_user_id = ((document.getElementById("disputeAgainst") || {}).value || "").trim() || null;
+    var priority = ((document.getElementById("disputePriority") || {}).value || "normal");
+    var msg = document.getElementById("disputeCreateMsg");
+    if (!subject) {
+      if (msg) msg.textContent = "Subject is required.";
+      return;
+    }
+    var client = sb();
+    if (!client) return;
+    var res = await client.from("disputes").insert({
+      subject: subject,
+      description: description,
+      property_id: property_id,
+      against_user_id: against_user_id,
+      priority: priority,
+      status: "open"
+    });
+    if (res.error) {
+      if (msg) msg.textContent = res.error.message;
+      return;
+    }
+    if (msg) msg.textContent = "Case created.";
+    try {
+      await writeAudit("dispute.create", "dispute", null, subject);
+    } catch (e) {}
+    await loadOverviewData();
+  }
+
+  function renderBroadcast() {
+    var list = state.announcements || [];
+    var box = document.getElementById("announceList");
+    if (!box) return;
+    if (!list.length) {
+      box.innerHTML = '<p class="ov-adm-empty">No announcements yet.</p>';
+      return;
+    }
+    box.innerHTML =
+      '<table class="admin-table"><thead><tr><th>Title</th><th>Audience</th><th>Active</th><th>Created</th><th></th></tr></thead><tbody>' +
+      list
+        .map(function (a) {
+          return (
+            "<tr><td><strong>" +
+            esc(a.title) +
+            "</strong><br><small>" +
+            esc((a.body || "").slice(0, 100)) +
+            "</small></td><td>" +
+            esc(a.audience || "all") +
+            "</td><td>" +
+            (a.active ? "Yes" : "No") +
+            "</td><td>" +
+            esc(String(a.created_at || "").slice(0, 10)) +
+            '</td><td><button type="button" class="btn" data-announce-toggle="' +
+            esc(a.id) +
+            '" data-active="' +
+            (a.active ? "1" : "0") +
+            '">' +
+            (a.active ? "Deactivate" : "Activate") +
+            "</button></td></tr>"
+          );
+        })
+        .join("") +
+      "</tbody></table>";
+    box.querySelectorAll("[data-announce-toggle]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        toggleAnnounce(b.getAttribute("data-announce-toggle"), b.getAttribute("data-active") !== "1");
+      });
+    });
+  }
+
+  async function publishAnnounce() {
+    var title = ((document.getElementById("announceTitle") || {}).value || "").trim();
+    var body = ((document.getElementById("announceBody") || {}).value || "").trim();
+    var audience = ((document.getElementById("announceAudience") || {}).value || "all");
+    var msg = document.getElementById("announceMsg");
+    if (!title || !body) {
+      if (msg) msg.textContent = "Title and message required.";
+      return;
+    }
+    var client = sb();
+    if (!client) return;
+    var res = await client.from("announcements").insert({
+      title: title,
+      body: body,
+      audience: audience,
+      active: true
+    });
+    if (res.error) {
+      if (msg) msg.textContent = res.error.message;
+      return;
+    }
+    if (msg) msg.textContent = "Published. Active banner will show on the public site.";
+    try {
+      await writeAudit("announce.publish", "announcement", null, title);
+    } catch (e) {}
+    await loadOverviewData();
+  }
+
+  async function toggleAnnounce(id, active) {
+    var client = sb();
+    if (!client) return;
+    var res = await client.from("announcements").update({ active: !!active }).eq("id", id);
+    if (res.error) alert(res.error.message);
+    await loadOverviewData();
+  }
+
+  async function saveFees() {
+    var msg = document.getElementById("feesMsg");
+    var value = {
+      professional: Number((document.getElementById("feeProfessional") || {}).value) || 5,
+      business: Number((document.getElementById("feeBusiness") || {}).value) || 10,
+      enterprise: Number((document.getElementById("feeEnterprise") || {}).value) || 15
+    };
+    var res = await saveSettingsRow("platform_fees", value);
+    if (msg) msg.textContent = res.error ? res.error.message : "Fee percentages saved.";
+  }
+
+  async function toggleRiskFlag(table, id, current) {
+    var client = sb();
+    if (!client || !id) return;
+    var next = !current;
+    var note = next ? prompt("Risk note (optional):", "") : null;
+    var payload = { risk_flag: next };
+    if (next && note) payload.risk_note = note;
+    if (!next) payload.risk_note = null;
+    var res = await client.from(table).update(payload).eq("id", id);
+    if (res.error) {
+      alert(res.error.message);
+      return;
+    }
+    try {
+      await writeAudit(next ? "risk.flag" : "risk.clear", table, id, note || "");
+    } catch (e) {}
+    await loadOverviewData();
+  }
+
+
   function bindNav() {
     document.querySelectorAll(".admin-nav [data-section]").forEach(function (a) {
       a.addEventListener("click", function (e) {
@@ -1503,6 +1940,45 @@
     if (btnF) btnF.addEventListener("click", saveFlags);
     var btnS = document.getElementById("btnSaveSupport");
     if (btnS) btnS.addEventListener("click", saveSupport);
+
+    var btnPs = document.getElementById("btnSavePaystack");
+    if (btnPs) {
+      btnPs.addEventListener("click", async function () {
+        var key = ((document.getElementById("settingPaystackPublic") || {}).value || "").trim();
+        var msg = document.getElementById("paystackMsg");
+        if (!key || key.indexOf("pk_") !== 0) {
+          if (msg) msg.textContent = "Enter a valid Paystack public key (starts with pk_test_ or pk_live_).";
+          return;
+        }
+        var res = await saveSettingsRow("payments_config", { paystackPublicKey: key });
+        try {
+          localStorage.setItem("leaseaccomPaymentsConfig", JSON.stringify({ paystackPublicKey: key }));
+        } catch (e) {}
+        if (msg) msg.textContent = res.error ? res.error.message : "Paystack public key saved.";
+      });
+    }
+
+    document.querySelectorAll("[data-dispute-filter]").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        disputeFilter = chip.getAttribute("data-dispute-filter") || "";
+        document.querySelectorAll("[data-dispute-filter]").forEach(function (c) {
+          c.classList.toggle("is-active", c === chip);
+        });
+        renderDisputes();
+      });
+    });
+    var btnCd = document.getElementById("btnCreateDispute");
+    if (btnCd) btnCd.addEventListener("click", createDispute);
+    var btnPa = document.getElementById("btnPublishAnnounce");
+    if (btnPa) btnPa.addEventListener("click", publishAnnounce);
+    var btnSf = document.getElementById("btnSaveFees");
+    if (btnSf) btnSf.addEventListener("click", saveFees);
+    var btnEu = document.getElementById("btnExportUsers");
+    if (btnEu) btnEu.addEventListener("click", exportUsersCsv);
+    var btnEp = document.getElementById("btnExportProperties");
+    if (btnEp) btnEp.addEventListener("click", exportPropertiesCsv);
+    var btnEa = document.getElementById("btnExportAudit");
+    if (btnEa) btnEa.addEventListener("click", exportAuditCsv);
     var btnCms = document.getElementById("btnSaveCms");
     if (btnCms) btnCms.addEventListener("click", saveCms);
     var cp = document.getElementById("cmsPrimary");

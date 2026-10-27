@@ -213,11 +213,16 @@
 }
 
 @media (max-width: 640px) {
+  .leaseaccom-notification-panel.is-open {
+    position: static;
+    z-index: 10001;
+  }
+
   .leaseaccom-notification-panel.is-open::before {
     content: "";
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 10000;
     background: rgba(8, 15, 26, 0.48);
     backdrop-filter: blur(2px);
   }
@@ -226,16 +231,21 @@
     position: fixed;
     inset: auto 0 0;
     width: 100%;
+    height: min(72dvh, 620px);
     max-height: min(72dvh, 620px);
     padding-bottom: env(safe-area-inset-bottom);
     border-radius: 20px 20px 0 0;
     transform: translateY(16px);
-    z-index: 101;
+    z-index: 10002;
+    display: flex;
+    flex-direction: column;
   }
 
   .leaseaccom-notification-list {
+    flex: 1 1 auto;
     max-height: calc(min(72dvh, 620px) - 66px);
     padding: 12px 14px;
+    overflow-y: auto;
   }
 
   .leaseaccom-notification-panel.is-open .leaseaccom-notification-panel__dropdown {

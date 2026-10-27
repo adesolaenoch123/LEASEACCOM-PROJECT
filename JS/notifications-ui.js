@@ -18,12 +18,23 @@
   }
 
   function ensureMarkup() {
+    var currentUser = null;
+    try {
+      currentUser = JSON.parse(
+        localStorage.getItem("leaseaccomCurrentUser") ||
+        localStorage.getItem("leaseaccomCurrentUser") ||
+        localStorage.getItem("currentUser") ||
+        "null"
+      );
+    } catch (e) {}
+
     var shouldEnable =
       document.body &&
       (
         document.body.dataset.notificationsEnabled === "true" ||
         /tenant-dashboard\.html?$/i.test(window.location.pathname || "") ||
-        document.body.dataset.leaseaccomPage === "tenant-dashboard"
+        document.body.dataset.leaseaccomPage === "tenant-dashboard" ||
+        (currentUser && String(currentUser.accountType || currentUser.role || "").toLowerCase() === "tenant")
       );
 
     // If markup already exists on the page, always wire it

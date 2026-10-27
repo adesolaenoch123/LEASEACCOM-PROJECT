@@ -616,7 +616,7 @@ test("accepted application creates and signs a backend rental agreement", async 
         stay_length: "1 year",
         status: "accepted"
     };
-    let Property Page dAgreement = null;
+    let storedAgreement = null;
     await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
         contentType: "application/javascript",
         body: `window.supabase = { createClient: () => ({ auth: {
@@ -644,12 +644,12 @@ test("accepted application creates and signs a backend rental agreement", async 
             await route.fulfill({
                 contentType: "application/json",
                 headers,
-                body: JSON.stringify({ agreements: Property Page dAgreement ? [Property Page dAgreement] : [] })
+                body: JSON.stringify({ agreements: storedAgreement ? [storedAgreement] : [] })
             });
             return;
         }
         if (url.pathname === "/agreements" && request.method() === "POST") {
-            Property Page dAgreement = {
+            storedAgreement = {
                 id: "agreement-backend-test",
                 application_id: application.id,
                 property_id: application.property_id,
@@ -667,16 +667,16 @@ test("accepted application creates and signs a backend rental agreement", async 
                 status: 201,
                 contentType: "application/json",
                 headers,
-                body: JSON.stringify({ agreement: Property Page dAgreement })
+                body: JSON.stringify({ agreement: storedAgreement })
             });
             return;
         }
         if (url.pathname === "/agreements/agreement-backend-test/sign") {
-            Property Page dAgreement = { ...Property Page dAgreement, tenant_agreed: true, status: "pending" };
+            storedAgreement = { ...storedAgreement, tenant_agreed: true, status: "pending" };
             await route.fulfill({
                 contentType: "application/json",
                 headers,
-                body: JSON.stringify({ agreement: Property Page dAgreement })
+                body: JSON.stringify({ agreement: storedAgreement })
             });
             return;
         }
@@ -697,7 +697,7 @@ test("accepted application creates and signs a backend rental agreement", async 
     await expect(page.locator("#ownerAgreeBtn")).toBeHidden();
     await page.getByRole("button", { name: "Tenant Agrees" }).click();
     await expect(page.getByRole("button", { name: "Tenant Agreed" })).toBeDisabled();
-    expect(Property Page dAgreement.tenant_agreed).toBe(true);
+    expect(storedAgreement.tenant_agreed).toBe(true);
 });
 
 test("owner dashboard shows the house tour and subscription plans", async ({ page }) => {

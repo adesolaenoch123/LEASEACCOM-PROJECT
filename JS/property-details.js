@@ -1313,11 +1313,23 @@ document.addEventListener("DOMContentLoaded", async () => {
                     )?.value;
 
 
-                const viewingTime =
+                let viewingTime =
                     document.getElementById(
                         "viewingTime"
                     )?.value;
 
+                const slotBoxes = Array.from(
+                    document.querySelectorAll('input[name="viewingSlot"]:checked')
+                ).map(function (el) { return el.value; });
+                if (slotBoxes.length) {
+                    if (slotBoxes.length > 3) {
+                        alert("Please choose up to 3 preferred time slots.");
+                        return;
+                    }
+                    viewingTime = slotBoxes.join(" · ");
+                    var hiddenTime = document.getElementById("viewingTime");
+                    if (hiddenTime) hiddenTime.value = viewingTime;
+                }
 
                 if (
                     !viewerName ||
@@ -1326,7 +1338,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 ) {
 
                     alert(
-                        "Please complete all viewing details."
+                        "Please complete all viewing details (date + at least one time slot)."
                     );
 
                     return;
@@ -1961,7 +1973,43 @@ LeaseAccom will process your request.`
 
         contactLandlordBtn.addEventListener(
             "click",
-            () => {
+            async () => {
+
+                /* Cloud-first conversation (fixes Conversation not found) */
+                try {
+                    if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.getOrCreateConversation === "function") {
+                        var ownerId = property.ownerId || property.owner_id || property.user_id;
+                        if (ownerId) {
+                            var cre = await window.LeaseAccomCloud.getOrCreateConversation(property.id, ownerId);
+                            if (cre && cre.ok && cre.data && cre.data.id) {
+                                var convId = cre.data.id;
+                                var list = [];
+                                try { list = JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]") || []; } catch (e1) { list = []; }
+                                if (!Array.isArray(list)) list = [];
+                                if (!list.some(function (c) { return String(c.id) === String(convId); })) {
+                                    list.unshift({
+                                        id: convId,
+                                        propertyId: property.id,
+                                        propertyTitle: property.title || "Listing",
+                                        propertyImage: property.image || "",
+                                        propertyLocation: property.location || property.city || "Nigeria",
+                                        ownerName: property.ownerName || "Property Owner",
+                                        ownerId: ownerId,
+                                        messages: [],
+                                        serverBacked: true,
+                                        updatedAt: new Date().toISOString()
+                                    });
+                                    localStorage.setItem("leaseaccomMessages", JSON.stringify(list));
+                                }
+                                localStorage.setItem("activeConversationId", convId);
+                                window.location.href = "messages.html";
+                                return;
+                            }
+                        }
+                    }
+                } catch (cloudErr) {
+                    console.warn("cloud conversation", cloudErr);
+                }
 
                 /* -----------------------------------------
                    GET EXISTING CONVERSATIONS

@@ -70,11 +70,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     let applications = [];
 
     try {
-        const Property Page dApplications = JSON.parse(
+        const storedApplications = JSON.parse(
             localStorage.getItem("rentalApplications") || "[]"
         );
-        applications = Array.isArray(Property Page dApplications)
-            ? Property Page dApplications
+        applications = Array.isArray(storedApplications)
+            ? storedApplications
             : [];
     } catch (error) {
         applications = [];
@@ -187,11 +187,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     let properties = [];
 
     try {
-        const Property Page dProperties = JSON.parse(
+        const storedProperties = JSON.parse(
             localStorage.getItem("leaseaccomProperties") || "[]"
         );
-        properties = Array.isArray(Property Page dProperties)
-            ? Property Page dProperties
+        properties = Array.isArray(storedProperties)
+            ? storedProperties
             : [];
     } catch (error) {
         properties = [];
@@ -858,11 +858,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     let agreements = [];
 
     try {
-        const Property Page dAgreements = JSON.parse(
+        const storedAgreements = JSON.parse(
             localStorage.getItem("leaseaccomAgreements") || "[]"
         );
-        agreements = Array.isArray(Property Page dAgreements)
-            ? Property Page dAgreements
+        agreements = Array.isArray(storedAgreements)
+            ? storedAgreements
             : [];
     } catch (error) {
         agreements = [];

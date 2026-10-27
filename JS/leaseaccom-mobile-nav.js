@@ -1,15 +1,12 @@
 /**
  * LeaseAccom mobile bottom navigation — tenant/public experience
+ * Polished for better touch targets and active states.
  */
 (function () {
   "use strict";
-  if (window.matchMedia && !window.matchMedia("(max-width: 820px)").matches) {
-    // Still install for resize; show only via CSS media query
-  }
-
   var page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
   var ownerPages = /owner-|add-property|admin/.test(page);
-  var authPages = /login|register/.test(page);
+  var authPages = /login|register|forgot|reset|auth-callback/.test(page);
   if (ownerPages || authPages || page === "admin.html") return;
 
   var items = [

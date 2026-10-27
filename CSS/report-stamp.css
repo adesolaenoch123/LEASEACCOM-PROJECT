@@ -1,0 +1,24 @@
+/* LeaseAccom — light report-outcome stamp (additive) */
+.la-report-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e9f7ef;
+  color: #0d7547;
+  border: 1px solid #b8e0c8;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.la-report-stamp.is-resolved {
+  background: #e9f7ef;
+  color: #0d7547;
+}
+.la-report-stamp.is-reviewed {
+  background: #fff8e6;
+  color: #8a6d1b;
+  border-color: #f0e0b0;
+}

@@ -1,0 +1,402 @@
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-page {
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid #e3e8e5;
+  border-radius: 16px;
+  background: #f7faf8;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(220px, .8fr);
+  gap: 24px;
+  align-items: center;
+  padding: 28px;
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 88% 10%, rgba(140, 224, 178, .2), transparent 42%),
+    linear-gradient(125deg, #06291f 0%, #0b3d2e 48%, #0d7547 100%);
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-badge {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .13);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-hero h2 {
+  margin: 0 0 10px;
+  color: #fff;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  line-height: 1.2;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-hero h2 em {
+  color: #8ce0b2;
+  font-style: normal;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-hero p {
+  max-width: 580px;
+  margin: 0;
+  color: rgba(255, 255, 255, .92);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-pills span {
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .13);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-hero-art {
+  min-height: 190px;
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 14px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, .06), rgba(0, 0, 0, .2)),
+    url("https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80") center/cover;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, .2);
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-pricing {
+  padding: 28px 22px;
+  scroll-margin-top: 80px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-choose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 7px;
+  color: #0d7547;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-choose::before,
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-choose::after {
+  width: 36px;
+  height: 1px;
+  background: #c5ddd0;
+  content: "";
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-pricing > h2,
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-intro {
+  text-align: center;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-pricing > h2 {
+  margin: 0 0 7px;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-intro {
+  max-width: 560px;
+  margin: 0 auto;
+  color: #66706a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-billing {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 18px 0 28px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-billing button {
+  min-height: 40px;
+  padding: 8px 15px;
+  border: 1px solid #e3e8e5;
+  border-radius: 999px;
+  background: #fff;
+  color: #66706a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-billing button.is-active {
+  border-color: #0d7547;
+  background: #0d7547;
+  color: #fff;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-billing button span {
+  margin-left: 4px;
+  color: inherit;
+  font-size: 10px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 20px 17px 16px;
+  border: 1px solid #e3e8e5;
+  border-radius: 16px;
+  background: #fff;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card.is-popular {
+  border: 2px solid #0d7547;
+  box-shadow: 0 12px 32px rgba(13, 117, 71, .12);
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card.is-enterprise {
+  border-color: #ddd6fe;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-tag {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  padding: 5px 12px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #0d7547;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: #e9f7ef;
+  color: #0d7547;
+  font-size: 21px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card.is-enterprise .owner-subscription-icon {
+  background: #f3e8ff;
+  color: #6d28d9;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card > h3 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-audience {
+  min-height: 38px;
+  margin: 0 0 10px;
+  color: #66706a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-price {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-price strong {
+  font-size: 1.65rem;
+  letter-spacing: -.03em;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-price span {
+  color: #66706a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card.is-enterprise .owner-subscription-price strong {
+  color: #5b21b6;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-annual {
+  align-self: flex-start;
+  margin: 8px 0 12px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #e9f7ef;
+  color: #0d7547;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card.is-enterprise .owner-subscription-annual {
+  background: #f3e8ff;
+  color: #6d28d9;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-cta {
+  width: 100%;
+  min-height: 42px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #0d7547;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter .2s, box-shadow .2s;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-cta:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 7px 18px rgba(13, 117, 71, .25);
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card.is-enterprise .owner-subscription-cta {
+  background: #5b21b6;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card > h4 {
+  margin: 11px 0 6px;
+  color: #0d7547;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card.is-enterprise > h4 {
+  color: #6d28d9;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card li {
+  position: relative;
+  padding-left: 17px;
+  color: #36413b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card li::before {
+  position: absolute;
+  left: 0;
+  color: #0d7547;
+  content: "✓";
+  font-weight: 800;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card.is-enterprise li::before {
+  color: #6d28d9;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-foot {
+  margin: auto 0 0;
+  padding: 11px;
+  border-radius: 10px;
+  background: #f5faf7;
+  color: #3d4a44;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-card.is-enterprise .owner-subscription-foot {
+  background: #f8f5ff;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-perks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-perks > div {
+  padding: 13px;
+  border: 1px solid #e3e8e5;
+  border-radius: 12px;
+  background: #fff;
+  color: #66706a;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-perks strong,
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-perks span {
+  display: block;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-perks strong {
+  margin-bottom: 4px;
+  color: #0d7547;
+}
+
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-checkout {
+  margin: 14px 0 0;
+  color: #66706a;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media (max-width: 1050px) {
+  body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-grid {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 700px) {
+  body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-hero {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-hero-art {
+    min-height: 150px;
+  }
+
+  body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-pricing {
+    padding: 22px 14px;
+  }
+
+  body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-perks {
+    grid-template-columns: 1fr;
+  }
+}

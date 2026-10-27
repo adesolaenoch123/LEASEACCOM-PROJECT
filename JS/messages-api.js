@@ -90,7 +90,7 @@
     async listConversations() {
       if (global.LeaseAccomCloud && global.LeaseAccomCloud.hasSb && global.LeaseAccomCloud.hasSb()) {
         try {
-          var client = global.leaseaccomSupabase || global.leaseaccomSupabase;
+          var client = global.leaseaccomSupabase || global.leasehubSupabase;
           var uid = await global.LeaseAccomCloud.uid();
           if (client && uid) {
             var { data, error } = await client.from("conversations").select("*")
@@ -98,7 +98,18 @@
               .order("last_message_at", { ascending: false });
             if (!error && data) {
               return data.map(function (c) {
-                return { id: c.id, propertyId: c.property_id, tenantId: c.tenant_id, ownerId: c.owner_id, subject: c.subject, updatedAt: c.last_message_at };
+                return {
+                  id: c.id,
+                  propertyId: c.property_id,
+                  tenantId: c.tenant_id,
+                  ownerId: c.owner_id,
+                  subject: c.subject || "Property enquiry",
+                  propertyTitle: c.subject || "Property enquiry",
+                  ownerName: "Property Owner",
+                  updatedAt: c.last_message_at,
+                  serverBacked: true,
+                  messages: []
+                };
               });
             }
           }

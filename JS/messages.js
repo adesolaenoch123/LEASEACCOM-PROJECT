@@ -664,23 +664,81 @@ document.addEventListener("DOMContentLoaded", () => {
         conversationId
     ) {
 
-        const conversations =
+        let conversations =
             getConversations();
 
-        const conversation =
+        let conversation =
             conversations.find(
                 (item) =>
                     String(item.id) ===
                     String(conversationId)
             );
 
-        if (!conversation) {
-
-            console.error(
-                "Conversation not found:",
-                conversationId
+        // Also match by propertyId if id was local "property-xxx"
+        if (!conversation && conversationId) {
+            conversation = conversations.find(
+                (item) =>
+                    String(item.propertyId) === String(conversationId) ||
+                    String(item.id) === "property-" + String(conversationId) ||
+                    String(conversationId) === "property-" + String(item.propertyId || "")
             );
+        }
 
+        if (!conversation) {
+            // Try one remote refresh then re-open
+            console.warn("Conversation not in local list, syncing...", conversationId);
+            (async function () {
+                try {
+                    if (typeof syncRemoteConversations === "function") {
+                        await syncRemoteConversations();
+                    }
+                    if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.hasSb === "function" && window.LeaseAccomCloud.hasSb()) {
+                        var client = window.leaseaccomSupabase || window.leasehubSupabase;
+                        if (client) {
+                            var row = null;
+                            var byId = await client.from("conversations").select("*").eq("id", conversationId).maybeSingle();
+                            if (byId && byId.data) row = byId.data;
+                            if (!row && String(conversationId).indexOf("property-") === 0) {
+                                var pid = String(conversationId).replace(/^property-/, "");
+                                var byProp = await client.from("conversations").select("*").eq("property_id", pid).limit(1).maybeSingle();
+                                if (byProp && byProp.data) row = byProp.data;
+                            }
+                            if (row) {
+                                var list = getConversations();
+                                var mapped = {
+                                    id: row.id,
+                                    propertyId: row.property_id,
+                                    tenantId: row.tenant_id,
+                                    ownerId: row.owner_id,
+                                    ownerName: "Property Owner",
+                                    propertyTitle: "Listing",
+                                    messages: [],
+                                    serverBacked: true,
+                                    updatedAt: row.last_message_at
+                                };
+                                var exists = list.some(function (c) { return String(c.id) === String(row.id); });
+                                if (!exists) {
+                                    list.unshift(mapped);
+                                    saveConversations(list);
+                                }
+                                localStorage.setItem("activeConversationId", row.id);
+                                renderConversations();
+                                openConversation(row.id);
+                                return;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+                if (chatEmpty) chatEmpty.style.display = "flex";
+                if (chatContent) chatContent.style.display = "none";
+                var tip = document.getElementById("chatEmpty");
+                if (tip) {
+                    var p = tip.querySelector("p");
+                    if (p) p.textContent = "Conversation not found. Open the property page and tap Message again.";
+                }
+            })();
             return;
         }
 

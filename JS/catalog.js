@@ -25,7 +25,8 @@
         return `<article class="property-card leaseaccom-enhanced-card" data-id="${safe(pid)}">
             <div class="property-image">
                 <img src="${safe(img)}" alt="${safe(p.title || "Listing")}" loading="lazy">
-                <span class="badge ${verified ? "" : "pending-badge"}"><i class="bx ${verified ? "bx-check-circle" : "bx-time-five"}"></i>${verified ? "Verified" : "Pending Verification"}</span>
+                <span class="badge ${verified ? "la-verified-badge" : "pending-badge"}"><i class="bx ${verified ? "bx-check-circle" : "bx-time-five"}"></i>${verified ? "Verified" : "Under review"}</span>
+                <button type="button" class="compare-card-btn" data-compare-id="${safe(pid)}" onclick="event.stopPropagation()">Compare</button>
                 <button type="button" class="save-btn ${saved ? "saved":""}" data-id="${safe(pid)}" aria-label="${saved ? "Remove saved listing":"Save listing"}"><i class="bx bx-heart"></i></button>
             </div>
             <div class="property-info">
@@ -85,6 +86,30 @@
                 leaseaccomToast(has?"Removed from saved":"Saved");
             });
         });
+        
+        grid.querySelectorAll(".compare-card-btn").forEach(btn => {
+            btn.addEventListener("click", e => {
+                e.stopPropagation();
+                const id = btn.dataset.compareId;
+                if (typeof toggleCompareProperty === "function") toggleCompareProperty(id);
+                else if (typeof addPropertyToCompare === "function") addPropertyToCompare(id);
+                else {
+                    let list = [];
+                    try { list = JSON.parse(localStorage.getItem("compareProperties") || "[]") || []; } catch (err) { list = []; }
+                    if (!Array.isArray(list)) list = [];
+                    const sid = String(id);
+                    if (list.map(String).includes(sid)) list = list.filter(x => String(x) !== sid);
+                    else {
+                        if (list.length >= 3) { leaseaccomToast("Compare up to 3 listings"); return; }
+                        list.push(sid);
+                    }
+                    localStorage.setItem("compareProperties", JSON.stringify(list));
+                    btn.classList.toggle("selected", list.map(String).includes(sid));
+                    leaseaccomToast(list.map(String).includes(sid) ? "Added to compare" : "Removed from compare");
+                }
+            });
+        });
+
         grid.querySelectorAll("[data-view-id]").forEach(btn => btn.addEventListener("click", e => {
             e.stopPropagation(); openDetail(btn.dataset.viewId);
         }));

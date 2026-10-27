@@ -124,37 +124,9 @@
     if (text) text.textContent = tip.text;
   }
 
-  function ensureOwnerPlanOptions() {
-    const optionsHost = document.getElementById("ownerPlanOptions");
-    if (!optionsHost) return;
-    if (optionsHost.querySelector(".owner-plan-option")) return;
-
-    const planCards = [
-      { id: "professional", name: "Professional", price: "₦5,000", summary: "For individual landlords and small property owners.", accent: "" },
-      { id: "business", name: "Business", price: "₦10,000", summary: "Most popular for growing landlords and managers.", accent: "is-popular" },
-      { id: "enterprise", name: "Enterprise", price: "₦20,000", summary: "For agencies, hotels and large portfolios.", accent: "is-ent" }
-    ];
-
-    optionsHost.innerHTML = planCards.map((plan) => `
-      <article class="owner-plan-option ${plan.accent}">
-        <div class="owner-plan-option-head">
-          <span>${plan.name}</span>
-          <strong>${plan.price}<small>/mo</small></strong>
-        </div>
-        <p>${plan.summary}</p>
-        <a class="owner-plan-button" href="owner-plans.html">View full plan →</a>
-      </article>
-    `).join("");
-
-    const notice = document.getElementById("ownerPlanNotice");
-    if (notice) {
-      notice.innerHTML = 'Full feature lists &amp; annual pricing: <a href="owner-plans.html">Open Premium Plans page</a>';
-    }
-  }
-
   function ensureFeaturedVideo() {
     if (document.querySelector(".owner-featured-video")) return;
-    const host = document.querySelector("#ownerPlan") || document.querySelector("#ownerPlanOptions");
+    const host = document.querySelector("#ownerPlan");
     if (!host) return;
     const video = document.createElement("video");
     video.className = "owner-featured-video";
@@ -213,7 +185,7 @@
     });
 
     document.getElementById("ownerManagePlanBtn")?.addEventListener("click", () => {
-      window.location.href = "owner-payments.html#plans";
+      document.getElementById("ownerPricingPlans")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     document.getElementById("ownerRefreshBtn")?.addEventListener("click", () => {
@@ -303,7 +275,6 @@
     setupSidebar();
     setupTips();
     ensureFeaturedVideo();
-    ensureOwnerPlanOptions();
     setupstore();
     setupVerificationPrompt();
     // Wait a tick for app.js owner dashboard render
@@ -339,6 +310,10 @@ function refreshOwnerPlanUI() {
     pill.dataset.plan = plan.id || "free";
     pill.title = used + "/" + maxU + " listings · " + priceLabel;
   }
+  const currentPlanName = document.getElementById("ownerCurrentPlanName");
+  if (currentPlanName) currentPlanName.textContent = plan.name || "Free";
+  const currentPlanDescription = document.getElementById("ownerCurrentPlanDescription");
+  if (currentPlanDescription) currentPlanDescription.textContent = blurb;
 
   let box = document.getElementById("ownerPlanSummary");
   const panel = document.querySelector(".owner-plan-card");
@@ -357,8 +332,7 @@ function refreshOwnerPlanUI() {
       '<p class="owner-muted">' + blurb + "</p>" +
       '<div class="owner-plan-meter"><span style="width:' + pct + '%"></span></div>' +
       '<div class="owner-plan-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
-      '<a class="owner-btn owner-btn-small" href="owner-plans.html">View plans</a>' +
-      '<a class="owner-btn owner-btn-small" href="owner-payments.html#plans">Manage</a></div>';
+      '<a class="owner-btn owner-btn-small" href="#ownerPricingPlans">View plans</a></div>';
   }
 
   // Gate premium / standard features
@@ -371,7 +345,7 @@ function refreshOwnerPlanUI() {
       if (!el.querySelector(".plan-lock-msg")) {
         const msg = document.createElement("div");
         msg.className = "plan-lock-msg";
-        msg.innerHTML = `<span>🔒 ${key} needs a higher plan.</span> <a href="owner-payments.html#plans">Upgrade</a>`;
+        msg.innerHTML = `<span>🔒 ${key} needs a higher plan.</span> <a href="#ownerPricingPlans">Upgrade</a>`;
         el.appendChild(msg);
       }
     }
@@ -383,7 +357,7 @@ function refreshOwnerPlanUI() {
     const level = limits.features.analytics;
     analytics.classList.toggle("is-plan-locked", level === "none");
     if (level === "none") {
-      analytics.innerHTML = `<div class="plan-lock-msg"><p>Analytics unlock on <strong>Business</strong> and <strong>Enterprise</strong>.</p><a href="owner-payments.html#plans">Upgrade</a></div>`;
+      analytics.innerHTML = `<div class="plan-lock-msg"><p>Analytics unlock on <strong>Business</strong> and <strong>Enterprise</strong>.</p><a href="#ownerPricingPlans">Upgrade</a></div>`;
     }
   }
 
@@ -480,7 +454,7 @@ function refreshOwnerPlanUI() {
     const ok = limits.features.viewerTracking;
     tracking.classList.toggle("is-plan-locked", !ok);
     if (!ok) {
-      tracking.innerHTML = `<div class="plan-lock-msg"><p>Viewer tracking is an <strong>Enterprise</strong> feature.</p><a href="owner-payments.html#plans">Upgrade plan</a></div>`;
+      tracking.innerHTML = `<div class="plan-lock-msg"><p>Viewer tracking is an <strong>Enterprise</strong> feature.</p><a href="#ownerPricingPlans">Upgrade plan</a></div>`;
     }
   }
 }
