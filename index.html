@@ -8,6 +8,9 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d7547">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="IMAGES/leaseaccom-logo.svg">
 
     <title>LeaseAccom — Find Your Place</title>
 <meta name="description" content="LeaseAccom connects tenants with property owners while helping people discover homes, shortlets, student housing, hotels and commercial spaces across Nigeria.">
@@ -720,7 +723,7 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
             </span>
 
             <span>
-                <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a>
+                Built for Nigeria Nigeria
             </span>
 
         </div>
@@ -800,5 +803,20 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
   setTimeout(unlock, 2500);
 })();
 </script>
+
+    <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./sw.js").then(function (reg) {
+          console.log("LeaseAccom PWA registered");
+          // Check for updates
+          reg.update();
+        }).catch(function (err) {
+          console.log("SW registration failed", err);
+        });
+      });
+    }
+    </script>
+
 </body>
 </html>
