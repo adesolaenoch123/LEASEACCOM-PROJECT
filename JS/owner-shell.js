@@ -54,7 +54,7 @@
 <aside class="owner-sidebar" id="ownerSidebar">
   <div class="owner-sidebar-top">
     <a href="index.html" class="owner-sidebar-brand">
-      <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom">
+      <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
       <div><strong>LeaseAccom</strong><span>Owner Lounge</span></div>
     </a>
     <button type="button" class="owner-sidebar-hide" id="ownerSidebarHide" aria-label="Hide menu"><i class="bx bx-chevron-left"></i></button>

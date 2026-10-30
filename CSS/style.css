@@ -6948,7 +6948,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .pay-flow { grid-template-columns: 1fr 1fr; }
   .pay-fee-grid { grid-template-columns: 1fr; }
 }
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .pay-flow { grid-template-columns: 1fr; }
   .pay-kpi-row { grid-template-columns: 1fr 1fr; }
 }
@@ -7829,6 +7829,95 @@ html.lh-loader-on body #leaseaccomPageLoader {
 .application-actions .primary-btn,
 .application-actions .secondary-btn { min-height:40px; }
 
+/* Owner dashboard application cards */
+body.owner-lounge-body[data-owner-page="dashboard"] .application-card {
+  padding: 18px;
+  border: 1px solid #e3ebe6;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(20, 44, 31, .045);
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-card .viewing-card-top {
+  align-items: flex-start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #edf1ee;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-card .section-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #748078;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-card .viewing-card-top h3 {
+  margin: 0;
+  color: #17211b;
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 14px;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-details > p {
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #edf1ee;
+  border-radius: 10px;
+  background: #fbfcfb;
+  color: #25332a;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-details > p strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #78847c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-message {
+  grid-column: 1 / -1;
+  padding: 12px 14px;
+  border: 1px solid #dcece2;
+  border-radius: 11px;
+  background: #f3faf5;
+  color: #31463a;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-message > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0d7547;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-message p { margin: 0; }
+body.owner-lounge-body[data-owner-page="dashboard"] .application-actions { gap: 8px; }
+body.owner-lounge-body[data-owner-page="dashboard"] .application-actions button { flex: 1 1 130px; }
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-tour-layout { min-width: 0; }
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-option {
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(20, 44, 31, .04);
+}
+
+@media (max-width: 640px) {
+  body.owner-lounge-body[data-owner-page="dashboard"] .application-card { padding: 14px; }
+  body.owner-lounge-body[data-owner-page="dashboard"] .application-details { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  body.owner-lounge-body[data-owner-page="dashboard"] .application-actions button { flex-basis: 100%; }
+}
+
 
 /* Owner verification prompt */
 .owner-verify-banner {
@@ -7897,13 +7986,13 @@ html.lh-loader-on body #leaseaccomPageLoader {
 
 .logo img,
 a.logo img {
-  max-height: 48px;
+  max-height: 64px;
   width: auto;
   object-fit: contain;
 }
 
 .logo img[src*="leaseaccom-logo"] {
-  height: 48px;
+  height: 64px;
   width: auto;
 }
 
@@ -8912,5 +9001,15 @@ button {
   .la-bottom-nav a i,
   .la-owner-bottom-nav a i {
     font-size: 19px;
+  }
+}
+
+/* Use the supplied emblem on phones and the full wordmark at larger widths. */
+@media (max-width: 767px) {
+  img[src*="leaseaccom-logo-full.png"] {
+    content: url("../IMAGES/leaseaccom-logo-icon.png");
+    height: 44px;
+    max-height: 44px;
+    width: auto;
   }
 }

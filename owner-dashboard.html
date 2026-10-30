@@ -7,9 +7,9 @@
   <title>Owner Lounge — LeaseAccom</title>
   <meta name="description" content="Manage LeaseAccom property listings, viewing requests, rental applications and owner activity.">
   <link rel="stylesheet" href="CSS/style.css">
+<link rel="stylesheet" href="CSS/skeletons.css">
   <link rel="stylesheet" href="CSS/notifications.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
-  <link rel="stylesheet" href="CSS/standout.css">
 </head>
 <body data-auth-gate="owner" class="owner-lounge-body" data-owner-page="dashboard">
 
@@ -17,7 +17,7 @@
   <aside class="owner-sidebar" id="ownerSidebar">
     <div class="owner-sidebar-top">
       <a href="index.html" class="owner-sidebar-brand">
-        <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom">
+        <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
         <div>
           <strong>LeaseAccom</strong>
           <span>Owner Lounge</span>
@@ -34,7 +34,7 @@
       <a href="owner-dashboard.html#ownerViewings" class="owner-nav-item"><i class="bx bx-calendar"></i><span>Viewings</span></a>
       <a href="owner-dashboard.html#ownerApplications" class="owner-nav-item"><i class="bx bx-file"></i><span>Applications</span></a>
       <a href="owner-messages.html" class="owner-nav-item"><i class="bx bx-message-dots" aria-hidden="true"></i><span>Messages</span></a>
-      <a href="owner-dashboard.html#ownerStore" class="owner-nav-item"><i class="bx bx-buildings"></i><span>Your storefront</span></a>
+      <a href="owner-dashboard.html#ownerStore" class="owner-nav-item"><i class="bx bx-buildings"></i><span>Property page appearance</span></a>
       <a href="owner-payments.html" class="owner-nav-item"><i class="bx bx-wallet"></i><span>Payments</span></a>
       <a href="owner-dashboard.html#ownerPlan" class="owner-nav-item"><i class="bx bx-diamond"></i><span>Plan</span></a>
     </nav>
@@ -59,7 +59,7 @@
     <header class="owner-topbar">
       <button type="button" class="owner-menu-toggle" id="ownerMenuToggle" aria-label="Open menu"><i class="bx bx-menu"></i></button>
       <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseAccom">
-        <span class="lh-lease">Lease</span><span class="lh-hub">Accom</span>
+        <span class="lh-lease">Lease</span><span class="lh-accom">Accom</span>
       </a>
       <div class="owner-topbar-title owner-topbar-title--desktop">
         <span class="owner-eyebrow">OWNER LOUNGE</span>
@@ -87,7 +87,7 @@
       <section class="owner-welcome-row">
         <div>
           <h2 id="ownerWelcome">Good day</h2>
-          <p>Your store at a glance.</p>
+          <p>Your properties at a glance.</p>
         </div>
         <a href="add-property.html" class="primary-btn owner-primary-cta"><i class="bx bx-plus"></i> Add property</a>
       </section>
@@ -123,7 +123,7 @@
             <a href="#ownerViewings" class="owner-action-tile"><i class="bx bx-calendar-check"></i><span>Viewings</span></a>
             <a href="#ownerApplications" class="owner-action-tile"><i class="bx bx-file"></i><span>Applications</span></a>
             <a href="owner-messages.html" class="owner-action-tile"><i class="bx bx-message-dots" aria-hidden="true"></i><span>Messages</span></a>
-            <a href="properties.html" class="owner-action-tile"><i class="bx bx-store-alt"></i><span>Storefront</span></a>
+            <a href="owner-dashboard.html#ownerStore" class="owner-action-tile"><i class="bx bx-store-alt"></i><span>Property page appearance</span></a>
           </div>
         </article>
       </section>
@@ -149,10 +149,9 @@
         </article>
         <article class="owner-stat">
           <i class="bx bx-show"></i>
-          <strong id="ownerViewCount">0</strong>
+          <strong id="ownerTotalViews">0</strong>
           <span>VIEWS</span>
           <small>Property views</small>
-          <strong id="ownerTotalViews">0</strong>
         </article>
       </section>
 
@@ -183,12 +182,12 @@
 
       <section class="owner-panel owner-store-panel" id="ownerStore">
         <div class="owner-panel-head">
-          <span>Store</span>
-          <small>Private management only. Tenants never see edit controls on the public storefront.</small>
+          <span>Property page</span>
+          <small>Private management only. Tenants never see edit controls on the public property page.</small>
         </div>
         <div class="owner-store-layout">
           <div class="owner-store-form">
-            <h3>Store appearance</h3>
+            <h3>Property page Appearance</h3>
             <p class="owner-muted">Banner, logo, and identity shown to tenants.</p>
             <label class="owner-field">
               <span>BANNER</span>
@@ -207,7 +206,7 @@
               </div>
             </label>
             <label class="owner-field">
-              <span>Business / store name *</span>
+              <span>Property page name *</span>
               <input type="text" id="ownerStoreNameInput" placeholder="e.g. Green Park Homes" maxlength="60">
             </label>
             <label class="owner-field">
@@ -219,23 +218,23 @@
               <input type="text" id="ownerStoreGoalInput" placeholder="e.g. Reach 20 active listings" maxlength="80">
             </label>
             <div class="owner-store-actions">
-              <button type="button" class="primary-btn" id="ownerSaveStoreBtn">Save store</button>
+              <button type="button" class="primary-btn" id="ownerSaveStoreBtn">Save changes</button>
               <span class="owner-muted" id="ownerStoreProductCount">0 properties</span>
             </div>
           </div>
           <div class="owner-store-preview-wrap">
-            <span class="owner-eyebrow">Live storefront</span>
-            <h3>How tenants see your store</h3>
+            <span class="owner-eyebrow">Live property page</span>
+            <h3>How tenants see your property page</h3>
             <p class="owner-muted">Updates as you edit. Properties are your active listings.</p>
             <div class="owner-phone-preview">
               <div class="owner-phone-banner" id="liveBannerText">More Than Shelter — It&apos;s Home.</div>
               <div class="owner-phone-body">
                 <div class="owner-phone-logo" id="liveLogoText">LH</div>
                 <strong id="liveOwnerName">LeaseAccom Owner</strong>
-                <p id="livestoreTagline">Explore this storefront</p>
+                <p id="livestoreTagline">Explore this property page</p>
                 <div class="owner-phone-goal" id="livestoreGoal">List quality homes</div>
                 <div class="owner-phone-actions">
-                  <span class="owner-phone-chip">Save store</span>
+                  <span class="owner-phone-chip">Save profile</span>
                   <span class="owner-phone-chip" id="liveProductChip">0 properties</span>
                 </div>
               </div>
@@ -331,7 +330,7 @@
   </a>
   <a href="owner-dashboard.html#ownerStore">
     <i class="bx bx-user" aria-hidden="true"></i>
-    <span>Profile</span>
+    <span>Property page</span>
   </a>
 </nav>
 
@@ -354,7 +353,6 @@
 <script src="JS/leaseaccom-polish.js"></script>
 <script src="JS/owner-lounge.js"></script>
 <script src="JS/owner-mobile-nav.js"></script>
-  <script src="JS/leaseaccom-standout.js"></script>
-  <script src="JS/leaseaccom-next4.js"></script>
+<script src="JS/skeletons.js"></script>
 </body>
 </html>

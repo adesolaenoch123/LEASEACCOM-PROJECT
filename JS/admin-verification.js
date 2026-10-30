@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <div class="admin-property-image">
                         <img
-                            src="${property.image || "IMAGES/leaseaccom-logo-horizontal.svg"}"
+                            src="${property.image || "IMAGES/leaseaccom-logo-full.png"}"
                             alt="${property.title || "Property"}"
                         >
                     </div>

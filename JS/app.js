@@ -5745,6 +5745,12 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    // The dedicated applications UI owns this dashboard section when loaded.
+    // Keep this legacy renderer available only as a fallback on older pages.
+    if (document.querySelector('script[src$="applications-ui.js"]')) {
+        return;
+    }
+
     const emptyApplications =
         document.getElementById("emptyOwnerApplications");
 
@@ -6156,7 +6162,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="leaseaccom-loader-content">
                 <img
                     class="leaseaccom-loader-logo"
-                    src="IMAGES/leaseaccom-logo-horizontal.svg"
+                    src="IMAGES/leaseaccom-logo-full.png"
                     alt="LeaseAccom"
                 >
 

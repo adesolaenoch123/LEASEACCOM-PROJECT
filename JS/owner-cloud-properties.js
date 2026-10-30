@@ -59,7 +59,7 @@
             : ownerVerified
               ? "Pending"
               : "Pending — verify account";
-        var image = listing.image || (listing.images && listing.images[0]) || "IMAGES/leaseaccom-logo-horizontal.svg";
+        var image = listing.image || (listing.images && listing.images[0]) || "IMAGES/leaseaccom-logo-full.png";
 
         return '<div class="owner-property-item">' +
           '<img class="owner-property-image" src="' + escapeHtml(image) + '" alt="' + escapeHtml(listing.title) + '">' +

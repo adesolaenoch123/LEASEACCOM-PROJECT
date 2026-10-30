@@ -1724,7 +1724,7 @@ document.addEventListener(
                                                 src="${esc(
                                                     property.image ||
                                                     property.images?.[0] ||
-                                                    "IMAGES/leaseaccom-logo-horizontal.svg"
+                                                    "IMAGES/leaseaccom-logo-full.png"
                                                 )}"
                                                 alt=""
                                             >

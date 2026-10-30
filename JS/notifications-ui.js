@@ -18,23 +18,25 @@
   }
 
   function ensureMarkup() {
-    var currentUser = null;
+    var path = (window.location.pathname || "").toLowerCase();
+    var isLanding = /index\.html?$/.test(path) || path === "/" || path.endsWith("/leaseaccom") || path.endsWith("/leaseaccom/");
+    var isDashboard = /dashboard\.html?$/i.test(path) || /owner-dashboard|tenant-dashboard/.test(path);
+    var loggedIn = false;
     try {
-      currentUser = JSON.parse(
+      loggedIn = !!(
         localStorage.getItem("leaseaccomCurrentUser") ||
-        localStorage.getItem("leaseaccomCurrentUser") ||
-        localStorage.getItem("currentUser") ||
-        "null"
+        localStorage.getItem("currentUser")
       );
     } catch (e) {}
 
     var shouldEnable =
       document.body &&
+      !isLanding &&
+      isDashboard &&
+      loggedIn &&
       (
         document.body.dataset.notificationsEnabled === "true" ||
-        /tenant-dashboard\.html?$/i.test(window.location.pathname || "") ||
-        document.body.dataset.leaseaccomPage === "tenant-dashboard" ||
-        (currentUser && String(currentUser.accountType || currentUser.role || "").toLowerCase() === "tenant")
+        isDashboard
       );
 
     // If markup already exists on the page, always wire it
@@ -125,6 +127,10 @@
   }
 
   function init() {
+    var path = (window.location.pathname || "").toLowerCase();
+    if (/index\.html?$/.test(path) || path === "/" || path === "") {
+      return; // never show notifications on landing page
+    }
     ensureStylesheet();
     var notificationPanel = ensureMarkup();
     if (!notificationPanel) return;

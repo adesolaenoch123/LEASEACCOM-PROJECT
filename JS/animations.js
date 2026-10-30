@@ -11,7 +11,7 @@
         loader.className = "page-loader";
         loader.id = "pageLoader";
         loader.innerHTML = `
-            <div class="page-loader-spinner" aria-hidden="true"></div>
+            <img src="IMAGES/leaseaccom-logo-icon.png" alt="LeaseAccom" class="page-loader-logo" style="width:72px;height:72px;object-fit:contain;margin-bottom:12px;">
             <div class="page-loader-text">Loading LeaseAccom…</div>
         `;
         document.body.prepend(loader);

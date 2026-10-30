@@ -6,6 +6,7 @@
   <title>LeaseAccom Admin</title>
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
   <link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="../CSS/skeletons.css">
 </head>
 <body>
 
@@ -40,8 +41,6 @@
       <a href="#verification" data-section="verification"><i class="bx bx-shield-quarter"></i> Verification</a>
       <a href="#payments" data-section="payments"><i class="bx bx-credit-card"></i> Payments</a>
       <a href="#reports" data-section="reports"><i class="bx bx-flag"></i> Reports</a>
-      <a href="#disputes" data-section="disputes"><i class="bx bx-error-alt"></i> Disputes</a>
-      <a href="#broadcast" data-section="broadcast"><i class="bx bx-broadcast"></i> Broadcast</a>
       <a href="#audit" data-section="audit"><i class="bx bx-history"></i> Audit</a>
       <a href="#email-queue" data-section="email-queue"><i class="bx bx-envelope"></i> Email</a>
       <a href="#cms" data-section="cms"><i class="bx bx-palette"></i> CMS</a>
@@ -71,33 +70,12 @@
 
     <main class="admin-content">
       <section class="admin-section is-active" id="section-overview" data-section-panel="overview">
-        <div class="section-intro" style="margin-bottom:12px">
-          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
-            <div>
-              <h2 style="margin:0 0 4px">Overview</h2>
-              <p style="margin:0" class="muted-note">Live platform health, action inbox, and exports.</p>
-            </div>
-            <div class="admin-filters" style="margin:0">
-              <button type="button" class="btn" id="btnExportUsers">Export users CSV</button>
-              <button type="button" class="btn" id="btnExportProperties">Export listings CSV</button>
-              <button type="button" class="btn" id="btnExportAudit">Export audit CSV</button>
-            </div>
-          </div>
-        </div>
         <div class="kpi-grid" id="kpiGrid"></div>
-        <div class="panel" style="margin-bottom:16px">
-          <div class="panel-head">
-            <h3>Action inbox</h3>
-            <span class="chip" id="inboxCountChip">0 open</span>
-          </div>
-          <p class="muted-note" style="margin-top:0">Everything that needs your attention in one place.</p>
-          <div id="actionInbox"></div>
-        </div>
         <div class="charts-row">
           <div class="panel">
-            <div class="panel-head"><h3>Marketplace activity</h3><span class="chip">Live</span></div>
+            <div class="panel-head"><h3>Traffic overview</h3><span class="chip">Live counts</span></div>
             <div class="traffic-chart" id="chartTraffic"></div>
-            <p class="muted-note">Users, listings, viewings, applications, reports.</p>
+            <p class="muted-note">Bars reflect current platform counts.</p>
           </div>
           <div class="panel">
             <div class="panel-head"><h3>Property pipeline</h3>
@@ -371,68 +349,6 @@
       </section>
 
       
-      
-      <section class="admin-section" id="section-disputes" data-section-panel="disputes">
-        <div class="section-intro">
-          <h2>Disputes &amp; cases</h2>
-          <p>Track tenant/owner conflicts, scam claims, and support cases.</p>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h3>Open a case</h3></div>
-          <div class="limits-grid" style="grid-template-columns:1fr">
-            <label>Subject <input id="disputeSubject" type="text" placeholder="e.g. No-show at viewing"></label>
-            <label>Description <textarea id="disputeBody" rows="3" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--la-border)"></textarea></label>
-            <label>Property ID (optional) <input id="disputePropertyId" type="text"></label>
-            <label>Against user ID (optional) <input id="disputeAgainst" type="text"></label>
-            <label>Priority
-              <select id="disputePriority">
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="low">Low</option>
-              </select>
-            </label>
-          </div>
-          <button type="button" class="btn btn-primary" id="btnCreateDispute" style="margin-top:10px">Create case</button>
-          <div id="disputeCreateMsg" class="muted-note"></div>
-        </div>
-        <div class="admin-filters">
-          <div class="filter-chips">
-            <button type="button" class="filter-chip is-active" data-dispute-filter="open">Open</button>
-            <button type="button" class="filter-chip" data-dispute-filter="resolved">Resolved</button>
-            <button type="button" class="filter-chip" data-dispute-filter="">All</button>
-          </div>
-        </div>
-        <p class="table-meta" id="disputeMeta">Showing 0 cases</p>
-        <div class="panel"><div class="admin-table-wrap"><div id="disputesTable"></div></div></div>
-      </section>
-
-      <section class="admin-section" id="section-broadcast" data-section-panel="broadcast">
-        <div class="section-intro">
-          <h2>Broadcast</h2>
-          <p>Publish a site-wide announcement banner (active announcements show on the public site).</p>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h3>New announcement</h3></div>
-          <div class="limits-grid" style="grid-template-columns:1fr">
-            <label>Title <input id="announceTitle" type="text" placeholder="Scheduled maintenance"></label>
-            <label>Message <textarea id="announceBody" rows="3" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--la-border)"></textarea></label>
-            <label>Audience
-              <select id="announceAudience">
-                <option value="all">Everyone</option>
-                <option value="owners">Owners</option>
-                <option value="tenants">Tenants</option>
-              </select>
-            </label>
-          </div>
-          <button type="button" class="btn btn-primary" id="btnPublishAnnounce" style="margin-top:10px">Publish</button>
-          <div id="announceMsg" class="muted-note"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h3>Active &amp; recent</h3></div>
-          <div id="announceList"></div>
-        </div>
-      </section>
-
       <section class="admin-section" id="section-reports" data-section-panel="reports">
         <div class="section-intro">
           <h2>Listing reports</h2>
@@ -569,30 +485,6 @@
           <div id="flagsMsg" class="muted-note"></div>
         </div>
 
-        
-        <div class="panel">
-          <div class="panel-head"><h3>Paystack</h3></div>
-          <p class="muted-note" style="margin-top:0">Public key only (pk_test_... or pk_live_...). Secret key stays in Paystack / server — never in the website.</p>
-          <div class="admin-filters">
-            <input type="text" id="settingPaystackPublic" placeholder="pk_test_..." style="min-width:280px;flex:1">
-            <button type="button" class="btn btn-primary" id="btnSavePaystack">Save Paystack key</button>
-          </div>
-          <div id="paystackMsg" class="muted-note"></div>
-        </div>
-
-        
-        <div class="panel">
-          <div class="panel-head"><h3>Platform fee % by plan</h3></div>
-          <p class="muted-note" style="margin-top:0">Used when payments go live. Stored in platform_settings.</p>
-          <div class="limits-grid">
-            <label>Professional % <input type="number" id="feeProfessional" min="0" max="100" value="5"></label>
-            <label>Business % <input type="number" id="feeBusiness" min="0" max="100" value="10"></label>
-            <label>Enterprise % <input type="number" id="feeEnterprise" min="0" max="100" value="15"></label>
-          </div>
-          <button type="button" class="btn btn-primary" id="btnSaveFees" style="margin-top:12px">Save fees</button>
-          <div id="feesMsg" class="muted-note"></div>
-        </div>
-
         <div class="panel">
           <div class="panel-head"><h3>Support contact</h3></div>
           <div class="admin-filters">
@@ -631,5 +523,6 @@ create policy platform_settings_admin on public.platform_settings
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../JS/supabase-client.js"></script>
 <script src="admin.js"></script>
+<script src="../JS/skeletons.js"></script>
 </body>
 </html>

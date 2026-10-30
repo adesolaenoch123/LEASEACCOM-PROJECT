@@ -365,7 +365,7 @@
         loader.className = `leaseaccom-loader--${purpose}`;
         loader.setAttribute("role", "status");
         loader.setAttribute("aria-live", "polite");
-        loader.innerHTML = `<div class="leaseaccom-loader-content"><img class="leaseaccom-loader-logo" src="IMAGES/leaseaccom-logo-horizontal.svg" alt=""><div class="leaseaccom-loader-visual">${loaderVisual(purpose)}</div><div class="leaseaccom-loader-text">${loaderCopy(purpose)}</div><span class="sr-only">Loading page</span></div>`;
+        loader.innerHTML = `<div class="leaseaccom-loader-content"><img class="leaseaccom-loader-logo" src="IMAGES/leaseaccom-logo-full.png" alt=""><div class="leaseaccom-loader-visual">${loaderVisual(purpose)}</div><div class="leaseaccom-loader-text">${loaderCopy(purpose)}</div><span class="sr-only">Loading page</span></div>`;
         document.body.prepend(loader);
         document.documentElement.classList.remove("lh-preload-lock");
         document.documentElement.classList.add("lh-loader-on");

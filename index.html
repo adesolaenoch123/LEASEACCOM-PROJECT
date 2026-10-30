@@ -1,21 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-try{document.documentElement.classList.add("lh-preload-lock")}catch(e){}
-/* Safety: unlock even if polish script 404s */
-setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-lock");document.documentElement.classList.add("lh-loader-on");}catch(e){}}, 3000);
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0d7547">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="IMAGES/leaseaccom-logo.svg">
 
     <title>LeaseAccom — Find Your Place</title>
 <meta name="description" content="LeaseAccom connects tenants with property owners while helping people discover homes, shortlets, student housing, hotels and commercial spaces across Nigeria.">
 
     <link rel="stylesheet" href="CSS/style.css">
+<link rel="stylesheet" href="CSS/skeletons.css">
+    <style>
+      .home-skeleton-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        overflow: auto;
+        padding: 18px clamp(16px, 5vw, 72px) 48px;
+        background: #fff;
+        transition: opacity .2s ease, visibility .2s ease;
+      }
+      .home-skeleton-screen.is-waiting { visibility: hidden; }
+      .home-skeleton-screen.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+      .home-dot-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        background: #fff;
+        transition: opacity .18s ease, visibility .18s ease;
+      }
+      .home-dot-loader.is-hidden { opacity: 0; visibility: hidden; }
+      .home-dot-loader span {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #0d7547;
+        animation: home-dot-bounce .65s ease-in-out infinite alternate;
+      }
+      .home-dot-loader span:nth-child(2) { animation-delay: .16s; }
+      .home-dot-loader span:nth-child(3) { animation-delay: .32s; }
+      @keyframes home-dot-bounce { to { transform: translateY(-9px); opacity: .55; } }
+      .home-skeleton-nav { height: 54px; display: flex; align-items: center; gap: 24px; margin-bottom: 28px; }
+      .home-skeleton-brand { width: 148px; height: 34px; border-radius: 8px; }
+      .home-skeleton-nav-item { width: 74px; height: 14px; border-radius: 8px; }
+      .home-skeleton-hero { min-height: 310px; border-radius: 22px; padding: 54px 8%; display: grid; align-content: center; gap: 18px; background: #f1f4f2; }
+      .home-skeleton-heading { width: min(520px, 80%); height: 38px; border-radius: 10px; }
+      .home-skeleton-copy { width: min(380px, 68%); height: 16px; border-radius: 8px; }
+      .home-skeleton-search { width: min(720px, 100%); height: 58px; margin-top: 8px; border-radius: 12px; }
+      .home-skeleton-section-title { width: 210px; height: 25px; margin: 32px 0 18px; border-radius: 8px; }
+      .home-skeleton-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+      .home-skeleton-card { min-height: 220px; border: 1px solid #edf0ee; border-radius: 14px; overflow: hidden; }
+      .home-skeleton-card-image { height: 132px; }
+      .home-skeleton-card-line { width: 72%; height: 13px; margin: 14px 14px 0; border-radius: 7px; }
+      .home-skeleton-card-line.short { width: 45%; margin-top: 10px; }
+      @media (max-width: 680px) {
+        .home-skeleton-nav-item { display: none; }
+        .home-skeleton-hero { min-height: 270px; padding: 36px 22px; }
+        .home-skeleton-heading { height: 30px; }
+        .home-skeleton-cards { grid-template-columns: 1fr; }
+        .home-skeleton-card:not(:first-child) { display: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .home-skeleton-screen, .home-dot-loader { transition: none; }
+        .home-dot-loader span { animation: none; }
+      }
+    </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
     <style>
@@ -33,7 +85,8 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
           margin-right: 8px;
         }
         .navbar > .logo:first-child img {
-          height: 40px;
+          height: 68px;
+          max-height: 68px;
           width: auto;
           max-width: 150px;
           object-fit: contain;
@@ -63,7 +116,7 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
         @media (max-width: 1100px) {
           .navbar .nav-links a { font-size: 12.5px; gap: 4px; }
           .navbar > .logo:first-child { max-width: 130px; }
-          .navbar > .logo:first-child img { height: 34px; max-width: 120px; }
+          .navbar > .logo:first-child img { height: 56px; max-height: 56px; max-width: 120px; }
         }
         @media (max-width: 850px) {
           .navbar > .logo:first-child {
@@ -108,12 +161,46 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
 
 <body>
 
+    <div class="home-dot-loader" id="homeDotLoader" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="home-skeleton-screen is-waiting" id="homeSkeletonScreen" aria-hidden="true">
+      <div class="home-skeleton-nav">
+        <div class="la-skeleton home-skeleton-brand"></div>
+        <div class="la-skeleton home-skeleton-nav-item"></div><div class="la-skeleton home-skeleton-nav-item"></div>
+        <div class="la-skeleton home-skeleton-nav-item"></div><div class="la-skeleton home-skeleton-nav-item"></div>
+      </div>
+      <div class="home-skeleton-hero">
+        <div class="la-skeleton home-skeleton-heading"></div>
+        <div class="la-skeleton home-skeleton-copy"></div>
+        <div class="la-skeleton home-skeleton-search"></div>
+      </div>
+      <div class="la-skeleton home-skeleton-section-title"></div>
+      <div class="home-skeleton-cards">
+        <div class="home-skeleton-card"><div class="la-skeleton home-skeleton-card-image"></div><div class="la-skeleton home-skeleton-card-line"></div><div class="la-skeleton home-skeleton-card-line short"></div></div>
+        <div class="home-skeleton-card"><div class="la-skeleton home-skeleton-card-image"></div><div class="la-skeleton home-skeleton-card-line"></div><div class="la-skeleton home-skeleton-card-line short"></div></div>
+        <div class="home-skeleton-card"><div class="la-skeleton home-skeleton-card-image"></div><div class="la-skeleton home-skeleton-card-line"></div><div class="la-skeleton home-skeleton-card-line short"></div></div>
+      </div>
+    </div>
+    <script>
+      window.setTimeout(function () {
+        var dots = document.getElementById("homeDotLoader");
+        var screen = document.getElementById("homeSkeletonScreen");
+        if (dots) dots.classList.add("is-hidden");
+        if (screen) screen.classList.remove("is-waiting");
+        window.setTimeout(function () { if (dots) dots.remove(); }, 200);
+        window.setTimeout(function () {
+          if (!screen) return;
+          screen.classList.add("is-hidden");
+          window.setTimeout(function () { screen.remove(); }, 250);
+        }, 3000);
+      }, 800);
+    </script>
+
     <!-- ================= NAVBAR ================= -->
 
     <header class="navbar">
 
         <a href="index.html" class="logo">
-            <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom">
+            <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
         </a>
 
         <nav class="nav-links">
@@ -675,7 +762,7 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
             <div>
 
                 <a href="index.html" class="logo">
-                    <img src="IMAGES/leaseaccom-logo-horizontal.svg" alt="LeaseAccom">
+                    <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
                 </a>
 
                 <p>
@@ -794,29 +881,6 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
   }, 1500);
 })();
 </script>
-<script>
-/* lh-preload-lock safety: never leave the page invisible */
-(function(){
-  function unlock(){ try{ document.documentElement.classList.remove("lh-preload-lock"); }catch(e){} }
-  if (document.readyState === "complete") setTimeout(unlock, 0);
-  else window.addEventListener("load", function(){ setTimeout(unlock, 50); });
-  setTimeout(unlock, 2500);
-})();
-</script>
-
-    <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", function () {
-        navigator.serviceWorker.register("./sw.js").then(function (reg) {
-          console.log("LeaseAccom PWA registered");
-          // Check for updates
-          reg.update();
-        }).catch(function (err) {
-          console.log("SW registration failed", err);
-        });
-      });
-    }
-    </script>
-
+<script src="JS/skeletons.js"></script>
 </body>
 </html>
