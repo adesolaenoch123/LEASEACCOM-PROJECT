@@ -333,7 +333,6 @@
 
     function loaderVisual(purpose) {
         const visuals = {
-            home: `<div class="leaseaccom-loader-pins" aria-hidden="true"><span></span><span></span><span></span></div>`,
             listings: `<div class="leaseaccom-loader-listings" aria-hidden="true"><i></i><i></i><i></i></div>`,
             gallery: `<div class="leaseaccom-loader-gallery" aria-hidden="true"><span></span><span></span><span></span></div>`,
             messages: `<div class="leaseaccom-loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>`,
@@ -346,7 +345,6 @@
 
     function loaderCopy(purpose) {
         return {
-            home: "Finding your next place...",
             listings: "Preparing listings...",
             gallery: "Opening property details...",
             messages: "Connecting conversations...",
@@ -357,6 +355,9 @@
     }
 
     function installPurposeLoader() {
+        // The landing page has its own logo-to-skeleton sequence in index.html.
+        // Do not layer the generic purpose loader over it.
+        if (getLoaderPurpose() === "home") return;
         if (!document.body || document.getElementById("leaseaccomPageLoader")) return;
 
         const purpose = getLoaderPurpose();

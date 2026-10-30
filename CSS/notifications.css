@@ -391,3 +391,67 @@ body.lh-notifications-open {
 .leaseaccom-notification.is-unread {
   background: #f0fdf4;
 }
+
+/* Tenant and owner notification panel: readable white surface with LeaseAccom green. */
+.leaseaccom-notification-panel__dropdown {
+  color: #17211b !important;
+  background: #fff !important;
+  border: 1px solid #dce9e1 !important;
+  box-shadow: 0 18px 48px rgba(15, 45, 29, 0.2) !important;
+}
+.leaseaccom-notification-panel__header {
+  color: #17211b !important;
+  border-bottom-color: #e6eee9 !important;
+}
+.leaseaccom-notification-panel__header span { color: #17211b !important; }
+.notification-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #526259 !important;
+  background: #f1f7f3 !important;
+  line-height: 1;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+.notification-close:hover { color: #087443 !important; background: #e5f4eb !important; }
+.leaseaccom-notification {
+  color: #17211b !important;
+  background: #f8fbf9 !important;
+  border: 1px solid #e7eee9 !important;
+}
+.leaseaccom-notification.is-unread {
+  border-left: 3px solid #087443 !important;
+  background: #eff8f2 !important;
+}
+.leaseaccom-notification__body,
+.leaseaccom-notification__body strong { color: #17211b !important; }
+.leaseaccom-notification__body p { color: #53635a !important; }
+.leaseaccom-notification__icon.info {
+  color: #087443 !important;
+  background: #dff2e6 !important;
+}
+.leaseaccom-notification__mark {
+  color: #087443 !important;
+  background: #e6f4eb !important;
+}
+.leaseaccom-notification__mark:hover { background: #d3ebdc !important; }
+.notification-toggle:hover { color: #087443; border-color: #b8ddc6; }
+
+@media (max-width: 820px) {
+  .leaseaccom-notification-panel.is-open::before { z-index: 9998; }
+  .leaseaccom-notification-panel.is-open .leaseaccom-notification-panel__dropdown {
+    z-index: 9999 !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: 72px !important;
+    bottom: auto !important;
+    width: auto !important;
+    max-height: min(70dvh, 540px) !important;
+    border-radius: 18px !important;
+  }
+  .leaseaccom-notification-list { max-height: calc(min(70dvh, 540px) - 66px) !important; }
+}

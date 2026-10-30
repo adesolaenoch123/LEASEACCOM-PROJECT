@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>document.documentElement.classList.add("home-loading");</script>
+    <style>html.home-loading body { visibility: hidden; } html.home-loading #homeBrandLoader:not(.is-hidden) { visibility: visible; }</style>
 
     <title>LeaseAccom — Find Your Place</title>
 <meta name="description" content="LeaseAccom connects tenants with property owners while helping people discover homes, shortlets, student housing, hotels and commercial spaces across Nigeria.">
@@ -10,39 +12,39 @@
     <link rel="stylesheet" href="CSS/style.css">
 <link rel="stylesheet" href="CSS/skeletons.css">
     <style>
-      .home-skeleton-screen {
+      .home-brand-loader, .home-skeleton-screen {
         position: fixed;
         inset: 0;
         z-index: 10000;
         overflow: auto;
         padding: 18px clamp(16px, 5vw, 72px) 48px;
         background: #fff;
-        transition: opacity .2s ease, visibility .2s ease;
+        transition: opacity .24s ease, visibility .24s ease;
       }
-      .home-skeleton-screen.is-waiting { visibility: hidden; }
-      .home-skeleton-screen.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-      .home-dot-loader {
+      .home-brand-loader {
+        z-index: 10002;
         position: fixed;
-        inset: 0;
-        z-index: 10001;
-        display: flex;
+        display: grid;
         align-items: center;
         justify-content: center;
-        gap: 9px;
-        background: #fff;
-        transition: opacity .18s ease, visibility .18s ease;
+        align-content: center;
+        justify-items: center;
+        gap: 16px;
       }
-      .home-dot-loader.is-hidden { opacity: 0; visibility: hidden; }
-      .home-dot-loader span {
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-        background: #0d7547;
-        animation: home-dot-bounce .65s ease-in-out infinite alternate;
+      .home-brand-loader img {
+        display: block;
+        width: clamp(170px, 30vw, 220px);
+        max-height: 150px;
+        object-fit: contain;
       }
-      .home-dot-loader span:nth-child(2) { animation-delay: .16s; }
-      .home-dot-loader span:nth-child(3) { animation-delay: .32s; }
-      @keyframes home-dot-bounce { to { transform: translateY(-9px); opacity: .55; } }
+      .home-brand-loader p { margin: 0; color: #66706a; font-size: 13px; font-weight: 600; }
+      .home-loader-indicator { display: flex; gap: 6px; align-items: center; height: 14px; }
+      .home-loader-indicator span { width: 7px; height: 7px; border-radius: 50%; background: #0d7547; animation: home-loader-pulse .8s ease-in-out infinite alternate; }
+      .home-loader-indicator span:nth-child(2) { animation-delay: .14s; }
+      .home-loader-indicator span:nth-child(3) { animation-delay: .28s; }
+      @keyframes home-loader-pulse { to { transform: translateY(-4px); opacity: .45; } }
+      .home-brand-loader.is-hidden, .home-skeleton-screen.is-waiting { opacity: 0; visibility: hidden; pointer-events: none; }
+      .home-skeleton-screen.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
       .home-skeleton-nav { height: 54px; display: flex; align-items: center; gap: 24px; margin-bottom: 28px; }
       .home-skeleton-brand { width: 148px; height: 34px; border-radius: 8px; }
       .home-skeleton-nav-item { width: 74px; height: 14px; border-radius: 8px; }
@@ -64,8 +66,8 @@
         .home-skeleton-card:not(:first-child) { display: none; }
       }
       @media (prefers-reduced-motion: reduce) {
-        .home-skeleton-screen, .home-dot-loader { transition: none; }
-        .home-dot-loader span { animation: none; }
+        .home-brand-loader, .home-skeleton-screen { transition: none; }
+        .home-loader-indicator span { animation: none; }
       }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -161,7 +163,11 @@
 
 <body>
 
-    <div class="home-dot-loader" id="homeDotLoader" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="home-brand-loader" id="homeBrandLoader" role="status" aria-live="polite">
+      <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
+      <div class="home-loader-indicator" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p>Finding your next place...</p>
+    </div>
     <div class="home-skeleton-screen is-waiting" id="homeSkeletonScreen" aria-hidden="true">
       <div class="home-skeleton-nav">
         <div class="la-skeleton home-skeleton-brand"></div>
@@ -181,18 +187,42 @@
       </div>
     </div>
     <script>
-      window.setTimeout(function () {
-        var dots = document.getElementById("homeDotLoader");
+      (function () {
+        var brand = document.getElementById("homeBrandLoader");
         var screen = document.getElementById("homeSkeletonScreen");
-        if (dots) dots.classList.add("is-hidden");
-        if (screen) screen.classList.remove("is-waiting");
-        window.setTimeout(function () { if (dots) dots.remove(); }, 200);
-        window.setTimeout(function () {
-          if (!screen) return;
+        if (!brand || !screen) {
+          document.documentElement.classList.remove("home-loading");
+          return;
+        }
+        var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var skeletonStartedAt = 0;
+        var pageLoaded = document.readyState === "complete";
+        var finished = false;
+        function finish() {
+          if (finished) return;
+          finished = true;
           screen.classList.add("is-hidden");
-          window.setTimeout(function () { screen.remove(); }, 250);
-        }, 3000);
-      }, 800);
+          screen.setAttribute("aria-hidden", "true");
+          document.documentElement.classList.remove("home-loading");
+          window.setTimeout(function () { brand.remove(); screen.remove(); }, reduceMotion ? 0 : 260);
+        }
+        function finishWhenReady() {
+          if (!pageLoaded || !skeletonStartedAt) return;
+          var remaining = Math.max(0, 3000 - (Date.now() - skeletonStartedAt));
+          window.setTimeout(finish, remaining);
+        }
+        window.addEventListener("load", function () { pageLoaded = true; finishWhenReady(); }, { once: true });
+        window.setTimeout(function () {
+          brand.classList.add("is-hidden");
+          brand.setAttribute("aria-hidden", "true");
+          screen.classList.remove("is-waiting");
+          screen.setAttribute("aria-hidden", "false");
+          skeletonStartedAt = Date.now();
+          finishWhenReady();
+          // Never keep the page covered indefinitely if a remote asset stalls.
+          window.setTimeout(finish, 4500);
+        }, reduceMotion ? 400 : 700);
+      })();
     </script>
 
     <!-- ================= NAVBAR ================= -->

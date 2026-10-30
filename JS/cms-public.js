@@ -1,6 +1,6 @@
 /**
  * LeaseAccom CMS — apply admin-published content on public pages
- * Source: platform_settings key "cms" (Supabase) + local cache
+ * Source: platform_settings key "cms" (Supabase)
  */
 (function () {
   "use strict";
@@ -39,32 +39,17 @@
     return out;
   }
 
-  function cacheGet() {
-    try {
-      return JSON.parse(localStorage.getItem("leaseaccomCmsPublished") || "{}");
-    } catch (e) {
-      return {};
-    }
-  }
-
-  function cacheSet(v) {
-    try {
-      localStorage.setItem("leaseaccomCmsPublished", JSON.stringify(v));
-    } catch (e) {}
-  }
-
   async function fetchCms() {
     var client = sb();
-    if (!client) return merge(DEFAULTS, cacheGet());
+    if (!client) return merge(DEFAULTS, null);
     try {
       var res = await client.from("platform_settings").select("value").eq("key", "cms").maybeSingle();
       if (res.data && res.data.value) {
         var merged = merge(DEFAULTS, res.data.value);
-        cacheSet(merged);
         return merged;
       }
     } catch (e) {}
-    return merge(DEFAULTS, cacheGet());
+    return merge(DEFAULTS, null);
   }
 
   function applyColors(cms) {

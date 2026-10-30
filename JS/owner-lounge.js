@@ -1,5 +1,5 @@
 (function () {
-  const store_KEY = "leaseaccom_owner_store_v1";
+  let storeData = {};
   const tips = [
     {
       title: "Sharp property photos",
@@ -15,24 +15,14 @@
     }
   ];
 
-  function loadstore() {
-    try {
-      return JSON.parse(localStorage.getItem(store_KEY) || "{}") || {};
-    } catch {
-      return {};
-    }
-  }
-
-  function savestore(data) {
-    localStorage.setItem(store_KEY, JSON.stringify(data));
-  }
+  function loadstore() { return storeData; }
 
   function applystoreToUI(data) {
     const name = data.name || "";
     const tagline = data.tagline || "";
     const goal = data.goal || "";
-    const banner = data.banner || "";
-    const logo = data.logo || "";
+    const banner = data.banner || data.banner_url || "";
+    const logo = data.logo || data.logo_url || "";
 
     const nameInput = document.getElementById("ownerStoreNameInput");
     const taglineInput = document.getElementById("ownerStoreTaglineInput");
@@ -95,13 +85,14 @@
     applystoreToUI(data);
   }
 
-  function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  async function uploadStoreAsset(file, kind) {
+    const cloud = window.LeaseAccomCloud;
+    const userId = await cloud?.uid?.();
+    if (!userId || !cloud?.uploadMedia) throw new Error("Sign in before uploading storefront images.");
+    const path = `${userId}/storefront/${kind}-${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "-")}`;
+    const result = await cloud.uploadMedia("property-media", path, file, file.type);
+    if (!result?.ok) throw new Error(result?.error || "Image upload failed.");
+    return result.publicUrl;
   }
 
   function setupSidebar() {
@@ -140,6 +131,9 @@
   }
 
   function setupstore() {
+    window.LeaseAccomCloud?.getOwnerStorefront?.().then((result) => {
+      if (result?.ok) { storeData = result.data || {}; applystoreToUI(storeData); }
+    });
     const data = loadstore();
     applystoreToUI(data);
 
@@ -157,31 +151,33 @@
     document.getElementById("ownerBannerInput")?.addEventListener("change", async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
-      const url = await readFileAsDataURL(file);
+      const url = await uploadStoreAsset(file, "banner");
       const stored = loadstore();
       stored.banner = url;
-      savestore(stored);
+      storeData = stored;
       applystoreToUI(stored);
     });
 
     document.getElementById("ownerLogoInput")?.addEventListener("change", async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
-      const url = await readFileAsDataURL(file);
+      const url = await uploadStoreAsset(file, "logo");
       const stored = loadstore();
       stored.logo = url;
-      savestore(stored);
+      storeData = stored;
       applystoreToUI(stored);
     });
 
-    document.getElementById("ownerSaveStoreBtn")?.addEventListener("click", () => {
+    document.getElementById("ownerSaveStoreBtn")?.addEventListener("click", async () => {
       const stored = loadstore();
       stored.name = document.getElementById("ownerStoreNameInput")?.value?.trim() || "";
       stored.tagline = document.getElementById("ownerStoreTaglineInput")?.value?.trim() || "";
       stored.goal = document.getElementById("ownerStoreGoalInput")?.value?.trim() || "";
-      savestore(stored);
+      const result = await window.LeaseAccomCloud?.saveOwnerStorefront?.(stored);
+      if (!result?.ok) { alert(result?.error || "Could not save storefront to the cloud."); return; }
+      storeData = result.data || stored;
       applystoreToUI(stored);
-      alert("storeappearance saved on this device.");
+      alert("Store appearance saved to your account.");
     });
 
     document.getElementById("ownerManagePlanBtn")?.addEventListener("click", () => {

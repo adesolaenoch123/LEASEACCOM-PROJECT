@@ -320,23 +320,6 @@ document.addEventListener("DOMContentLoaded", () => {
             cautionFee: Number.isFinite(cautionFee) ? cautionFee : undefined,
             submittedAt: new Date().toISOString()
         };
-        let storedProperties = [];
-        try { const parsed = JSON.parse(localStorage.getItem("leaseaccomProperties") || "[]"); storedProperties = Array.isArray(parsed) ? parsed : []; } catch {}
-        storedProperties.push(newProperty);
-        // Always keep local copy (fallback / offline)
-        localStorage.setItem("leaseaccomProperties", JSON.stringify(storedProperties));
-        const currentUserProperties = Array.isArray(currentUser.properties) ? currentUser.properties : [];
-        if (!currentUserProperties.some(id => String(id) === String(newProperty.id))) currentUserProperties.push(newProperty.id);
-        currentUser.properties = currentUserProperties;
-        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(currentUser));
-        try {
-            const users = JSON.parse(localStorage.getItem("leaseaccomUsers") || "[]");
-            if (Array.isArray(users)) {
-                const index = users.findIndex(user => String(user.id) === String(currentUser.id));
-                if (index !== -1) { users[index] = currentUser; localStorage.setItem("leaseaccomUsers", JSON.stringify(users)); }
-            }
-        } catch {}
-
         // Cloud: upload media to Storage, then insert property row
         showFormStatus("Uploading photos to LeaseAccom cloud…", "success");
         try {
@@ -352,10 +335,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     newProperty.videos = videoUrls;
                     showFormStatus("Photos uploaded. Saving listing…", "success");
                 } else if (media && media.offline) {
-                    showFormStatus("Offline — saving on this device only.", "success");
+                    showFormStatus("Connect to the internet to upload listing photos.", "error");
+                    return;
                 } else if (media && media.error) {
                     console.warn("media upload", media.error);
-                    showFormStatus("Photo upload issue: " + media.error + ". Trying to save listing…", "error");
+                    showFormStatus("Photo upload failed: " + media.error, "error");
+                    return;
                 }
             }
             let cloud = null;
@@ -369,16 +354,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (cloud.mapped && cloud.mapped.id) newProperty.id = cloud.mapped.id;
                 showFormStatus("Property saved to cloud. Pending admin approval before it goes live.", "success");
             } else if (cloud && cloud.offline) {
-                showFormStatus("Saved on this device only (offline).", "success");
+                showFormStatus("Connect to the internet before saving this listing.", "error");
+                return;
             } else if (cloud) {
                 console.warn("createProperty", cloud.error);
-                showFormStatus("Saved on this device. Cloud: " + (cloud.error || "failed"), "error");
+                showFormStatus("Listing was not saved: " + (cloud.error || "cloud save failed"), "error");
+                return;
             } else {
-                showFormStatus("Saved on this device (cloud client not loaded).", "success");
+                showFormStatus("Cloud connection is unavailable. Listing was not saved.", "error");
+                return;
             }
         } catch (err) {
             console.warn(err);
-            showFormStatus("Saved locally. Cloud error: " + (err && err.message ? err.message : "failed"), "error");
+            showFormStatus("Listing was not saved: " + (err && err.message ? err.message : "cloud error"), "error");
+            return;
         }
         window.setTimeout(() => { window.location.href = "owner-dashboard.html"; }, 1200);
     });

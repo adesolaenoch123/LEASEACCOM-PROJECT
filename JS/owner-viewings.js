@@ -1,6 +1,6 @@
 /**
  * LeaseAccom owner viewing requests
- * Hybrid: Supabase/API when available, otherwise localStorage "viewingRequests"
+ * Owner viewing requests are loaded and updated in Supabase.
  */
 document.addEventListener("DOMContentLoaded", async function () {
   const container = document.getElementById("ownerViewingRequests");
@@ -56,39 +56,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   }
 
-  function loadLocalRequests() {
-    try {
-      const v = JSON.parse(localStorage.getItem("viewingRequests") || "[]");
-      return Array.isArray(v) ? v : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveLocalRequests(list) {
-    localStorage.setItem("viewingRequests", JSON.stringify(list));
-  }
-
-  async function resolveOwnerViewings(owner) {
-    var cloud = await loadCloudRequests(owner);
-    if (cloud && cloud.length) {
-      saveLocalRequests(cloud);
-      return cloud;
-    }
-    if (cloud && cloud.length === 0) return [];
-    return loadLocalRequests().filter(function (r) { return ownerMatches(r, owner); });
-  }
-
-  function canUseLocalFallback() {
-    const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-    const apiConfigured = Boolean(
-      window.LeaseAccomApi &&
-      typeof window.LeaseAccomApi.isConfigured === "function" &&
-      window.LeaseAccomApi.isConfigured()
-    );
-    return (window.LeaseAccomLiveMode ? window.LeaseAccomLiveMode.allowLocalFallback() : isLocalHost);
-  }
-
   function ownerMatches(request, owner) {
     if (!owner) return false;
     const oid = owner.id != null ? String(owner.id) : "";
@@ -100,28 +67,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (oname && String(request.ownerName || "").trim().toLowerCase() === oname) return true;
     if (oemail && String(request.ownerEmail || "").trim().toLowerCase() === oemail) return true;
 
-    // Match via properties this owner listed in localStorage
-    try {
-      const props = JSON.parse(localStorage.getItem("leaseaccomProperties") || "[]");
-      if (Array.isArray(props) && props.length) {
-        const myPropIds = props
-          .filter(function (p) {
-            return (
-              (oid && String(p.ownerId) === oid) ||
-              (oname && String(p.ownerName || "").toLowerCase() === oname)
-            );
-          })
-          .map(function (p) {
-            return String(p.id);
-          });
-        if (myPropIds.indexOf(String(request.propertyId || request.property_id || "")) !== -1) {
-          return true;
-        }
-      }
-    } catch (e) {}
-
-    // Demo fallback: if owner has no matched ids yet, show all so UI is testable
-    if (!oid && !oname) return true;
     return false;
   }
 
@@ -254,29 +199,15 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
     } catch (error) {
       console.warn("Viewing status API patch failed.", error);
-      if (!canUseLocalFallback()) {
-        if (button) button.disabled = false;
-        if (typeof window.leaseaccomToast === "function") window.leaseaccomToast("Could not update viewing status");
-        return;
-      }
+      if (button) button.disabled = false;
+      if (typeof window.leaseaccomToast === "function") window.leaseaccomToast("Could not update viewing status");
+      return;
     }
 
     if (!updatedRemotely) {
-      if (!canUseLocalFallback()) {
-        if (button) button.disabled = false;
-        return;
-      }
-      const list = loadLocalRequests();
-      const idx = list.findIndex(function (request) {
-        return String(request.id) === String(id);
-      });
-      if (idx !== -1) {
-        list[idx].status = status;
-        list[idx].updatedAt = new Date().toISOString();
-        if (!Array.isArray(list[idx].statusHistory)) list[idx].statusHistory = [];
-        list[idx].statusHistory.push({ status: status, at: list[idx].updatedAt, by: "owner" });
-        saveLocalRequests(list);
-      }
+      if (button) button.disabled = false;
+      if (typeof window.leaseaccomToast === "function") window.leaseaccomToast("Viewing request could not be updated in Supabase.");
+      return;
     }
 
     await loadAndRender();
@@ -307,7 +238,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             };
           });
           apiLoaded = true;
-          saveLocalRequests(records);
         }
       }
     } catch (e) {
@@ -335,10 +265,10 @@ document.addEventListener("DOMContentLoaded", async function () {
       console.warn("LeaseAccom: owner viewings API unavailable.", e);
     }
 
-    if (!apiLoaded && canUseLocalFallback()) {
-      records = loadLocalRequests().filter(function (request) {
-        return ownerMatches(request, owner);
-      });
+    if (!apiLoaded) {
+      if (typeof window.leaseaccomToast === "function") window.leaseaccomToast("Viewing requests could not be loaded from Supabase.");
+      render([]);
+      return;
     }
 
     records.sort(function (a, b) {

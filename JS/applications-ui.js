@@ -1,6 +1,6 @@
 /**
  * LeaseAccom applications UI — owner + tenant
- * Hybrid: API when available, localStorage "rentalApplications" otherwise
+ * Rental applications are stored in Supabase; local storage is never a data fallback.
  */
 (function () {
   "use strict";
@@ -21,29 +21,6 @@
     } catch (e) {
       return null;
     }
-  }
-
-  function loadLocal() {
-    try {
-      const v = JSON.parse(localStorage.getItem("rentalApplications") || "[]");
-      return Array.isArray(v) ? v : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveLocal(list) {
-    localStorage.setItem("rentalApplications", JSON.stringify(list));
-  }
-
-  function canUseLocalFallback() {
-    const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-    const apiConfigured = Boolean(
-      window.LeaseAccomApi &&
-      typeof window.LeaseAccomApi.isConfigured === "function" &&
-      window.LeaseAccomApi.isConfigured()
-    );
-    return (window.LeaseAccomLiveMode ? window.LeaseAccomLiveMode.allowLocalFallback() : isLocalHost);
   }
 
   function formatDate(value) {
@@ -81,19 +58,6 @@
     if (app.ownerId != null && oid && String(app.ownerId) === oid) return true;
     if (app.owner_id != null && oid && String(app.owner_id) === oid) return true;
     if (oname && String(app.ownerName || "").trim().toLowerCase() === oname) return true;
-    try {
-      const props = JSON.parse(localStorage.getItem("leaseaccomProperties") || "[]");
-      if (Array.isArray(props)) {
-        const ids = props
-          .filter(function (p) {
-            return oid && String(p.ownerId) === oid;
-          })
-          .map(function (p) {
-            return String(p.id);
-          });
-        if (ids.indexOf(String(app.propertyId || app.property_id || "")) !== -1) return true;
-      }
-    } catch (e) {}
     return false;
   }
 
@@ -242,45 +206,14 @@
 
   async function updateApplicationStatus(applicationId, status, button) {
     if (button) button.disabled = true;
-    let updatedRemotely = false;
     try {
-      if (
-        window.LeaseAccomApi &&
-        window.LeaseAccomApi.isConfigured &&
-        window.LeaseAccomApi.isConfigured() &&
-        typeof window.LeaseAccomApi.request === "function"
-      ) {
-        const token = await window.LeaseAccomAuth?.getAccessToken?.();
-        if (!token) throw new Error("Please log in again to continue.");
-        await window.LeaseAccomApi.request("/applications/" + encodeURIComponent(applicationId), {
-          method: "PATCH",
-          body: { status: status }
-        });
-        updatedRemotely = true;
-      }
+      const result = await window.LeaseAccomCloud?.updateApplicationStatus?.(applicationId, status);
+      if (!result?.ok) throw new Error(result?.error || "Supabase is unavailable.");
     } catch (e) {
-      console.warn("Application status API patch failed.", e);
-      if (!canUseLocalFallback()) {
-        if (button) button.disabled = false;
-        if (typeof window.leaseaccomToast === "function") window.leaseaccomToast("Could not update application status");
-        return;
-      }
-    }
-
-    if (!updatedRemotely) {
-      if (!canUseLocalFallback()) {
-        if (button) button.disabled = false;
-        return;
-      }
-      const list = loadLocal();
-      const idx = list.findIndex(function (item) {
-        return String(item.id) === String(applicationId);
-      });
-      if (idx !== -1) {
-        list[idx].status = status;
-        list[idx].updatedAt = new Date().toISOString();
-        saveLocal(list);
-      }
+      console.warn("Supabase application status update failed.", e);
+      if (button) button.disabled = false;
+      if (typeof window.leaseaccomToast === "function") window.leaseaccomToast(e.message || "Could not update application status");
+      return;
     }
 
     if (status === "accepted") {
@@ -297,28 +230,19 @@
     if (!isOwnerPage && !isTenantPage) return;
 
     let records = [];
-    let apiLoaded = false;
-
     try {
-      if (
-        window.LeaseAccomApi &&
-        window.LeaseAccomApi.isConfigured &&
-        window.LeaseAccomApi.isConfigured() &&
-        window.LeaseAccomAuth &&
-        typeof window.LeaseAccomAuth.getAccessToken === "function"
-      ) {
-        const token = await window.LeaseAccomAuth.getAccessToken();
-        if (token) {
-          const payload = await window.LeaseAccomApi.request("/applications");
-          records = Array.isArray(payload.applications) ? payload.applications : [];
-          apiLoaded = true;
-        }
-      }
+      const role = isOwnerPage ? "owner" : "tenant";
+      const result = await window.LeaseAccomCloud?.listMyApplications?.(role);
+      if (!result?.ok) throw new Error(result?.error || "Supabase is unavailable.");
+      records = result.data || [];
     } catch (e) {
-      console.warn("LeaseAccom: applications API unavailable.", e);
+      console.warn("LeaseAccom: Supabase applications unavailable.", e);
+      const message = "Applications could not be loaded. Check your connection and try again.";
+      if (isOwnerPage) renderOwnerApplications([]);
+      if (isTenantPage) renderTenantApplications([]);
+      if (typeof window.leaseaccomToast === "function") window.leaseaccomToast(message);
+      return;
     }
-
-    if (!apiLoaded && canUseLocalFallback()) records = loadLocal();
 
     if (isOwnerPage) {
       const ownerRecords = records.filter(function (r) {

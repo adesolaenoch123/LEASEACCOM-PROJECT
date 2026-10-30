@@ -32,6 +32,10 @@
     if (sk) sk.remove();
   }
   function auto() {
+    // index.html has a coordinated full-page skeleton sequence; avoid a second
+    // set of card skeletons fighting it during startup.
+    var page = (location.pathname || "").toLowerCase().split("/").pop();
+    if (!page || page === "index.html") return;
     document.querySelectorAll(".property-grid").forEach(function (grid) {
       if (!grid.children.length || grid.querySelector(".la-skeleton-grid")) {
         show(grid, 6);

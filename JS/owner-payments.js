@@ -1,135 +1,67 @@
-/**
- * Owner Payments page — demo UI only (no real charges).
- */
+/** Owner payments page. Displays cloud-backed payout details and real transactions only. */
 (function () {
-  const BANK_KEY = 'leaseaccom_owner_payout_bank_v1';
-  const SAMPLE_KEY = 'leaseaccom_owner_pay_sample_v1';
+  let bank = {};
 
-  const sampleRows = [
-    { date: '2026-09-28', desc: 'Rent collection', property: 'Lekki 2BED Apartment', type: 'in', status: 'Cleared', amount: 850000 },
-    { date: '2026-09-22', desc: 'Security deposit', property: 'Yaba Studio', type: 'in', status: 'Pending', amount: 200000 },
-    { date: '2026-09-18', desc: 'Payout to bank', property: '—', type: 'out', status: 'Paid', amount: -500000 },
-    { date: '2026-09-10', desc: 'Rent collection', property: 'Ikeja Duplex', type: 'in', status: 'Cleared', amount: 1200000 },
-    { date: '2026-09-02', desc: 'Platform fee', property: 'Lekki 2BED Apartment', type: 'out', status: 'Paid', amount: -25500 }
-  ];
-
-  function loadBank() {
-    try { return JSON.parse(localStorage.getItem(BANK_KEY) || '{}') || {}; } catch { return {}; }
-  }
-  function saveBank(data) {
-    localStorage.setItem(BANK_KEY, JSON.stringify(data));
+  function formatNaira(value) {
+    const n = Number(value) || 0;
+    return (n < 0 ? "-" : "") + "₦" + Math.abs(n).toLocaleString("en-NG");
   }
 
-  function formatNaira(n) {
-    const v = Number(n) || 0;
-    const sign = v < 0 ? '-' : '';
-    return sign + '₦' + Math.abs(v).toLocaleString();
+  async function renderBank() {
+    const response = await window.LeaseAccomCloud?.getPayoutAccount?.();
+    bank = response?.ok && response.data ? {
+      bank: response.data.bank_name,
+      name: response.data.account_name,
+      number: response.data.account_number
+    } : {};
+    const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    setText("payBankName", bank.bank || "Not set");
+    setText("payAccountName", bank.name || "—");
+    setText("payAccountNumber", bank.number ? String(bank.number).replace(/.(?=.{4})/g, "•") : "••••");
+    const values = [["payBankNameInput", bank.bank], ["payAccountNameInput", bank.name], ["payAccountNumberInput", bank.number]];
+    values.forEach(([id, value]) => { const el = document.getElementById(id); if (el) el.value = value || ""; });
   }
 
-  function renderBank() {
-    const b = loadBank();
-    document.getElementById('payBankName').textContent = b.bank || 'Not set';
-    document.getElementById('payAccountName').textContent = b.name || '—';
-    document.getElementById('payAccountNumber').textContent = b.number
-      ? String(b.number).replace(/.(?=.{4})/g, '•')
-      : '••••';
-    const bi = document.getElementById('payBankNameInput');
-    const ni = document.getElementById('payAccountNameInput');
-    const ai = document.getElementById('payAccountNumberInput');
-    if (bi) bi.value = b.bank || '';
-    if (ni) ni.value = b.name || '';
-    if (ai) ai.value = b.number || '';
-  }
-
-  function renderTable(filter) {
-    const body = document.getElementById('payTableBody');
+  function renderEmptyTable() {
+    const body = document.getElementById("payTableBody");
     if (!body) return;
-    const useSample = localStorage.getItem(SAMPLE_KEY) === '1';
-    let rows = useSample ? sampleRows.slice() : [];
-    if (filter === 'in') rows = rows.filter((r) => r.type === 'in');
-    if (filter === 'out') rows = rows.filter((r) => r.type === 'out');
-
-    if (!rows.length) {
-      body.innerHTML = `<tr class="pay-empty-row"><td colspan="6">
-        <div class="dashboard-empty small-empty" style="border:0;padding:28px 10px">
-          <div><i class="bx bx-receipt"></i></div>
-          <h3>No transactions yet</h3>
-          <p>When payments go live, rent collections and withdrawals will appear here.</p>
-        </div></td></tr>`;
-      updateKpis([]);
-      return;
-    }
-
-    body.innerHTML = rows.map((r) => `
-      <tr data-type="${r.type}">
-        <td>${r.date}</td>
-        <td>${r.desc}</td>
-        <td>${r.property}</td>
-        <td><span class="pay-type ${r.type}">${r.type === 'in' ? 'Incoming' : 'Payout'}</span></td>
-        <td><span class="pay-status ${String(r.status).toLowerCase()}">${r.status}</span></td>
-        <td class="${r.amount < 0 ? 'is-out' : 'is-in'}">${formatNaira(r.amount)}</td>
-      </tr>`).join('');
-    updateKpis(useSample ? sampleRows : []);
+    body.innerHTML = `<tr class="pay-empty-row"><td colspan="6"><div class="dashboard-empty small-empty" style="border:0;padding:28px 10px"><div><i class="bx bx-receipt"></i></div><h3>No transactions yet</h3><p>Completed payments will appear here.</p></div></td></tr>`;
+    ["payBalance", "payPending", "payMonth", "payLifetime"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = formatNaira(0);
+    });
   }
 
-  function updateKpis(rows) {
-    const clearedIn = rows.filter((r) => r.type === 'in' && r.status === 'Cleared').reduce((s, r) => s + r.amount, 0);
-    const pendingIn = rows.filter((r) => r.type === 'in' && r.status === 'Pending').reduce((s, r) => s + r.amount, 0);
-    const out = rows.filter((r) => r.type === 'out').reduce((s, r) => s + Math.abs(r.amount), 0);
-    const available = Math.max(0, clearedIn - out);
-    const month = rows.filter((r) => r.type === 'in').reduce((s, r) => s + r.amount, 0);
-    const lifetime = clearedIn;
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = formatNaira(v); };
-    set('payBalance', available);
-    set('payPending', pendingIn);
-    set('payMonth', month);
-    set('payLifetime', lifetime);
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener("DOMContentLoaded", () => {
     renderBank();
-    const sampleOn = localStorage.getItem(SAMPLE_KEY) === '1';
-    const toggle = document.getElementById('paySampleToggle');
-    if (toggle) toggle.checked = sampleOn;
-    renderTable('all');
-
-    document.getElementById('payEditBankBtn')?.addEventListener('click', () => {
-      document.getElementById('payBankCard').hidden = true;
-      document.getElementById('payBankForm').hidden = false;
+    renderEmptyTable();
+    const toggle = document.getElementById("paySampleToggle");
+    if (toggle) { toggle.checked = false; toggle.hidden = true; }
+    document.getElementById("payEditBankBtn")?.addEventListener("click", () => {
+      document.getElementById("payBankCard").hidden = true;
+      document.getElementById("payBankForm").hidden = false;
     });
-    document.getElementById('payBankCancel')?.addEventListener('click', () => {
-      document.getElementById('payBankForm').hidden = true;
-      document.getElementById('payBankCard').hidden = false;
+    document.getElementById("payBankCancel")?.addEventListener("click", () => {
+      document.getElementById("payBankForm").hidden = true;
+      document.getElementById("payBankCard").hidden = false;
     });
-    document.getElementById('payBankForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      saveBank({
-        bank: document.getElementById('payBankNameInput').value.trim(),
-        name: document.getElementById('payAccountNameInput').value.trim(),
-        number: document.getElementById('payAccountNumberInput').value.trim()
+    document.getElementById("payBankForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const result = await window.LeaseAccomCloud?.savePayoutAccount?.({
+        bank: document.getElementById("payBankNameInput").value.trim(),
+        name: document.getElementById("payAccountNameInput").value.trim(),
+        number: document.getElementById("payAccountNumberInput").value.trim()
       });
-      renderBank();
-      document.getElementById('payBankForm').hidden = true;
-      document.getElementById('payBankCard').hidden = false;
-      alert('Payout method saved on this device (demo only).');
+      if (!result?.ok) { alert(result?.error || "Could not save payout details to your account."); return; }
+      await renderBank();
+      document.getElementById("payBankForm").hidden = true;
+      document.getElementById("payBankCard").hidden = false;
+      alert("Payout details saved to your account.");
     });
-
-    document.querySelectorAll('[data-pay-filter]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-pay-filter]').forEach((b) => b.classList.remove('is-active'));
-        btn.classList.add('is-active');
-        renderTable(btn.getAttribute('data-pay-filter'));
-      });
-    });
-
-    toggle?.addEventListener('change', () => {
-      localStorage.setItem(SAMPLE_KEY, toggle.checked ? '1' : '0');
-      const active = document.querySelector('[data-pay-filter].is-active')?.getAttribute('data-pay-filter') || 'all';
-      renderTable(active);
-    });
-
-    document.getElementById('payWithdrawBtn')?.addEventListener('click', () => {
-      alert('Withdrawals are not live yet. This button stays disabled until a payment provider is connected.');
-    });
+    document.querySelectorAll("[data-pay-filter]").forEach((button) => button.addEventListener("click", () => {
+      document.querySelectorAll("[data-pay-filter]").forEach((item) => item.classList.toggle("is-active", item === button));
+      renderEmptyTable();
+    }));
+    document.getElementById("payWithdrawBtn")?.addEventListener("click", () => alert("Withdrawals are not live yet."));
   });
 })();

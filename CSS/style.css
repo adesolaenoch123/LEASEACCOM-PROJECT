@@ -4597,11 +4597,6 @@ body {
    catalogues, frames for galleries, dots for chat, bars for dashboards and
    steps for forms. */
 .leaseaccom-loader-visual { min-height: 52px; display: grid; place-items: center; }
-.leaseaccom-loader-pins { display: flex; gap: 16px; align-items: end; height: 52px; }
-.leaseaccom-loader-pins span { width: 15px; height: 15px; border-radius: 50% 50% 50% 0; background: #15945c; transform: rotate(-45deg) scale(.75); animation: leaseaccomPinBounce 1.6s ease-in-out infinite; }
-.leaseaccom-loader-pins span:nth-child(2) { animation-delay: .15s; background: #0d7547; }
-.leaseaccom-loader-pins span:nth-child(3) { animation-delay: .3s; background: #7abf99; }
-
 .leaseaccom-loader-listings { display: flex; gap: 10px; }
 .leaseaccom-loader-listings i { display: block; width: 54px; height: 40px; border-radius: 7px; background: linear-gradient(110deg,#edf3ef 25%,#dcefe3 45%,#edf3ef 65%); background-size: 240% 100%; animation: leaseaccomCardShimmer 1.8s ease-in-out infinite; }
 .leaseaccom-loader-listings i:nth-child(2) { animation-delay: .12s; }
@@ -4625,7 +4620,6 @@ body {
 .leaseaccom-loader-steps span { position: relative; width: 17px; height: 17px; border-radius: 50%; background: #d5e5db; animation: leaseaccomStep 1.6s ease-in-out infinite; }
 .leaseaccom-loader-steps span + span { margin-left: 27px; }.leaseaccom-loader-steps span + span::before { content: ""; position: absolute; right: 17px; top: 7px; width: 27px; height: 3px; background: #d5e5db; }.leaseaccom-loader-steps span:nth-child(2) { animation-delay: .18s; }.leaseaccom-loader-steps span:nth-child(3) { animation-delay: .36s; }
 
-@keyframes leaseaccomPinBounce { 0%,100% { transform: rotate(-45deg) translate(0,0) scale(.75); opacity:.55; } 50% { transform: rotate(-45deg) translate(0,-8px) scale(1); opacity:1; } }
 @keyframes leaseaccomCardShimmer { from { background-position: 200% 0; } to { background-position: -40% 0; } }
 @keyframes leaseaccomGalleryFrame { 0%,100% { transform: translateY(2px); opacity:.55; } 50% { transform: translateY(-3px); opacity:1; } }
 @keyframes leaseaccomTyping { 0%,60%,100% { transform: translateY(0); opacity:.45; } 30% { transform: translateY(-8px); opacity:1; } }
@@ -4805,7 +4799,6 @@ body {
     .leaseaccom-loader-spinner,
     .leaseaccom-btn-spinner,
     .leaseaccom-skeleton-shimmer,
-    .leaseaccom-loader-pins span,
     .leaseaccom-loader-listings i,
     .leaseaccom-loader-gallery span,
     .leaseaccom-loader-dots span,

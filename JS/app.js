@@ -1061,8 +1061,11 @@ if (marketplaceContainer) {
         if (isVisible && map) setTimeout(() => map.invalidateSize(), 100);
     });
 
-    saveSearchButton?.addEventListener("click", () => {
-        const savedSearches = JSON.parse(localStorage.getItem("leaseaccomSavedSearches")) || [];
+    saveSearchButton?.addEventListener("click", async () => {
+        const cloud = window.LeaseAccomCloud;
+        const savedResponse = await cloud?.listSavedSearches?.();
+        if (!savedResponse?.ok) { showMarketplaceToast("Sign in and connect to save searches to your account."); return; }
+        const savedSearches = savedResponse.data || [];
         const matchIds = (Array.isArray(properties) ? properties : [])
             .filter(function (property) {
                 if (typeof isLeaseAccomPropertyPublic === "function" && !isLeaseAccomPropertyPublic(property)) return false;
@@ -1092,15 +1095,14 @@ if (marketplaceContainer) {
             alertsEnabled: true
         };
 
-        const duplicate = savedSearches.some(item =>
-            item.text === search.text &&
-            item.type === search.type &&
-            item.budget === search.budget &&
-            item.verified === search.verified
-        );
-
-        if (!duplicate) savedSearches.unshift(search);
-        localStorage.setItem("leaseaccomSavedSearches", JSON.stringify(savedSearches.slice(0, 10)));
+        const duplicate = savedSearches.some(item => {
+            const criteria = item.criteria || {};
+            return criteria.text === search.text && criteria.type === search.type && criteria.budget === search.budget && criteria.verified === search.verified;
+        });
+        if (!duplicate) {
+            const saved = await cloud.saveSearch({ label: search.text || "All properties", criteria: search });
+            if (!saved?.ok) { showMarketplaceToast(saved?.error || "Search could not be saved to the cloud."); return; }
+        }
         showMarketplaceToast(
             duplicate
                 ? "This search is already saved. We will alert you when new matches appear."
@@ -1108,13 +1110,15 @@ if (marketplaceContainer) {
         );
     });
 
-    function checkSavedSearchAlerts() {
+    async function checkSavedSearchAlerts() {
         try {
-            var savedSearches = JSON.parse(localStorage.getItem("leaseaccomSavedSearches") || "[]") || [];
+            var response = await window.LeaseAccomCloud?.listSavedSearches?.();
+            var savedSearches = response?.ok ? response.data || [] : [];
             if (!Array.isArray(savedSearches) || !savedSearches.length || !Array.isArray(properties)) return;
             var totalNew = 0;
-            var updated = savedSearches.map(function (s) {
-                if (!s || s.alertsEnabled === false) return s;
+            for (const row of savedSearches) {
+                var s = Object.assign({}, row.criteria || {}, { id: row.id });
+                if (!s || s.alertsEnabled === false) continue;
                 var maxBudget = s.budget === "all" || s.budget == null ? Infinity : Number(s.budget);
                 var ids = properties.filter(function (property) {
                     if (typeof isLeaseAccomPropertyPublic === "function" && !isLeaseAccomPropertyPublic(property)) return false;
@@ -1131,13 +1135,13 @@ if (marketplaceContainer) {
                 var prev = Array.isArray(s.matchIds) ? s.matchIds.map(String) : [];
                 var news = ids.filter(function (id) { return prev.indexOf(id) === -1; });
                 totalNew += news.length;
-                return Object.assign({}, s, {
+                var updated = Object.assign({}, s, {
                     matchIds: ids,
                     lastCheckedAt: new Date().toISOString(),
                     newCount: news.length
                 });
-            });
-            localStorage.setItem("leaseaccomSavedSearches", JSON.stringify(updated.slice(0, 10)));
+                await window.LeaseAccomCloud.saveSearch({ id: row.id, label: row.label, criteria: updated });
+            }
             if (totalNew > 0) {
                 showMarketplaceToast(totalNew + " new listing(s) match your saved search" + (totalNew > 1 ? "es" : "") + ".");
             }
@@ -4272,37 +4276,16 @@ function saveSavedProperties(saved) {
    Keeps the last 10 properties opened on this device.
    ========================================================= */
 
-const RECENTLY_VIEWED_KEY = "leaseaccomRecentlyViewed";
 const RECENTLY_VIEWED_LIMIT = 10;
 
 function getRecentlyViewedIds() {
-    try {
-        const recentlyViewed = JSON.parse(
-            localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]"
-        );
-
-        return leaseaccomNormalizeIdList(Array.isArray(recentlyViewed) ? recentlyViewed : []);
-    } catch (error) {
-        return [];
-    }
+    return [];
 }
 
-function addRecentlyViewed(id) {
+async function addRecentlyViewed(id) {
     const propertyId = leaseaccomId(id);
-
     if (!propertyId) return;
-
-    const ids = getRecentlyViewedIds().filter(
-        existingId => !leaseaccomIdsEqual(existingId, propertyId)
-    );
-
-    // Most recently viewed first.
-    ids.unshift(propertyId);
-
-    localStorage.setItem(
-        RECENTLY_VIEWED_KEY,
-        JSON.stringify(ids.slice(0, RECENTLY_VIEWED_LIMIT))
-    );
+    await window.LeaseAccomCloud?.recordRecentlyViewed?.(propertyId);
 }
 
 function getRecentlyViewedProperties() {
@@ -4317,13 +4300,16 @@ function getRecentlyViewedProperties() {
         .slice(0, RECENTLY_VIEWED_LIMIT);
 }
 
-function renderRecentlyViewed() {
+async function renderRecentlyViewed() {
     const container = document.getElementById("recentlyViewed");
     const section = document.getElementById("recentlyViewedSection");
 
     if (!container || !section) return;
 
-    const recent = getRecentlyViewedProperties();
+    const response = await window.LeaseAccomCloud?.listRecentlyViewed?.(RECENTLY_VIEWED_LIMIT);
+    const ids = response?.ok ? response.data.map(item => String(item.property_id)) : [];
+    const recent = ids.map(id => properties.find(property => leaseaccomIdsEqual(property.id, id)))
+        .filter(Boolean).filter(isLeaseAccomPropertyPublic);
 
     if (!recent.length) {
         section.hidden = true;

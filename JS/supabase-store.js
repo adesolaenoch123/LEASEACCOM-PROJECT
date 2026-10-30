@@ -1,5 +1,5 @@
 /**
- * LeaseAccom — Supabase as primary store (localStorage fallback)
+ * LeaseAccom — Supabase data store (no persistent local-storage fallback)
  * Include AFTER supabase-client.js on every page that needs data.
  *
  * window.LeaseAccomStore = {
@@ -29,13 +29,7 @@
 
   /* ---------- PROFILES / USERS ---------- */
   async function listProfiles() {
-    if (!hasSb()) {
-      try {
-        return JSON.parse(localStorage.getItem("leaseaccomUsers") || "[]");
-      } catch (e) {
-        return [];
-      }
-    }
+    if (!hasSb()) return [];
     var { data, error } = await sb()
       .from("profiles")
       .select("id, full_name, phone, account_type, account_status, verification_status, plan, created_at, avatar_url")
@@ -72,13 +66,7 @@
   /* ---------- PROPERTIES ---------- */
   async function listProperties(opts) {
     opts = opts || {};
-    if (!hasSb()) {
-      try {
-        return JSON.parse(localStorage.getItem("leaseaccomProperties") || "[]");
-      } catch (e) {
-        return [];
-      }
-    }
+    if (!hasSb()) return [];
     var q = sb().from("properties").select("*").order("created_at", { ascending: false });
     if (opts.status) q = q.eq("verification_status", opts.status);
     if (opts.ownerId) q = q.eq("owner_id", opts.ownerId);
@@ -151,13 +139,7 @@
   /* ---------- VIEWINGS ---------- */
   async function listViewings(opts) {
     opts = opts || {};
-    if (!hasSb()) {
-      try {
-        return JSON.parse(localStorage.getItem("viewingRequests") || "[]");
-      } catch (e) {
-        return [];
-      }
-    }
+    if (!hasSb()) return [];
     var q = sb().from("viewings").select("*").order("created_at", { ascending: false });
     if (opts.ownerId) q = q.eq("owner_id", opts.ownerId);
     if (opts.tenantId) q = q.eq("tenant_id", opts.tenantId);
@@ -185,13 +167,7 @@
   /* ---------- APPLICATIONS ---------- */
   async function listApplications(opts) {
     opts = opts || {};
-    if (!hasSb()) {
-      try {
-        return JSON.parse(localStorage.getItem("rentalApplications") || "[]");
-      } catch (e) {
-        return [];
-      }
-    }
+    if (!hasSb()) return [];
     var q = sb().from("applications").select("*").order("created_at", { ascending: false });
     if (opts.ownerId) q = q.eq("owner_id", opts.ownerId);
     if (opts.tenantId) q = q.eq("tenant_id", opts.tenantId);
@@ -220,13 +196,7 @@
 
   /* ---------- PAYMENTS ---------- */
   async function listPayments() {
-    if (!hasSb()) {
-      try {
-        return JSON.parse(localStorage.getItem("leaseaccomPayments") || "[]");
-      } catch (e) {
-        return [];
-      }
-    }
+    if (!hasSb()) return [];
     var { data, error } = await sb()
       .from("payments")
       .select("*")
@@ -249,13 +219,7 @@
 
   /* ---------- SUBSCRIPTIONS & PLANS ---------- */
   async function listPlans() {
-    if (!hasSb()) {
-      return [
-        { id: "professional", name: "Professional", price_monthly: 5000 },
-        { id: "business", name: "Business", price_monthly: 10000 },
-        { id: "enterprise", name: "Enterprise", price_monthly: 20000 }
-      ];
-    }
+    if (!hasSb()) return [];
     var { data } = await sb()
       .from("subscription_plans")
       .select("*")
@@ -265,13 +229,7 @@
   }
 
   async function listSubscriptions() {
-    if (!hasSb()) {
-      try {
-        return JSON.parse(localStorage.getItem("leaseaccomSubscriptions") || "[]");
-      } catch (e) {
-        return [];
-      }
-    }
+    if (!hasSb()) return [];
     var { data, error } = await sb()
       .from("subscriptions")
       .select("*, subscription_plans(name)")
@@ -282,13 +240,7 @@
 
   /* ---------- REPORTS ---------- */
   async function listReports() {
-    if (!hasSb()) {
-      try {
-        return JSON.parse(localStorage.getItem("leaseaccomReports") || "[]");
-      } catch (e) {
-        return [];
-      }
-    }
+    if (!hasSb()) return [];
     var { data } = await sb().from("reports").select("*").order("created_at", { ascending: false });
     return data || [];
   }
@@ -303,28 +255,13 @@
 
   /* ---------- SETTINGS / BRAND ---------- */
   async function getSetting(key) {
-    if (!hasSb()) {
-      if (key === "brand") {
-        try {
-          return JSON.parse(localStorage.getItem("leaseaccomBrandConfig") || "null");
-        } catch (e) {
-          return null;
-        }
-      }
-      return null;
-    }
+    if (!hasSb()) return null;
     var { data } = await sb().from("platform_settings").select("value").eq("key", key).maybeSingle();
     return data ? data.value : null;
   }
 
   async function setSetting(key, value) {
-    if (!hasSb()) {
-      if (key === "brand") {
-        localStorage.setItem("leaseaccomBrandConfig", JSON.stringify(value));
-        localStorage.setItem("leaseaccomCmsPublished", JSON.stringify(value));
-      }
-      return { error: null };
-    }
+    if (!hasSb()) return { error: new Error("Supabase is unavailable") };
     var { error } = await sb()
       .from("platform_settings")
       .upsert({ key: key, value: value, updated_at: new Date().toISOString() });
@@ -340,11 +277,6 @@
       entity_id: entity && entity.id,
       created_at: new Date().toISOString()
     };
-    try {
-      var local = JSON.parse(localStorage.getItem("leaseaccomAdminAuditLog") || "[]");
-      local.unshift(entry);
-      localStorage.setItem("leaseaccomAdminAuditLog", JSON.stringify(local.slice(0, 200)));
-    } catch (e) {}
     if (!hasSb()) return;
     try {
       var user = await sb().auth.getUser();
@@ -355,13 +287,7 @@
   }
 
   async function listAudit() {
-    if (!hasSb()) {
-      try {
-        return JSON.parse(localStorage.getItem("leaseaccomAdminAuditLog") || "[]");
-      } catch (e) {
-        return [];
-      }
-    }
+    if (!hasSb()) return [];
     var { data } = await sb().from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100);
     return data || [];
   }

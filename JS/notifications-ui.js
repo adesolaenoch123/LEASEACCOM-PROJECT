@@ -129,6 +129,9 @@
   function init() {
     var path = (window.location.pathname || "").toLowerCase();
     if (/index\.html?$/.test(path) || path === "/" || path === "") {
+      document.querySelectorAll(".leaseaccom-header-notifications, [data-notifications-panel]").forEach(function (node) {
+        node.remove();
+      });
       return; // never show notifications on landing page
     }
     ensureStylesheet();
@@ -213,6 +216,7 @@
       notificationPanel.classList.remove("is-open");
       bellButton.setAttribute("aria-expanded", "false");
       document.body.classList.remove("lh-notifications-open");
+      bellButton.focus({ preventScroll: true });
     }
 
     function togglePanel() {
@@ -222,6 +226,13 @@
 
     async function fetchNotifications() {
       try {
+        if (window.LeaseAccomCloud?.listNotifications) {
+          var cloudResult = await window.LeaseAccomCloud.listNotifications();
+          if (cloudResult?.ok) { renderNotifications(cloudResult.data || []); return; }
+          showFallback("Notifications are temporarily unavailable.", "ðŸ””");
+          if (badge) badge.hidden = true;
+          return;
+        }
         if (window.LeaseAccomApi && window.LeaseAccomAuth) {
           var token = await window.LeaseAccomAuth.getAccessToken();
           if (token && window.LeaseAccomApi.isConfigured && window.LeaseAccomApi.isConfigured()) {
@@ -274,6 +285,7 @@
     if (closeButton) {
       closeButton.addEventListener("click", function (event) {
         event.preventDefault();
+        event.stopPropagation();
         closePanel();
       });
     }
@@ -292,6 +304,13 @@
       var btn = event.target.closest("[data-mark-read]");
       if (!btn) return;
       var id = btn.getAttribute("data-mark-read");
+
+      if (window.LeaseAccomCloud?.markNotificationRead) {
+        var cloudMarked = await window.LeaseAccomCloud.markNotificationRead(id);
+        if (cloudMarked?.ok) await fetchNotifications();
+        else if (typeof window.leaseaccomToast === "function") window.leaseaccomToast("Could not update notification");
+        return;
+      }
 
       if (window.LeaseAccomApi && window.LeaseAccomApi.isConfigured && window.LeaseAccomApi.isConfigured()) {
         try {
@@ -334,7 +353,14 @@
 
     // Expose helper for other modules to push notifications
     window.LeaseAccomNotify = {
-      push: function (notif) {
+      push: async function (notif) {
+        if (window.LeaseAccomCloud?.notify) {
+          var userId = await window.LeaseAccomCloud.uid();
+          if (!userId) return { ok: false, error: "Sign in to create notifications." };
+          var cloudSaved = await window.LeaseAccomCloud.notify(userId, notif?.title, notif?.message, notif?.type, notif?.link);
+          if (cloudSaved?.ok) await fetchNotifications();
+          return cloudSaved;
+        }
         var items = loadLocal();
         items.unshift({
           id: String((notif && notif.id) || "n-" + Date.now()),

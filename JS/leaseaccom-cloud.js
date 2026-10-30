@@ -23,16 +23,19 @@
   }
 
   async function notify(userId, title, message, type, link) {
-    if (!hasSb() || !userId) return;
+    if (!hasSb() || !userId) return { ok: false, offline: !hasSb() };
     try {
-      await sb().from("notifications").insert({
+      const { error } = await sb().from("notifications").insert({
         user_id: userId,
         title: title || "LeaseAccom",
         message: message || "",
         type: type || "info",
         link: link || null
       });
-    } catch (e) {}
+      return error ? { ok: false, error: error.message } : { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
   }
 
   // ---- Properties ----
@@ -240,6 +243,22 @@
     return { ok: true, data: data || [] };
   }
 
+  async function updateApplicationStatus(id, status) {
+    if (!hasSb()) return { ok: false, offline: true };
+    const userId = await uid();
+    if (!userId) return { ok: false, error: "Not signed in" };
+    const { data, error } = await sb()
+      .from("applications")
+      .update({ status: status, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("owner_id", userId)
+      .select()
+      .maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: "Application was not found or cannot be changed." };
+    return { ok: true, data: data };
+  }
+
   // ---- Notifications ----
   async function listNotifications() {
     if (!hasSb()) return { ok: false, offline: true, data: [] };
@@ -288,6 +307,84 @@
     const { data, error } = await sb().from("saved_properties").select("property_id, created_at").eq("user_id", userId);
     if (error) return { ok: false, error: error.message, data: [] };
     return { ok: true, data: data || [] };
+  }
+
+  async function listSavedSearches() {
+    if (!hasSb()) return { ok: false, offline: true, data: [] };
+    const userId = await uid();
+    if (!userId) return { ok: false, data: [] };
+    const { data, error } = await sb().from("saved_searches").select("*").eq("user_id", userId).order("updated_at", { ascending: false });
+    return error ? { ok: false, error: error.message, data: [] } : { ok: true, data: data || [] };
+  }
+
+  async function saveSearch(search) {
+    if (!hasSb()) return { ok: false, offline: true };
+    const userId = await uid();
+    if (!userId) return { ok: false, error: "Not signed in" };
+    const row = { user_id: userId, label: search.label || "Saved search", criteria: search.criteria || search, updated_at: new Date().toISOString() };
+    const query = search.id
+      ? sb().from("saved_searches").update(row).eq("id", search.id).eq("user_id", userId).select().single()
+      : sb().from("saved_searches").insert(row).select().single();
+    const { data, error } = await query;
+    return error ? { ok: false, error: error.message } : { ok: true, data };
+  }
+
+  async function deleteSearch(id) {
+    if (!hasSb()) return { ok: false, offline: true };
+    const userId = await uid();
+    if (!userId) return { ok: false, error: "Not signed in" };
+    const { error } = await sb().from("saved_searches").delete().eq("id", id).eq("user_id", userId);
+    return { ok: !error, error: error?.message };
+  }
+
+  async function recordRecentlyViewed(propertyId) {
+    if (!hasSb() || !propertyId) return { ok: false };
+    const userId = await uid();
+    if (!userId) return { ok: false };
+    const { error } = await sb().from("recently_viewed_properties").upsert({ user_id: userId, property_id: String(propertyId), viewed_at: new Date().toISOString() }, { onConflict: "user_id,property_id" });
+    return { ok: !error, error: error?.message };
+  }
+
+  async function listRecentlyViewed(limit) {
+    if (!hasSb()) return { ok: false, offline: true, data: [] };
+    const userId = await uid();
+    if (!userId) return { ok: false, data: [] };
+    const { data, error } = await sb().from("recently_viewed_properties").select("property_id, viewed_at").eq("user_id", userId).order("viewed_at", { ascending: false }).limit(limit || 20);
+    return error ? { ok: false, error: error.message, data: [] } : { ok: true, data: data || [] };
+  }
+
+  async function getOwnerStorefront() {
+    if (!hasSb()) return { ok: false, offline: true, data: null };
+    const userId = await uid();
+    if (!userId) return { ok: false, data: null };
+    const { data, error } = await sb().from("owner_storefronts").select("*").eq("owner_id", userId).maybeSingle();
+    return error ? { ok: false, error: error.message } : { ok: true, data };
+  }
+
+  async function saveOwnerStorefront(store) {
+    if (!hasSb()) return { ok: false, offline: true };
+    const userId = await uid();
+    if (!userId) return { ok: false, error: "Not signed in" };
+    const row = { owner_id: userId, name: store.name || "", tagline: store.tagline || "", goal: store.goal || "", banner_url: store.banner || store.banner_url || "", logo_url: store.logo || store.logo_url || "", published: !!store.published, updated_at: new Date().toISOString() };
+    const { data, error } = await sb().from("owner_storefronts").upsert(row, { onConflict: "owner_id" }).select().single();
+    return error ? { ok: false, error: error.message } : { ok: true, data };
+  }
+
+  async function getPayoutAccount() {
+    if (!hasSb()) return { ok: false, offline: true, data: null };
+    const userId = await uid();
+    if (!userId) return { ok: false, data: null };
+    const { data, error } = await sb().from("owner_payout_accounts").select("bank_name, account_name, account_number").eq("owner_id", userId).maybeSingle();
+    return error ? { ok: false, error: error.message } : { ok: true, data };
+  }
+
+  async function savePayoutAccount(account) {
+    if (!hasSb()) return { ok: false, offline: true };
+    const userId = await uid();
+    if (!userId) return { ok: false, error: "Not signed in" };
+    const row = { owner_id: userId, bank_name: account.bank || "", account_name: account.name || "", account_number: account.number || "", updated_at: new Date().toISOString() };
+    const { error } = await sb().from("owner_payout_accounts").upsert(row, { onConflict: "owner_id" });
+    return { ok: !error, error: error?.message };
   }
 
   // ---- Owner verification ----
@@ -496,10 +593,20 @@
     updateViewingStatus: updateViewingStatus,
     createApplication: createApplication,
     listMyApplications: listMyApplications,
+    updateApplicationStatus: updateApplicationStatus,
     listNotifications: listNotifications,
     markNotificationRead: markNotificationRead,
     toggleSaved: toggleSaved,
     listSaved: listSaved,
+    listSavedSearches: listSavedSearches,
+    saveSearch: saveSearch,
+    deleteSearch: deleteSearch,
+    recordRecentlyViewed: recordRecentlyViewed,
+    listRecentlyViewed: listRecentlyViewed,
+    getOwnerStorefront: getOwnerStorefront,
+    saveOwnerStorefront: saveOwnerStorefront,
+    getPayoutAccount: getPayoutAccount,
+    savePayoutAccount: savePayoutAccount,
     submitOwnerVerification: submitOwnerVerification,
     submitOwnerVerificationFull: submitOwnerVerificationFull,
     uploadVerificationFile: uploadVerificationFile,
