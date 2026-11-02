@@ -51,6 +51,8 @@ test("tenant dashboard reads saved properties from the shared saved Property Pag
     });
 
     await page.goto("/tenant-dashboard.html");
+    await expect(page.locator(".navbar .logo img")).toHaveAttribute("src", "IMAGES/leaseaccom-logo-full.png");
+    await expect(page.locator(".navbar .logo img")).toBeVisible();
     await expect(page.locator("#savedCount")).toHaveText("1");
     await expect.poll(() => page.evaluate(() => {
         const user = JSON.parse(localStorage.getItem("leaseaccomCurrentUser"));
@@ -175,7 +177,7 @@ test("notification panels are accessible on mobile app screens", async ({ page }
     });
     await page.setViewportSize({ width: 390, height: 844 });
 
-    for (const route of ["/", "/tenant-dashboard.html"]) {
+    for (const route of ["/tenant-dashboard.html"]) {
         await page.goto(route);
         const bell = page.getByRole("button", { name: "Open notifications" });
         await expect(bell).toBeVisible();
@@ -184,6 +186,9 @@ test("notification panels are accessible on mobile app screens", async ({ page }
         const panel = page.locator(".leaseaccom-notification-panel");
         await expect(panel).toHaveClass(/is-open/);
         await expect.poll(() => panel.locator(".leaseaccom-notification-panel__dropdown").evaluate((element) =>
+            getComputedStyle(element).position
+        )).toBe("fixed");
+        await expect.poll(() => panel.evaluate((element) =>
             getComputedStyle(element).position
         )).toBe("fixed");
         await expect.poll(() => page.evaluate(() =>
@@ -206,6 +211,147 @@ test("notification panels are accessible on mobile app screens", async ({ page }
     await expect.poll(() => page.locator("#ownerNotifPanel").evaluate((element) =>
         getComputedStyle(element).position
     )).toBe("fixed");
+});
+
+test("landlord inbox and open chat stay usable on mobile screens", async ({ page }) => {
+    const conversation = {
+        id: "owner-mobile-message-test",
+        propertyId: "owner-mobile-property",
+        propertyTitle: "Bright two-bedroom apartment",
+        tenantId: "tenant-mobile-message-test",
+        tenantName: "Test Tenant",
+        messages: [{
+            sender: "tenant",
+            text: "Could I arrange a viewing?",
+            createdAt: new Date().toISOString()
+        }]
+    };
+    await page.addInitScript((item) => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "owner-mobile-message-test",
+            name: "Test Owner",
+            accountType: "owner"
+        }));
+        localStorage.setItem("leaseaccomMessages", JSON.stringify([item]));
+    }, conversation);
+
+    await page.goto("/owner-messages.html");
+    const conversationRow = page.locator("#ownerConversationList .conversation-item");
+    await expect(conversationRow).toHaveCount(1);
+    await conversationRow.click();
+    await expect(page.locator("#ownerChatContent")).toBeVisible();
+    await expect(page.locator("#ownerChatPropertyCard")).toBeVisible();
+    await expect(page.locator("#ownerChatMessages")).toContainText("Could I arrange a viewing?");
+
+    for (const width of [320, 375, 768, 1280]) {
+        await page.setViewportSize({ width, height: 860 });
+        await expect.poll(() => page.evaluate(() =>
+            document.documentElement.scrollWidth <= window.innerWidth
+        )).toBe(true);
+    }
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.locator("#chatBackBtn").click();
+    await expect(page.locator(".om-inbox")).toBeVisible();
+    await expect(page.locator(".om-chat")).toBeHidden();
+});
+
+test("tenant can send a message from a cloud-backed conversation", async ({ page }) => {
+    const conversation = {
+        id: "conversation-send-test",
+        propertyId: "property-send-test",
+        propertyTitle: "Message test property",
+        ownerId: "owner-send-test",
+        tenantId: "tenant-send-test",
+        ownerName: "Test Owner",
+        serverBacked: true,
+        messages: []
+    };
+    await page.addInitScript((item) => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "tenant-send-test",
+            name: "Test Tenant",
+            accountType: "tenant"
+        }));
+        localStorage.setItem("leaseaccomMessages", JSON.stringify([item]));
+        localStorage.setItem("activeConversationId", item.id);
+    }, conversation);
+
+    await page.goto("/messages.html");
+    await page.evaluate(() => {
+        window.LeaseAccomCloud = {
+            hasSb: () => true,
+            uid: async () => "tenant-send-test",
+            sendMessage: async (id, body) => ({
+                ok: id === "conversation-send-test",
+                data: { id: "message-send-test", body, created_at: new Date().toISOString() }
+            }),
+            notify: async () => ({ ok: true })
+        };
+    });
+
+    await page.locator("#messageInput").fill("Hello, is this property still available?");
+    await page.locator("#messageForm").evaluate(form => form.requestSubmit());
+
+    await expect.poll(() => page.evaluate(() => {
+        const messages = JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]");
+        return messages[0]?.messages?.some(message => message.text === "Hello, is this property still available?");
+    })).toBe(true);
+    await expect(page.locator("#messageInput")).toHaveValue("");
+});
+
+test("tenant message inbox and chat match the responsive branded layout", async ({ page }) => {
+    const conversation = {
+        id: "tenant-inbox-layout-test",
+        propertyId: "tenant-property-layout-test",
+        propertyTitle: "Modern 2 Bedroom Apartment",
+        propertyLocation: "Lekki, Lagos",
+        propertyPrice: 1200000,
+        period: "year",
+        propertyImage: "https://example.com/apartment.jpg",
+        ownerId: "owner-layout-test",
+        ownerName: "LeaseAccom Support",
+        messages: [
+            { sender: "tenant", text: "Is this apartment still available?", createdAt: new Date().toISOString() },
+            { sender: "owner", text: "Yes, would you like to schedule a viewing?", createdAt: new Date().toISOString() }
+        ]
+    };
+    await page.addInitScript((item) => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "tenant-layout-test",
+            name: "Test Tenant",
+            accountType: "tenant"
+        }));
+        localStorage.setItem("leaseaccomMessages", JSON.stringify([item]));
+    }, conversation);
+
+    await page.goto("/messages.html");
+    await expect(page.locator(".messages-logo img")).toHaveAttribute("src", "IMAGES/leaseaccom-logo-full.png");
+    await expect(page.locator(".messages-logo img")).toBeVisible();
+    await expect(page.locator(".conversation-search .search-icon")).toBeVisible();
+    await expect(page.locator("#conversationList .conversation-item")).toContainText("LeaseAccom Support");
+    await expect(page.locator(".message-filter")).toHaveCount(4);
+    await page.locator("#conversationList .conversation-item").click();
+    await expect(page.locator("#chatPersonName")).toHaveText("LeaseAccom Support");
+    await expect(page.locator(".tenant-property-card")).toContainText("Book viewing");
+
+    for (const width of [320, 375, 768, 1280]) {
+        await page.setViewportSize({ width, height: 860 });
+        await expect.poll(() => page.evaluate(() =>
+            document.documentElement.scrollWidth <= window.innerWidth
+        )).toBe(true);
+    }
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await expect.poll(() => page.locator(".messages-logo img").evaluate((image) =>
+        image.currentSrc.endsWith("/IMAGES/leaseaccom-logo-icon.png")
+    )).toBe(true);
+    await expect(page.locator("#chatVideoBtn")).toHaveCount(0);
+    await expect(page.locator("#chatBackBtn svg")).toBeVisible();
+    await expect(page.locator("#chatCallBtn")).toBeVisible();
+    await page.locator("#chatBackBtn").click();
+    await expect(page.locator(".messages-sidebar")).toBeVisible();
+    await expect(page.locator(".chat-area")).toBeHidden();
 });
 
 test("tenant notification panel loads and marks backend notifications read", async ({ page }) => {
@@ -262,6 +408,42 @@ test("tenant notification panel loads and marks backend notifications read", asy
     await expect(page.getByRole("button", { name: "Read" })).toBeDisabled();
 });
 
+test("mobile notification sheet keeps content above its dim backdrop", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "tenant-notification-layout",
+            name: "Test Tenant",
+            accountType: "tenant"
+        }));
+        localStorage.setItem("leaseaccomNotifications", JSON.stringify([{
+            id: "notification-layout-test",
+            title: "Test notification",
+            message: "The notification content remains readable.",
+            type: "info",
+            read: false
+        }]));
+    });
+    await page.goto("/tenant-dashboard.html");
+    await page.getByRole("button", { name: "Open notifications" }).click();
+
+    const dropdown = page.locator(".leaseaccom-notification-panel__dropdown");
+    await expect(dropdown).toBeVisible();
+    await expect(dropdown.locator(".leaseaccom-notification__body strong")).toHaveText("Test notification");
+    await expect(dropdown.locator(".leaseaccom-notification__body strong")).toHaveCSS("color", "rgb(23, 33, 27)");
+    await expect.poll(() => dropdown.evaluate(element =>
+        (function () {
+            const card = element.querySelector(".leaseaccom-notification");
+            const rect = card.getBoundingClientRect();
+            return document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+                ?.closest(".leaseaccom-notification-panel__dropdown") === element;
+        })()
+    )).toBe(true);
+
+    await page.locator(".leaseaccom-notification-panel").click({ position: { x: 2, y: 2 } });
+    await expect(page.locator(".leaseaccom-notification-panel")).not.toHaveClass(/is-open/);
+});
+
 test("login uses Supabase Auth without caching the password", async ({ page }) => {
     await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
         contentType: "application/javascript",
@@ -302,6 +484,83 @@ test("property search filters the public catalog", async ({ page }) => {
     await expect(page.locator("#marketplaceProperties .property-card").first()).toContainText(/Lekki/i);
 });
 
+test("assistant guide opens, searches properties, and supports voice without tuning sliders", async ({ page }) => {
+    await page.addInitScript(() => {
+        window.SpeechRecognition = class {
+            start() {
+                this.onresult?.({ results: [[{ transcript: "How do I request a viewing?" }]] });
+            }
+        };
+        window.speechSynthesis = { cancel() {}, speak() {} };
+        window.SpeechSynthesisUtterance = function (text) {
+            this.text = text;
+        };
+    });
+
+    await page.goto("/");
+    await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "manifest.json");
+    await expect.poll(async () => page.evaluate(async () =>
+        (await navigator.serviceWorker.getRegistrations()).some((registration) =>
+            registration.active?.scriptURL.endsWith("/sw.js")
+        )
+    )).toBe(true);
+    const launcher = page.getByRole("button", { name: "Open LeaseAccom AI assistant" });
+    await expect(launcher).toBeVisible();
+    await expect(page.locator('script[src$="JS/floating-help.js"]')).toHaveCount(1);
+    await launcher.click();
+    await expect(page.locator("#assistantPanel")).toHaveClass(/is-open/);
+    await expect(page.locator("#laVoiceBtn")).toBeVisible();
+    await expect(page.locator("#laSpeakerBtn")).toBeVisible();
+    await expect(page.locator("#assistantPanel input[type=range]")).toHaveCount(0);
+
+    const answerStartedAt = Date.now();
+    await page.locator("#laVoiceBtn").click();
+    await expect(page.locator(".la-liquid-loader")).toBeVisible();
+    await expect(page.locator(".assistant-message-ai").last()).toContainText("Request a viewing", { timeout: 5000 });
+    expect(Date.now() - answerStartedAt).toBeGreaterThanOrEqual(2900);
+
+    await page.locator("#laSpeakerBtn").click();
+    await expect(page.locator("#laSpeakerBtn")).toHaveAttribute("title", "Voice replies off");
+
+    await page.locator("#assistantInput").fill("Show me apartments in Lekki");
+    const searchStartedAt = Date.now();
+    await page.locator("#assistantForm").evaluate((form) => form.requestSubmit());
+    await expect(page.locator(".la-liquid-loader")).toContainText("Searching for apartments in Lekki");
+    await expect(page.locator(".assistant-result strong").first()).toContainText("Apartment", { timeout: 5000 });
+    expect(Date.now() - searchStartedAt).toBeGreaterThanOrEqual(2900);
+});
+
+test("PWA install manifest exposes correctly sized icons and install action", async ({ page }) => {
+    await page.goto("/");
+
+    const manifest = await page.evaluate(async () => {
+        const response = await fetch("manifest.json");
+        return response.json();
+    });
+    expect(manifest.display).toBe("standalone");
+    expect(manifest.icons.map(icon => icon.sizes).sort()).toEqual(["192x192", "512x512"]);
+
+    const iconSizes = await page.evaluate(async icons => Promise.all(icons.map(icon => new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(`${image.naturalWidth}x${image.naturalHeight}`);
+        image.onerror = reject;
+        image.src = icon.src;
+    }))), manifest.icons);
+    expect(iconSizes.sort()).toEqual(["192x192", "512x512"]);
+
+    const installButton = page.locator("#installAppBtn");
+    await expect(installButton).toBeHidden();
+    await page.evaluate(() => {
+        const event = new Event("beforeinstallprompt", { cancelable: true });
+        event.prompt = async () => {};
+        event.userChoice = Promise.resolve({ outcome: "accepted" });
+        window.dispatchEvent(event);
+    });
+    await expect(installButton).toBeVisible();
+    await installButton.click();
+    await expect(installButton).toBeHidden();
+});
+
 test("approved Supabase UUID listings render and open their details", async ({ page }) => {
     const propertyId = "4f814eed-4f2e-4bb0-b41c-647223d495bd";
     const listing = {
@@ -331,6 +590,7 @@ test("approved Supabase UUID listings render and open their details", async ({ p
         body: `window.supabase = { createClient: () => ({
             from: () => ({
                 select() { return this; },
+                or() { return this; },
                 eq() { return this; },
                 order() { return Promise.resolve({ data: [${JSON.stringify(listing)}], error: null }); }
             }),
@@ -378,7 +638,9 @@ test("property details rental modal submits applications to the backend", async 
         body: `window.supabase = { createClient: () => ({
             from: () => ({
                 select() { return this; },
+                or() { return this; },
                 eq() { return this; },
+                then(resolve, reject) { return Promise.resolve({ data: [], error: null }).then(resolve, reject); },
                 order() { return Promise.resolve({ data: [${JSON.stringify(listing)}], error: null }); }
             }),
             auth: { getSession: async () => ({ data: { session: { access_token: "modal-test-token" } }, error: null }) }
@@ -428,7 +690,8 @@ test("property details rental modal submits applications to the backend", async 
     await page.locator("#applicantName").fill("Modal Tenant");
     await page.locator("#applicantEmail").fill("modal@example.com");
     await page.locator("#applicantPhone").fill("08000000000");
-    await page.locator("#moveInDate").fill("2026-11-01");
+    const minMoveInDate = await page.locator("#moveInDate").getAttribute("min");
+    await page.locator("#moveInDate").fill(minMoveInDate);
     await page.locator("#applicationMessage").fill("I would like to rent this apartment.");
     await page.getByRole("button", { name: "Submit Application" }).click();
 
@@ -437,7 +700,7 @@ test("property details rental modal submits applications to the backend", async 
         property_id: propertyId,
         applicant_name: "Modal Tenant",
         applicant_phone: "08000000000",
-        move_in_date: "2026-11-01"
+        move_in_date: minMoveInDate
     });
 });
 
@@ -714,17 +977,73 @@ test("owner dashboard shows the house tour and subscription plans", async ({ pag
     const video = page.locator(".owner-featured-video");
     await expect(video).toBeVisible();
     await expect.poll(() => video.evaluate((element) => element.readyState)).toBeGreaterThan(0);
-    await expect(page.locator("#ownerPlanOptions .owner-plan-option")).toHaveCount(3);
-    await expect(page.locator("#ownerPlanOptions")).toContainText("₦20,000");
+    await expect(page.locator("#ownerPricingPlans .owner-subscription-card")).toHaveCount(3);
+    await expect(page.locator("#ownerPricingPlans")).toContainText("₦20,000");
 
-    await page.getByRole("button", { name: "Subscribe now" }).click();
-    await expect(page.locator("#ownerPlanNotice")).toContainText("checkout is not connected yet");
+    page.once("dialog", dialog => dialog.accept());
+    await page.locator('#ownerPlan [data-select-plan="enterprise"]').click();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomPlanIntent") || "null")?.planId))
+        .toBe("enterprise");
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect.poll(() => page.locator("#ownerPlanOptions").evaluate((element) =>
+    await expect(page.locator(".owner-brand-text img")).toHaveAttribute("src", "IMAGES/leaseaccom-logo-full.png");
+    await expect(page.locator(".owner-brand-text img")).toBeVisible();
+    await expect(page.locator("#ownerMessageBadge").locator("..")).toBeVisible();
+    await expect(page.locator("#ownerNotifBtn")).toBeVisible();
+    await expect.poll(() => page.locator(".owner-brand-text img").evaluate((image) =>
+        image.currentSrc.endsWith("/IMAGES/leaseaccom-logo-icon.png")
+    )).toBe(true);
+    await expect.poll(() => page.locator(".owner-subscription-grid").evaluate((element) =>
         getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length
     )).toBe(1);
     await expect.poll(() => page.evaluate(() =>
         document.documentElement.scrollWidth <= window.innerWidth
     )).toBe(true);
+});
+
+test("owner plans logo aligns to the top-left on mobile", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/owner-plans.html");
+
+    const logo = page.locator(".op-top .brand img");
+    await expect(logo).toBeVisible();
+    await expect.poll(() => logo.evaluate((image) =>
+        image.currentSrc.endsWith("/IMAGES/leaseaccom-logo-icon.png")
+    )).toBe(true);
+    await expect.poll(() => logo.evaluate((image) =>
+        image.getBoundingClientRect().left
+    )).toBeLessThan(30);
+});
+
+test("homepage shows its spinner followed by skeleton loading", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#landingSpinnerStage img")).toHaveAttribute("src", "IMAGES/leaseaccom-logo-full.png");
+    await expect.poll(() => page.locator("html").getAttribute("data-landing-loader-phase"), { timeout: 10000 }).toBe("ready");
+    await expect(page.locator(".landing-skeleton-card")).toHaveCount(3);
+    await expect(page.locator("#assistantPanel input[type=range]")).toHaveCount(0);
+});
+
+test("owner plan checkout remains paused", async ({ page }) => {
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "owner-payment-test",
+            name: "Test Owner",
+            email: "owner@example.com",
+            accountType: "owner"
+        }));
+    });
+    const paystackRequests = [];
+    page.on("request", request => {
+        if (request.url().includes("js.paystack.co")) paystackRequests.push(request.url());
+    });
+    await page.goto("/owner-plans.html");
+
+    await page.once("dialog", async dialog => {
+        expect(dialog.message()).toContain("currently paused");
+        await dialog.accept();
+    });
+    await page.locator('[data-select-plan="professional"]').click();
+
+    expect(paystackRequests).toHaveLength(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomCurrentUser")).plan || null)).toBeNull();
 });

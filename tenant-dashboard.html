@@ -14,7 +14,7 @@
 <meta name="description" content="Track saved properties, viewings and rental applications from your LeaseAccom tenant dashboard.">
 
     <link rel="stylesheet" href="CSS/style.css">
-<link rel="stylesheet" href="CSS/skeletons.css">
+    <link rel="stylesheet" href="CSS/skeletons.css">
     <link rel="stylesheet" href="CSS/tenant-loop.css">
     <link rel="stylesheet" href="CSS/notifications.css">
     <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
@@ -51,7 +51,10 @@
         href="index.html"
         class="logo"
     >
-        <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
+        <picture>
+            <source media="(max-width: 820px)" srcset="IMAGES/leaseaccom-logo-icon.png">
+            <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
+        </picture>
     </a>
 
 
@@ -517,7 +520,6 @@
 <script src="JS/tenant-loop.js"></script>
 <script src="JS/leaseaccom-polish.js"></script>
 <script src="JS/leaseaccom-mobile-nav.js"></script>
-
 <script src="JS/skeletons.js"></script>
 </body>
 

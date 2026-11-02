@@ -5,6 +5,7 @@
 (function (global) {
   "use strict";
 
+  var PAYMENTS_ENABLED = false;
   var cachedPublicKey = null;
 
   function sb() {
@@ -72,6 +73,10 @@
   }
 
   async function activatePlan(user, planId, reference, amount, billing) {
+    if (!PAYMENTS_ENABLED) {
+      return false;
+    }
+
     var client = sb();
     var uid = user && (user.id || user.userId);
     user.plan = planId;
@@ -139,6 +144,11 @@
    * @param {string} [opts.email]
    */
   async function startPlanCheckout(opts) {
+    if (!PAYMENTS_ENABLED) {
+      alert("Paystack checkout is currently paused.");
+      return;
+    }
+
     var user = currentUser();
     if (!user) {
       alert("Please sign in as an owner to subscribe.");

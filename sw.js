@@ -2,19 +2,25 @@
    Network-first for HTML so site updates appear in the installed app.
    Cache-first for static assets.
 */
-const CACHE = "leaseaccom-pwa-v2";
+const CACHE = "leaseaccom-pwa-v4";
 
 self.addEventListener("install", function (event) {
-  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE).then(function (cache) {
-      return cache.addAll([
-        "./",
-        "./index.html",
-        "./CSS/style.css",
-        "./JS/leaseaccom-mobile-nav.js"
-      ]).catch(function () { /* ignore missing during install */ });
-    })
+    caches.open(CACHE)
+      .then(function (cache) {
+        return cache.addAll([
+          "./",
+          "./index.html",
+          "./manifest.json",
+          "./CSS/style.css",
+          "./CSS/skeletons.css",
+          "./IMAGES/leaseaccom-pwa-192.png",
+          "./IMAGES/leaseaccom-pwa-512.png"
+        ]);
+      })
+      .then(function () {
+        return self.skipWaiting();
+      })
   );
 });
 
@@ -34,16 +40,21 @@ self.addEventListener("activate", function (event) {
 
 self.addEventListener("fetch", function (event) {
   var req = event.request;
+  var url = new URL(req.url);
+  if (req.method !== "GET" || url.origin !== self.location.origin) return;
+
   // Always try network first for HTML documents so updates show up
   if (req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html")) {
     event.respondWith(
       fetch(req).then(function (res) {
-        var copy = res.clone();
-        caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
+        if (res.ok) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
+        }
         return res;
       }).catch(function () {
         return caches.match(req).then(function (cached) {
-          return cached || caches.match("./index.html");
+          return cached || caches.match(new URL("./index.html", self.registration.scope).href);
         });
       })
     );
@@ -56,7 +67,11 @@ self.addEventListener("fetch", function (event) {
       return cached || fetch(req).then(function (res) {
         if (res && res.status === 200 && req.method === "GET") {
           var copy = res.clone();
-          caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
+          caches.open(CACHE).then(function (cache) {
+            return cache.put(req, copy);
+          }).catch(function (error) {
+            console.warn("PWA asset cache update failed.", error);
+          });
         }
         return res;
       });

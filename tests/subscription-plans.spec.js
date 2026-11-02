@@ -78,5 +78,6 @@ test("owner dashboard contains the full subscription page inline", async ({ page
     page.once("dialog", (dialog) => dialog.accept());
     await page.locator('#ownerPlan [data-select-plan="business"]').click();
     await expect(page.locator("#ownerPlanSummary")).toContainText("Free");
-    expect(await page.evaluate(() => localStorage.getItem("leaseaccomPlanIntent"))).toBeNull();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomPlanIntent") || "null")))
+        .toMatchObject({ planId: "business", billing: "annual", amount: 108000 });
 });

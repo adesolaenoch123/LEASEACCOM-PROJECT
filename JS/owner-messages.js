@@ -30,6 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const tenantAvatar =
         document.getElementById("tenantChatOwnerAvatar");
 
+    const propertyCard =
+        document.getElementById("ownerChatPropertyCard");
+
     const topProfileAvatar =
         document.getElementById("topProfileAvatar");
 
@@ -374,6 +377,20 @@ document.addEventListener("DOMContentLoaded", () => {
             item.className =
                 "conversation-item";
 
+            const category =
+                String(
+                    conversation.category ||
+                    conversation.messageCategory ||
+                    "chats"
+                ).toLowerCase();
+
+            item.dataset.category =
+                category.includes("notification")
+                    ? "notifications"
+                    : category.includes("update")
+                        ? "updates"
+                        : "chats";
+
 
             if (
                 conversation.id ===
@@ -544,6 +561,35 @@ document.addEventListener("DOMContentLoaded", () => {
             conversation.tenantAvatar ||
             tenantProfile.avatar ||
             defaultTenantAvatar;
+
+        if (propertyCard) {
+            const propertyId = conversation.propertyId;
+            const propertyTitle = conversation.propertyTitle || "Property enquiry";
+            const propertyLocation = conversation.propertyLocation || conversation.location || "";
+            const propertyImage = conversation.propertyImage || conversation.image || "";
+            const propertyPrice = Number(conversation.propertyPrice ?? conversation.price);
+            const priceLabel = Number.isFinite(propertyPrice) && propertyPrice > 0
+                ? new Intl.NumberFormat("en-NG", {
+                    style: "currency",
+                    currency: "NGN",
+                    maximumFractionDigits: 0
+                }).format(propertyPrice)
+                : "";
+            propertyCard.hidden = !propertyId;
+            if (propertyId) {
+                propertyCard.innerHTML = `
+                    ${propertyImage
+                        ? `<img class="om-property-image" src="${escapeHTML(propertyImage)}" alt="${escapeHTML(propertyTitle)}">`
+                        : `<span class="om-property-image om-property-placeholder"><i class="bx bx-building-house" aria-hidden="true"></i></span>`}
+                    <div class="om-property-details">
+                        <strong>${escapeHTML(propertyTitle)}</strong>
+                        ${propertyLocation ? `<span>${escapeHTML(propertyLocation)}</span>` : ""}
+                        ${priceLabel ? `<b>${escapeHTML(priceLabel)}</b>` : ""}
+                    </div>
+                    <a class="om-property-link" href="property-details.html?id=${encodeURIComponent(String(propertyId))}">View property</a>
+                `;
+            }
+        }
 
 
         renderMessages(
@@ -1038,91 +1084,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         }
     );
-
-
-    /* ==========================================
-       FILTER BUTTONS
-    ========================================== */
-
-    document
-        .querySelectorAll(".message-filter")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    document
-                        .querySelectorAll(
-                            ".message-filter"
-                        )
-                        .forEach(btn =>
-                            btn.classList.remove(
-                                "active"
-                            )
-                        );
-
-
-                    button.classList.add(
-                        "active"
-                    );
-
-
-                    const filter =
-                        button.dataset.filter;
-
-
-                    const items =
-                        document.querySelectorAll(
-                            ".conversation-item"
-                        );
-
-
-                    conversations =
-                        getConversations();
-
-
-                    items.forEach(item => {
-
-                        const conversation =
-                            conversations.find(
-                                c =>
-                                    item.classList.contains(
-                                        "active"
-                                    )
-                            );
-
-
-                        if (
-                            filter ===
-                            "unread"
-                        ) {
-
-                            const hasUnread =
-                                conversations.some(
-                                    c =>
-                                        c.unread > 0
-                                );
-
-
-                            item.style.display =
-                                hasUnread
-                                    ? "flex"
-                                    : "none";
-
-                        } else {
-
-                            item.style.display =
-                                "flex";
-
-                        }
-
-                    });
-
-                }
-            );
-
-        });
 
 
     /* ==========================================

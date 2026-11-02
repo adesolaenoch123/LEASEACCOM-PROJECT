@@ -442,16 +442,32 @@ body.lh-notifications-open {
 .notification-toggle:hover { color: #087443; border-color: #b8ddc6; }
 
 @media (max-width: 820px) {
-  .leaseaccom-notification-panel.is-open::before { z-index: 9998; }
+  .leaseaccom-notification-panel.is-open {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10000 !important;
+    display: block !important;
+  }
+  .leaseaccom-notification-panel.is-open::before {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: rgba(8, 15, 26, .48);
+    backdrop-filter: blur(2px);
+  }
   .leaseaccom-notification-panel.is-open .leaseaccom-notification-panel__dropdown {
-    z-index: 9999 !important;
+    position: absolute !important;
+    z-index: 1 !important;
     left: 12px !important;
     right: 12px !important;
-    top: 72px !important;
+    top: max(72px, env(safe-area-inset-top)) !important;
     bottom: auto !important;
     width: auto !important;
     max-height: min(70dvh, 540px) !important;
     border-radius: 18px !important;
   }
-  .leaseaccom-notification-list { max-height: calc(min(70dvh, 540px) - 66px) !important; }
+  .leaseaccom-notification-list {
+    max-height: calc(min(70dvh, 540px) - 66px) !important;
+    overflow-y: auto;
+  }
 }

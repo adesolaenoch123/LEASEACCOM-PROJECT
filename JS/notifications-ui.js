@@ -229,9 +229,7 @@
         if (window.LeaseAccomCloud?.listNotifications) {
           var cloudResult = await window.LeaseAccomCloud.listNotifications();
           if (cloudResult?.ok) { renderNotifications(cloudResult.data || []); return; }
-          showFallback("Notifications are temporarily unavailable.", "ðŸ””");
-          if (badge) badge.hidden = true;
-          return;
+          console.warn("Supabase notifications unavailable; trying the configured API.", cloudResult?.error);
         }
         if (window.LeaseAccomApi && window.LeaseAccomAuth) {
           var token = await window.LeaseAccomAuth.getAccessToken();
@@ -290,6 +288,12 @@
       });
     }
 
+    notificationPanel.addEventListener("click", function (event) {
+      if (event.target === notificationPanel && notificationPanel.classList.contains("is-open")) {
+        closePanel();
+      }
+    });
+
     document.addEventListener("click", function (event) {
       if (!notificationPanel.classList.contains("is-open")) return;
       if (notificationPanel.contains(event.target)) return;
@@ -307,9 +311,11 @@
 
       if (window.LeaseAccomCloud?.markNotificationRead) {
         var cloudMarked = await window.LeaseAccomCloud.markNotificationRead(id);
-        if (cloudMarked?.ok) await fetchNotifications();
-        else if (typeof window.leaseaccomToast === "function") window.leaseaccomToast("Could not update notification");
-        return;
+        if (cloudMarked?.ok) {
+          await fetchNotifications();
+          return;
+        }
+        console.warn("Supabase could not update the notification; trying the configured API.", cloudMarked?.error);
       }
 
       if (window.LeaseAccomApi && window.LeaseAccomApi.isConfigured && window.LeaseAccomApi.isConfigured()) {

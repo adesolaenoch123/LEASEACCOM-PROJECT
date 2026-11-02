@@ -32,13 +32,10 @@
     if (sk) sk.remove();
   }
   function auto() {
-    // index.html has a coordinated full-page skeleton sequence; avoid a second
-    // set of card skeletons fighting it during startup.
     var page = (location.pathname || "").toLowerCase().split("/").pop();
-    if (!page || page === "index.html") return;
     document.querySelectorAll(".property-grid").forEach(function (grid) {
       if (!grid.children.length || grid.querySelector(".la-skeleton-grid")) {
-        show(grid, 6);
+        show(grid, page === "index.html" ? 3 : 6);
         // Hide once real cards appear
         var obs = new MutationObserver(function () {
           if (grid.querySelector(".property-card, article")) {
@@ -47,7 +44,6 @@
           }
         });
         obs.observe(grid, { childList: true, subtree: true });
-        // Safety timeout
         setTimeout(function () { hide(grid); }, 8000);
       }
     });

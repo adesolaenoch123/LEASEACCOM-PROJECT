@@ -326,9 +326,7 @@ function refreshOwnerPlanUI() {
       (plan.billing === "month" ? "/mo" : "") + "</p>" +
       '<p class="owner-muted">' + used + " / " + maxU + " listings used</p>" +
       '<p class="owner-muted">' + blurb + "</p>" +
-      '<div class="owner-plan-meter"><span style="width:' + pct + '%"></span></div>' +
-      '<div class="owner-plan-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
-      '<a class="owner-btn owner-btn-small" href="#ownerPricingPlans">View plans</a></div>';
+      '<div class="owner-plan-meter"><span style="width:' + pct + '%"></span></div>';
   }
 
   // Gate premium / standard features

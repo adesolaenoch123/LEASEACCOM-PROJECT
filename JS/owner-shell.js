@@ -44,6 +44,31 @@
     return loadNotifs().filter((n) => !n.read).length;
   }
 
+  function unreadMessageCount() {
+    const user = currentUser();
+    const userId = String(user?.id || user?.userId || '');
+    try {
+      const conversations = JSON.parse(localStorage.getItem('leaseaccomMessages') || '[]');
+      if (!Array.isArray(conversations)) return 0;
+      return conversations.reduce((total, conversation) => {
+        const ownerId = String(conversation.ownerId || conversation.owner_id || '');
+        if (userId && ownerId && ownerId !== userId) return total;
+        return total + Math.max(0, Number(conversation.unread) || 0);
+      }, 0);
+    } catch (error) {
+      console.warn('Owner message badge could not read local conversations.', error);
+      return 0;
+    }
+  }
+
+  function updateMessageBadge() {
+    const badge = document.getElementById('ownerMessageBadge');
+    if (!badge) return;
+    const count = unreadMessageCount();
+    badge.textContent = count > 99 ? '99+' : String(count);
+    badge.hidden = count === 0;
+  }
+
   function sidebarHTML(active) {
     const user = currentUser();
     const name = user?.name || 'Owner';
@@ -60,7 +85,7 @@
     <button type="button" class="owner-sidebar-hide" id="ownerSidebarHide" aria-label="Hide menu"><i class="bx bx-chevron-left"></i></button>
   </div>
   <nav class="owner-sidebar-nav">
-    ${item('owner-dashboard.html', 'dashboard', 'bx-grid-alt', 'Dashboard')}
+    ${item('owner-dashboard.html', 'dashboard', 'bx-home-alt', 'Dashboard')}
     ${item('owner-dashboard.html#myProperties', 'properties', 'bx-building-house', 'Properties')}
     ${item('owner-verification.html', 'verification', 'bx-badge-check', 'Verification')}
     ${item('add-property.html', 'add', 'bx-plus-circle', 'Add property')}
@@ -90,13 +115,20 @@
 <header class="owner-topbar">
   <button type="button" class="owner-menu-toggle" id="ownerMenuToggle" aria-label="Open menu"><i class="bx bx-menu"></i></button>
   <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseAccom">
-    <span class="lh-lease">Lease</span><span class="lh-accom">Accom</span>
+    <picture>
+      <source media="(max-width: 820px)" srcset="IMAGES/leaseaccom-logo-icon.png">
+      <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
+    </picture>
   </a>
   <div class="owner-topbar-title owner-topbar-title--desktop">
     <span class="owner-eyebrow">OWNER LOUNGE</span>
     <h1>${title}</h1>
   </div>
   <div class="owner-topbar-actions">
+    <a href="owner-messages.html" class="owner-ghost-btn owner-topbar-icon-link" aria-label="Messages" title="Messages">
+      <i class="bx bx-message-dots" aria-hidden="true"></i>
+      <span class="owner-notif-badge" id="ownerMessageBadge" hidden>0</span>
+    </a>
     <div class="owner-notif-wrap">
       <button type="button" class="owner-ghost-btn owner-notif-btn" id="ownerNotifBtn" aria-label="Notifications">
         <i class="bx bx-bell"></i>
@@ -173,6 +205,8 @@
     seedNotifsFromData();
     renderNotifList();
     loadBackendNotifications();
+    updateMessageBadge();
+    window.addEventListener('storage', updateMessageBadge);
     const badge = document.getElementById('ownerNotifBadge');
     const panel = document.getElementById('ownerNotifPanel');
     document.getElementById('ownerNotifBtn')?.addEventListener('click', (e) => {

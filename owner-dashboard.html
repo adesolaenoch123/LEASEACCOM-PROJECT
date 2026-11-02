@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="CSS/style.css">
 <link rel="stylesheet" href="CSS/skeletons.css">
   <link rel="stylesheet" href="CSS/notifications.css">
+  <link rel="stylesheet" href="CSS/owner-subscription.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 <body data-auth-gate="owner" class="owner-lounge-body" data-owner-page="dashboard">
@@ -17,7 +18,10 @@
   <aside class="owner-sidebar" id="ownerSidebar">
     <div class="owner-sidebar-top">
       <a href="index.html" class="owner-sidebar-brand">
-        <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
+        <picture>
+          <source media="(max-width: 900px)" srcset="IMAGES/leaseaccom-logo-icon.png">
+          <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
+        </picture>
         <div>
           <strong>LeaseAccom</strong>
           <span>Owner Lounge</span>
@@ -29,7 +33,7 @@
     </div>
 
     <nav class="owner-sidebar-nav">
-      <a href="owner-dashboard.html" class="owner-nav-item is-active"><i class="bx bx-grid-alt"></i><span>Dashboard</span></a>
+      <a href="owner-dashboard.html" class="owner-nav-item is-active"><i class="bx bx-home-alt"></i><span>Dashboard</span></a>
       <a href="owner-dashboard.html#myProperties" class="owner-nav-item"><i class="bx bx-building-house"></i><span>Properties</span></a>
       <a href="owner-dashboard.html#ownerViewings" class="owner-nav-item"><i class="bx bx-calendar"></i><span>Viewings</span></a>
       <a href="owner-dashboard.html#ownerApplications" class="owner-nav-item"><i class="bx bx-file"></i><span>Applications</span></a>
@@ -59,13 +63,20 @@
     <header class="owner-topbar">
       <button type="button" class="owner-menu-toggle" id="ownerMenuToggle" aria-label="Open menu"><i class="bx bx-menu"></i></button>
       <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseAccom">
-        <span class="lh-lease">Lease</span><span class="lh-accom">Accom</span>
+        <picture>
+          <source media="(max-width: 820px)" srcset="IMAGES/leaseaccom-logo-icon.png">
+          <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
+        </picture>
       </a>
       <div class="owner-topbar-title owner-topbar-title--desktop">
         <span class="owner-eyebrow">OWNER LOUNGE</span>
         <h1 id="ownerStoreTitle">Dashboard</h1>
       </div>
       <div class="owner-topbar-actions">
+        <a href="owner-messages.html" class="owner-ghost-btn owner-topbar-icon-link" aria-label="Messages" title="Messages">
+          <i class="bx bx-message-dots" aria-hidden="true"></i>
+          <span class="owner-notif-badge" id="ownerMessageBadge" hidden>0</span>
+        </a>
         <div class="owner-notif-wrap">
           <button type="button" class="owner-ghost-btn owner-notif-btn" id="ownerNotifBtn" aria-label="Notifications">
             <i class="bx bx-bell"></i>
@@ -302,12 +313,119 @@
             <strong>Free</strong>
             <p class="owner-muted">List properties, receive viewings and applications. Premium payout tools can be added later.</p>
           </div>
-          <button type="button" class="owner-ghost-btn" id="ownerManagePlanBtn">Manage</button>
+          <button type="button" class="owner-ghost-btn" id="ownerManagePlanBtn">Compare plans</button>
         </div>
 
-        <div class="owner-tour-layout">
+        <section class="owner-subscription-page" id="ownerPricingPlans" aria-labelledby="ownerPricingTitle">
+          <div class="owner-subscription-pricing">
+            <div class="owner-subscription-choose">Choose your plan</div>
+            <h2 id="ownerPricingTitle">Simple, transparent pricing</h2>
+            <p class="owner-subscription-intro">Select a plan to grow your property business. Save 10% when you choose annual billing.</p>
+            <div class="owner-subscription-billing" role="group" aria-label="Billing period">
+              <button type="button" class="is-active" data-billing="monthly" aria-pressed="true">Monthly</button>
+              <button type="button" data-billing="annual" aria-pressed="false">Annually <span>Save 10%</span></button>
+            </div>
+
+            <div class="owner-subscription-grid">
+              <article class="owner-subscription-card">
+                <div class="owner-subscription-icon"><i class="bx bx-home-alt" aria-hidden="true"></i></div>
+                <h3>Professional</h3>
+                <p class="owner-subscription-audience">For individual landlords and small property owners.</p>
+                <div class="owner-subscription-price"><strong data-price-for="professional">₦5,000</strong><span>/ month</span></div>
+                <div class="owner-subscription-annual" data-annual-note="professional">Annual: ₦54,000 (10% off)</div>
+                <button type="button" class="owner-subscription-cta" data-select-plan="professional">Get Started</button>
+                <h4>Property listings</h4>
+                <ul>
+                  <li>Up to 5 active listings</li>
+                  <li>Up to 15 photos per listing</li>
+                  <li>1 video per listing (when available)</li>
+                  <li>Property verification eligibility</li>
+                  <li>Standard search placement</li>
+                  <li>Availability calendar</li>
+                </ul>
+                <h4>Management &amp; support</h4>
+                <ul>
+                  <li>Tenant enquiries and in-app chat</li>
+                  <li>Viewing request management</li>
+                  <li>Application tracking</li>
+                  <li>Basic dashboard &amp; property analytics</li>
+                  <li>Reviews and notifications</li>
+                  <li>Email support</li>
+                </ul>
+                <p class="owner-subscription-foot">Perfect for getting started — list, attract tenants and manage enquiries with ease.</p>
+              </article>
+
+              <article class="owner-subscription-card is-popular">
+                <span class="owner-subscription-tag">Most Popular</span>
+                <div class="owner-subscription-icon"><i class="bx bx-buildings" aria-hidden="true"></i></div>
+                <h3>Business</h3>
+                <p class="owner-subscription-audience">For growing landlords and property managers.</p>
+                <div class="owner-subscription-price"><strong data-price-for="business">₦10,000</strong><span>/ month</span></div>
+                <div class="owner-subscription-annual" data-annual-note="business">Annual: ₦108,000 (10% off)</div>
+                <button type="button" class="owner-subscription-cta" data-select-plan="business">Get Started</button>
+                <h4>Property listings</h4>
+                <ul>
+                  <li>Up to 10 active listings</li>
+                  <li>Up to 20 photos per listing</li>
+                  <li>Up to 3 videos per listing (when available)</li>
+                  <li>Property verification eligibility</li>
+                  <li>Priority search placement</li>
+                  <li>Availability calendar</li>
+                </ul>
+                <h4>Management &amp; growth tools</h4>
+                <ul>
+                  <li>Everything in Professional</li>
+                  <li>Advanced property and enquiry analytics</li>
+                  <li>Lead tracking &amp; applicant management</li>
+                  <li>Bulk listing management</li>
+                  <li>Dedicated account manager support</li>
+                  <li>Ad-free experience</li>
+                </ul>
+                <p class="owner-subscription-foot">For growing businesses — more visibility, better insights and portfolio control.</p>
+              </article>
+
+              <article class="owner-subscription-card is-enterprise">
+                <div class="owner-subscription-icon"><i class="bx bx-building-house" aria-hidden="true"></i></div>
+                <h3>Enterprise</h3>
+                <p class="owner-subscription-audience">For established agencies, hotels and large property businesses.</p>
+                <div class="owner-subscription-price"><strong data-price-for="enterprise">₦20,000</strong><span>/ month</span></div>
+                <div class="owner-subscription-annual" data-annual-note="enterprise">Annual: ₦216,000 (10% off)</div>
+                <button type="button" class="owner-subscription-cta" data-select-plan="enterprise">Get Started</button>
+                <h4>Property listings</h4>
+                <ul>
+                  <li>Up to 30 active listings</li>
+                  <li>Up to 20 photos per listing</li>
+                  <li>Up to 3 videos per listing (when available)</li>
+                  <li>Property verification eligibility</li>
+                  <li>Priority search placement</li>
+                  <li>Availability calendar</li>
+                </ul>
+                <h4>Enterprise features</h4>
+                <ul>
+                  <li>Everything in Business</li>
+                  <li>AI assistant (100 requests per month)</li>
+                  <li>Dedicated company storefront on LeaseAccom</li>
+                  <li>Branded company profile</li>
+                  <li>Featured on landing page (subject to availability)</li>
+                  <li>Advanced portfolio &amp; performance analytics</li>
+                  <li>Ad-free · priority support</li>
+                  <li>Company advertising (optional add-on)</li>
+                </ul>
+                <p class="owner-subscription-foot">Built for bigger ambitions — showcase your brand and manage your portfolio in one place.</p>
+              </article>
+            </div>
+
+            <div class="owner-subscription-perks">
+              <div><strong>Transaction fee discounts</strong><span>Professional 5% · Business 10% · Enterprise 15% when you subscribe.</span></div>
+              <div><strong>Annual savings</strong><span>Save 10% when you pay yearly.</span></div>
+              <div><strong>Ad policy</strong><span>Business &amp; Enterprise are ad-free. Professional includes standard platform ads.</span></div>
+            </div>
+            <p class="owner-subscription-checkout">Plan checkout is not connected yet. Selecting a plan will save your choice for later.</p>
+          </div>
+        </section>
+
+        <div class="owner-tour-layout" id="ownerFeatured">
           <video class="owner-featured-video" src="hero-banner.mp4" controls muted playsinline preload="metadata" aria-label="Owner featured video"></video>
-          <div id="ownerPlanOptions" class="owner-plan-options" aria-live="polite"></div>
         </div>
         <div id="ownerPlanNotice" class="owner-plan-notice" aria-live="polite"></div>
       </section>
@@ -317,7 +435,7 @@
 
 <nav class="owner-bottom-nav" aria-label="Owner dashboard navigation">
   <a href="owner-dashboard.html" class="is-active" aria-current="page">
-    <i class="bx bx-grid-alt" aria-hidden="true"></i>
+    <i class="bx bx-home-alt" aria-hidden="true"></i>
     <span>Dashboard</span>
   </a>
   <a href="owner-dashboard.html#myProperties">
@@ -346,6 +464,7 @@
 <script src="JS/app.js"></script>
 <script src="JS/config.js"></script>
 <script src="JS/api-client.js"></script>
+<script src="JS/paystack-checkout.js"></script>
 <script src="JS/plans.js"></script>
 <script src="JS/owner-cloud-properties.js"></script>
 <script src="JS/owner-viewings.js"></script>

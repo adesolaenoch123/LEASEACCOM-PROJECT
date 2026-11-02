@@ -7,7 +7,7 @@
   if (!/owner-|add-property/.test(page)) return;
 
   var items = [
-    { href: "owner-dashboard.html", icon: "bx-grid-alt", label: "Dashboard", match: /owner-dashboard/ },
+    { href: "owner-dashboard.html", icon: "bx-home-alt", label: "Dashboard", match: /owner-dashboard/ },
     { href: "owner-dashboard.html#myProperties", icon: "bx-building-house", label: "Properties", match: /myProperties|add-property|owner-properties/ },
     { href: "owner-messages.html", icon: "bx-message-dots", label: "Messages", match: /owner-messages/ },
     { href: "owner-plans.html", icon: "bx-diamond", label: "Plans", match: /owner-plans/ },

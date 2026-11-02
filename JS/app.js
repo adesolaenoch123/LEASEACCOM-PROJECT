@@ -373,6 +373,7 @@ function loadFeatured() {
     const assistantInput = document.getElementById("assistantInput");
     const assistantMessages = document.getElementById("assistantMessages");
     let lastAssistantRequest = null;
+    let assistantAwaitingSearchDetails = false;
 
     function addAssistantMessage(message, sender = "ai") {
         const bubble = document.createElement("div");
@@ -380,6 +381,9 @@ function loadFeatured() {
         bubble.textContent = message;
         assistantMessages.appendChild(bubble);
         assistantMessages.scrollTop = assistantMessages.scrollHeight;
+        if (sender === "ai" && typeof window.LeaseAccomAssistantSpeak === "function") {
+            window.LeaseAccomAssistantSpeak(message);
+        }
     }
 
 
@@ -423,9 +427,15 @@ function loadFeatured() {
 
     function parseAssistantRequest(query) {
         const normalizedQuery = query.toLowerCase();
-        const location = properties.find((property) =>
-            normalizedQuery.includes(property.city.toLowerCase())
-        )?.city;
+        const locationCandidates = Array.from(new Set(properties.flatMap((property) => [
+            property.city,
+            property.location,
+            ...String(property.location || "").split(/[,\s]+/)
+        ]).map((value) => String(value || "").trim()).filter((value) => value.length > 2)))
+            .sort((left, right) => right.length - left.length);
+        const location = locationCandidates.find((candidate) =>
+            normalizedQuery.includes(candidate.toLowerCase())
+        );
         const typeAliases = [
             ["Studio Apartment", "studio apartment"],
             ["Apartment", "apartment"],
@@ -466,7 +476,9 @@ function loadFeatured() {
         const request = parseAssistantRequest(query);
         const matches = properties.filter((property) => (
             isLeaseAccomPropertyPublic(property) &&
-            (!request.location || property.city === request.location) &&
+            (!request.location || [property.city, property.location].some((value) =>
+                String(value || "").toLowerCase().includes(request.location.toLowerCase())
+            )) &&
             (!request.type || property.type === request.type) &&
             (!request.bedrooms || property.bedrooms === request.bedrooms) &&
             property.price <= request.maxBudget
@@ -594,13 +606,8 @@ function loadFeatured() {
 
         if (hasPropertyIntent && !request.location) {
             lastAssistantRequest = query;
+            assistantAwaitingSearchDetails = true;
             addAssistantMessage("Which city or area would you like to search in?");
-            return;
-        }
-
-        if (hasPropertyIntent && request.location && request.maxBudget === Infinity) {
-            lastAssistantRequest = query;
-            addAssistantMessage("What is your maximum budget? You can say something like ₦3m or ₦500k.");
             return;
         }
 
@@ -609,12 +616,7 @@ function loadFeatured() {
             const followUp = findAssistantMatches(followUpQuery);
             if (followUp.request.location || followUp.request.type || followUp.request.bedrooms || followUp.request.maxBudget !== Infinity) {
                 lastAssistantRequest = followUpQuery;
-
-                if (followUp.request.location && followUp.request.maxBudget === Infinity) {
-                    addAssistantMessage("What is your maximum budget? You can say something like ₦3m or ₦500k.");
-                    return;
-                }
-
+                assistantAwaitingSearchDetails = false;
                 respondWithAssistantMatches(followUp.request, followUp.matches);
                 return;
             }
@@ -626,6 +628,7 @@ function loadFeatured() {
         }
 
         lastAssistantRequest = query;
+        assistantAwaitingSearchDetails = false;
         respondWithAssistantMatches(request, matches);
     }
 
@@ -647,6 +650,9 @@ function loadFeatured() {
         addAssistantMessage(`I found ${matches.length} option${matches.length === 1 ? "" : "s"}${filters ? ` for ${filters}` : ""}.`);
         addAssistantResults(matches);
     }
+
+    window.LeaseAccomAssistantSearch = answerAssistant;
+    window.LeaseAccomAssistantHasPendingSearch = () => assistantAwaitingSearchDetails;
 
     function openAISearch() {
         if (!assistantPanel) return;
@@ -684,7 +690,10 @@ function loadFeatured() {
         );
     }
 
-    assistantLauncher?.addEventListener("click", openAISearch);
+    if (assistantLauncher) {
+        assistantLauncher.dataset.leaseaccomAppLauncher = "true";
+        assistantLauncher.addEventListener("click", openAISearch);
+    }
     assistantClose?.addEventListener("click", closeAISearch);
 
     assistantForm?.addEventListener("submit", (event) => {
@@ -694,14 +703,6 @@ function loadFeatured() {
         addAssistantMessage(query, "user");
         assistantInput.value = "";
         answerAssistant(query);
-    });
-
-    document.querySelectorAll("[data-assistant-prompt]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const query = button.dataset.assistantPrompt;
-            addAssistantMessage(query, "user");
-            answerAssistant(query);
-        });
     });
 
 
@@ -6314,6 +6315,16 @@ document.addEventListener(
     }
 );
 })();
+
+if (
+    !window.leaseaccomHelpInitialized &&
+    !document.querySelector('script[data-floating-help], script[src$="JS/floating-help.js"]')
+) {
+    const helpScript = document.createElement("script");
+    helpScript.src = "JS/floating-help.js";
+    helpScript.dataset.floatingHelp = "true";
+    document.body.appendChild(helpScript);
+}
 /* =========================================================
    LEASEACCOM — FINAL UX POLISH
    ========================================================= */

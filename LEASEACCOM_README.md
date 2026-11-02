@@ -14,12 +14,23 @@ Formerly leaseaccom — refined toward the three-experience platform plan.
 
 - Name: **LeaseAccom**
 - Colours: green `#0d7547` / `#15945c`, black `#101311`, white, soft green `#e9f7ef`
-- Logos: `IMAGES/leaseaccom-logo.svg` (stacked), `IMAGES/leaseaccom-logo-horizontal.svg` (navbar)
+- Logos: `IMAGES/leaseaccom-logo-full.png` (desktop wordmark), `IMAGES/leaseaccom-logo-icon.png` (mobile icon)
 
 ## Mobile
 
 - Bottom nav on tenant/public pages (Home · Properties · Messages · Profile)
 - Touch-friendly controls and safe-area padding
+
+## Install LeaseAccom on a phone
+
+The homepage includes the PWA manifest, platform icons, service-worker registration, and an Android/Chromium install button. To publish it with GitHub Pages:
+
+1. Push the repository to GitHub.
+2. In the repository, open **Settings → Pages** and deploy from the `main` branch, repository root.
+3. Open the published HTTPS site on the phone and allow a few seconds for the service worker to install.
+4. On Android/Chrome, tap **Install app** when it appears, or use the browser menu. On iPhone/iPad, open the site in Safari, tap **Share → Add to Home Screen**.
+
+The PWA uses relative URLs so it works from the GitHub project-pages path as well as a custom domain. A GitHub Pages HTTPS URL is required for installation; pushing code alone does not publish/enable Pages.
 
 ## Local storage keys
 

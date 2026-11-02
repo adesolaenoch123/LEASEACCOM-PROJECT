@@ -11,9 +11,11 @@
 <body class="op-body">
 
 <header class="op-top">
-  <a class="brand" href="index.html">
-    <i class="bx bx-home-alt" style="color:#0d7547;font-size:22px"></i>
-    <span>Lease<span class="g">Accom</span></span>
+  <a class="brand" href="index.html" aria-label="LeaseAccom home">
+    <picture>
+      <source media="(max-width: 820px)" srcset="IMAGES/leaseaccom-logo-icon.png">
+      <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
+    </picture>
   </a>
   <nav>
     <a href="index.html">Home</a>
@@ -161,7 +163,12 @@
 </section>
 
 <footer class="op-foot">
-  <a href="index.html"><i class="bx bx-home-alt"></i> LeaseAccom</a>
+  <a href="index.html" aria-label="LeaseAccom home">
+    <picture>
+      <source media="(max-width: 820px)" srcset="IMAGES/leaseaccom-logo-icon.png">
+      <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
+    </picture>
+  </a>
   <span>Find your place. Live better.</span>
 </footer>
 
@@ -169,5 +176,6 @@
 <script src="JS/supabase-client.js"></script>
 <script src="JS/paystack-checkout.js"></script>
 <script src="JS/plans.js"></script>
+<script src="JS/floating-help.js"></script>
 </body>
 </html>

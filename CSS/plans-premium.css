@@ -5,6 +5,7 @@
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
 .op-top .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; color: #101311; }
+.op-top .brand img { display: block; width: min(220px, 42vw); height: 56px; object-fit: contain; }
 .op-top .brand .g { color: #0d7547; }
 .op-top nav { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; font-weight: 600; }
 .op-top nav a { color: #66706a; text-decoration: none; }
@@ -142,9 +143,14 @@
   font-size: 13px; color: #66706a;
 }
 .op-foot a { color: #0d7547; font-weight: 800; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; }
+.op-foot a img { display: block; width: 180px; max-width: 100%; height: 52px; object-fit: contain; }
 
 @media (max-width: 900px) {
   .op-top nav { display: none; }
+  .op-top { justify-content: flex-start; }
+  .op-top .brand { flex: 0 0 46px; width: 46px; height: 46px; margin-right: auto; }
+  .op-top .brand img { width: 46px; height: 46px; }
+  .op-top .op-user { flex: 0 0 auto; }
   .op-hero .inner { grid-template-columns: 1fr; }
   .op-hero-tagline { text-align: left; }
   .op-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }

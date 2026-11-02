@@ -58,7 +58,34 @@
       return response ? response.conversations.map(mapConversation) : null;
     },
 
-    async createConversation(propertyId) {
+    async createConversation(property) {
+      const propertyId = typeof property === "object" ? property?.propertyId || property?.property_id : property;
+      const cloud = window.LeaseAccomCloud;
+      if (cloud?.getOrCreateConversation && typeof property === "object" && property?.ownerId) {
+        try {
+          const result = await cloud.getOrCreateConversation(
+            propertyId,
+            property.ownerId,
+            property.tenantId
+          );
+          if (result?.ok && result.data) {
+            const row = result.data;
+            return mapConversation({
+              ...row,
+              property_title: property.propertyTitle,
+              property_image: property.propertyImage,
+              property_location: property.propertyLocation,
+              owner_name: property.ownerName,
+              owner_avatar: property.ownerAvatar,
+              tenant_name: property.tenantName,
+              tenant_avatar: property.tenantAvatar
+            });
+          }
+          if (result?.error) console.warn("Could not create conversation in Supabase:", result.error);
+        } catch (error) {
+          console.warn("Supabase conversation creation failed:", error);
+        }
+      }
       const response = await request("/conversations", {
         method: "POST",
         body: { property_id: String(propertyId) }
@@ -84,60 +111,73 @@
 })();
 
 
-  // Bridge to Supabase when LeaseAccomCloud is available
-  var _orig = global.LeaseAccomMessagesApi || {};
-  global.LeaseAccomMessagesApi = Object.assign({}, _orig, {
-    async listConversations() {
-      if (global.LeaseAccomCloud && global.LeaseAccomCloud.hasSb && global.LeaseAccomCloud.hasSb()) {
-        try {
-          var client = global.leaseaccomSupabase || global.leasehubSupabase;
-          var uid = await global.LeaseAccomCloud.uid();
-          if (client && uid) {
-            var { data, error } = await client.from("conversations").select("*")
-              .or("tenant_id.eq." + uid + ",owner_id.eq." + uid)
-              .order("last_message_at", { ascending: false });
-            if (!error && data) {
-              return data.map(function (c) {
-                return {
-                  id: c.id,
-                  propertyId: c.property_id,
-                  tenantId: c.tenant_id,
-                  ownerId: c.owner_id,
-                  subject: c.subject || "Property enquiry",
-                  propertyTitle: c.subject || "Property enquiry",
-                  ownerName: "Property Owner",
-                  updatedAt: c.last_message_at,
-                  serverBacked: true,
-                  messages: []
-                };
-              });
-            }
-          }
-        } catch (e) { console.warn(e); }
-      }
-      if (_orig.listConversations) return _orig.listConversations();
-      return null;
-    },
+(function (global) {
+  var chatApi = global.LeaseAccomChatApi || {};
+  var restSendMessage = chatApi.sendMessage;
+  var restListMessages = chatApi.listMessages;
+
+  global.LeaseAccomChatApi = Object.assign({}, chatApi, {
     async sendMessage(conversation, body) {
-      if (global.LeaseAccomCloud && typeof global.LeaseAccomCloud.sendMessage === "function") {
-        var id = conversation && (conversation.id || conversation);
-        var r = await global.LeaseAccomCloud.sendMessage(id, body);
-        if (r && r.ok) return { id: r.data && r.data.id, body: body, createdAt: r.data && r.data.created_at };
-      }
-      if (_orig.sendMessage) return _orig.sendMessage(conversation, body);
-      return null;
-    },
-    async listMessages(conversation) {
-      if (global.LeaseAccomCloud && typeof global.LeaseAccomCloud.listMessages === "function") {
-        var id = conversation && (conversation.id || conversation);
-        var r = await global.LeaseAccomCloud.listMessages(id);
-        if (r && r.ok) {
-          return (r.data || []).map(function (m) {
-            return { id: m.id, body: m.body, senderId: m.sender_id, createdAt: m.created_at };
-          });
+      var cloud = global.LeaseAccomCloud;
+      if (cloud && typeof cloud.sendMessage === "function") {
+        try {
+          var result = await cloud.sendMessage(conversation.id, body);
+          if (result?.ok) {
+            var userId = await cloud.uid();
+            var tenantSent = String(userId) === String(conversation.tenantId);
+            var recipientId = tenantSent ? conversation.ownerId : conversation.tenantId;
+            if (recipientId && cloud.notify) {
+              var notification = await cloud.notify(
+                recipientId,
+                "New message",
+                body.slice(0, 180),
+                "info",
+                tenantSent ? "owner-messages.html" : "messages.html"
+              );
+              if (!notification?.ok) console.warn("Message sent, but its notification could not be saved.", notification?.error);
+            }
+            return {
+              id: result.data?.id,
+              sender_id: userId,
+              sender: tenantSent ? "tenant" : "owner",
+              text: body,
+              body: body,
+              createdAt: result.data?.created_at
+            };
+          }
+          if (result?.error) console.warn("Supabase could not send the message:", result.error);
+        } catch (error) {
+          console.warn("Supabase message send failed:", error);
         }
       }
-      if (_orig.listMessages) return _orig.listMessages(conversation);
-      return null;
+      return restSendMessage ? restSendMessage(conversation, body) : null;
+    },
+
+    async listMessages(conversation) {
+      var cloud = global.LeaseAccomCloud;
+      if (cloud && typeof cloud.listMessages === "function") {
+        try {
+          var result = await cloud.listMessages(conversation.id);
+          if (result?.ok) {
+            return (result.data || []).map(function (message) {
+              var isTenant = String(message.sender_id) === String(conversation.tenantId);
+              return {
+                id: message.id,
+                sender_id: message.sender_id,
+                sender: isTenant ? "tenant" : "owner",
+                senderName: isTenant ? conversation.tenantName : conversation.ownerName,
+                senderAvatar: isTenant ? conversation.tenantAvatar : conversation.ownerAvatar,
+                text: message.body || "",
+                createdAt: message.created_at || ""
+              };
+            });
+          }
+          if (result?.error) console.warn("Supabase messages could not be loaded:", result.error);
+        } catch (error) {
+          console.warn("Supabase message loading failed:", error);
+        }
+      }
+      return restListMessages ? restListMessages(conversation) : null;
     }
   });
+})(window);

@@ -285,6 +285,7 @@
     billing = mode;
     document.querySelectorAll("[data-billing]").forEach(function (btn) {
       btn.classList.toggle("is-active", btn.getAttribute("data-billing") === mode);
+      btn.setAttribute("aria-pressed", String(btn.getAttribute("data-billing") === mode));
     });
     document.querySelectorAll("[data-price-for]").forEach(function (node) {
       var id = node.getAttribute("data-price-for");

@@ -271,8 +271,8 @@ values (
     "heroTitle": "Find your place without the unnecessary stress.",
     "heroSubtitle": "Search verified properties across Nigeria.",
     "heroVideo": "hero-banner.mp4",
-    "logoUrl": "IMAGES/leaseaccom-logo-horizontal.svg",
-    "logoIconUrl": "IMAGES/leaseaccom-logo.svg"
+    "logoUrl": "IMAGES/leaseaccom-logo-full.png",
+    "logoIconUrl": "IMAGES/leaseaccom-logo-icon.png"
   }'::jsonb
 )
 on conflict (key) do nothing;

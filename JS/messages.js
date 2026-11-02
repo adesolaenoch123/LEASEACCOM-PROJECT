@@ -149,6 +149,11 @@ document.addEventListener("DOMContentLoaded", () => {
             "tenantChatOwnerAvatar"
         );
 
+    const chatBackBtn =
+        document.getElementById(
+            "chatBackBtn"
+        );
+
 
     /* =========================================
        UPDATE PROFILE UI
@@ -573,16 +578,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 item.dataset.conversationId =
                     conversation.id;
 
+                const ownerName =
+                    conversation.ownerName || "Property Owner";
+                const isSupportConversation =
+                    /support|leaseaccom/i.test(ownerName);
+                item.dataset.category =
+                    isSupportConversation ? "support" : "landlords";
+                item.dataset.unread =
+                    Number(conversation.unread) > 0 ? "true" : "false";
+                item.dataset.starred =
+                    conversation.starred === true || conversation.isStarred === true
+                        ? "true"
+                        : "false";
+                item.dataset.notification =
+                    conversation.isNotification === true ||
+                    conversation.type === "notification"
+                        ? "true"
+                        : "false";
+                const ownerAvatar =
+                    isSupportConversation
+                        ? "IMAGES/leaseaccom-logo-icon.png"
+                        : conversation.ownerAvatar || DEFAULT_OWNER_AVATAR;
 
                 item.innerHTML = `
 
                     <img
                         class="conversation-avatar"
-                        src="${
-                            conversation.ownerAvatar ||
-                            DEFAULT_OWNER_AVATAR
-                        }"
-                        alt="Property Owner"
+                        src="${escapeHTML(ownerAvatar)}"
+                        alt="${escapeHTML(ownerName)}"
                     >
 
                     <div class="conversation-info">
@@ -592,9 +615,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             <span class="conversation-name">
 
                                 ${escapeHTML(
-                                    conversation.ownerName ||
-                                    "Property Owner"
+                                    ownerName
                                 )}
+                                ${
+                                    isSupportConversation
+                                        ? '<i class="conversation-verified bx bxs-badge-check" aria-label="Verified LeaseAccom support"></i>'
+                                        : ""
+                                }
 
                             </span>
 
@@ -634,6 +661,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
 
                     </div>
+                    ${
+                        Number(conversation.unread) > 0
+                            ? `<span class="conversation-unread">${Number(conversation.unread)}</span>`
+                            : ""
+                    }
                 `;
 
 
@@ -765,6 +797,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Mobile: show conversation full-screen
         const shell = document.querySelector(".messages-shell");
         if (shell) shell.classList.add("chat-open");
+        document.body.classList.add("tenant-chat-open");
 
 
         if (chatPersonName) {
@@ -782,12 +815,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Property";
         }
 
+        if (chatPersonName) {
+            chatPersonName.textContent =
+                conversation.ownerName || "Property Owner";
+        }
+
+        if (chatOwnerAvatar) {
+            chatOwnerAvatar.alt =
+                conversation.ownerName || "Property Owner";
+        }
+
 
         if (chatOwnerAvatar) {
 
             chatOwnerAvatar.src =
-                conversation.ownerAvatar ||
-                DEFAULT_OWNER_AVATAR;
+                /support|leaseaccom/i.test(conversation.ownerName || "")
+                    ? "IMAGES/leaseaccom-logo-icon.png"
+                    : conversation.ownerAvatar || DEFAULT_OWNER_AVATAR;
         }
 
 
@@ -1033,6 +1077,44 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
+        if (conversation.propertyId && conversation.propertyTitle) {
+            const propertyImage = conversation.propertyImage ||
+                conversation.image ||
+                conversation.property?.image ||
+                "";
+            const propertyLocation = conversation.propertyLocation ||
+                conversation.location ||
+                conversation.property?.location ||
+                "";
+            const price = Number(
+                conversation.propertyPrice ??
+                conversation.price ??
+                conversation.property?.price
+            );
+            const priceLabel = Number.isFinite(price) && price > 0
+                ? new Intl.NumberFormat("en-NG", {
+                    style: "currency",
+                    currency: "NGN",
+                    maximumFractionDigits: 0
+                }).format(price)
+                : "";
+            const propertyCard = document.createElement("article");
+            propertyCard.className = "tenant-property-card";
+            propertyCard.innerHTML = `
+                ${propertyImage
+                    ? `<img src="${escapeHTML(propertyImage)}" alt="${escapeHTML(conversation.propertyTitle)}">`
+                    : `<span class="tenant-property-image-placeholder"><i class="bx bx-building-house" aria-hidden="true"></i></span>`}
+                <div class="tenant-property-info">
+                    <strong>${escapeHTML(conversation.propertyTitle)}</strong>
+                    ${propertyLocation ? `<span><i class="bx bx-map" aria-hidden="true"></i> ${escapeHTML(propertyLocation)}</span>` : ""}
+                    ${priceLabel ? `<b>${escapeHTML(priceLabel)} / ${escapeHTML(conversation.period || "year")}</b>` : ""}
+                    ${conversation.description ? `<p>${escapeHTML(conversation.description)}</p>` : ""}
+                    <a href="property-details.html?id=${encodeURIComponent(String(conversation.propertyId))}"><i class="bx bx-calendar" aria-hidden="true"></i> Book viewing</a>
+                </div>
+            `;
+            chatMessages.appendChild(propertyCard);
+        }
+
 
         chatMessages.scrollTop =
             chatMessages.scrollHeight;
@@ -1102,7 +1184,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (!conversation.serverBacked && conversation.propertyId) {
                     const remoteConversation = await window.LeaseAccomChatApi?.createConversation?.(
-                        conversation.propertyId
+                        conversation
                     );
                     if (remoteConversation) {
                         const oldId = String(conversation.id);
@@ -1217,147 +1299,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
     }
-
-
-    /* =========================================
-       SEARCH
-    ========================================= */
-
-    const conversationSearch =
-        document.getElementById(
-            "tenantConversationSearch"
-        );
-
-
-    if (conversationSearch) {
-
-        conversationSearch.addEventListener(
-            "input",
-            () => {
-
-                const search =
-                    conversationSearch.value
-                        .toLowerCase()
-                        .trim();
-
-
-                document
-                    .querySelectorAll(
-                        ".conversation-item"
-                    )
-                    .forEach(
-                        (item) => {
-
-                            const matches =
-                                item.textContent
-                                    .toLowerCase()
-                                    .includes(
-                                        search
-                                    );
-
-                            item.style.display =
-                                matches
-                                    ? ""
-                                    : "none";
-                        }
-                    );
-            }
-        );
-    }
-
-
-    /* =========================================
-       FILTER BUTTONS
-    ========================================= */
-
-    const filterButtons =
-        document.querySelectorAll(
-            ".message-filter"
-        );
-
-
-    filterButtons.forEach(
-        (button) => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    filterButtons.forEach(
-                        (btn) =>
-                            btn.classList.remove(
-                                "active"
-                            )
-                    );
-
-                    button.classList.add(
-                        "active"
-                    );
-
-
-                    const filter =
-                        button.dataset.filter;
-
-
-                    const conversations =
-                        getConversations();
-
-
-                    document
-                        .querySelectorAll(
-                            ".conversation-item"
-                        )
-                        .forEach(
-                            (item) => {
-
-                                const conversation =
-                                    conversations.find(
-                                        (c) =>
-                                            String(
-                                                c.id
-                                            ) ===
-                                            String(
-                                                item.dataset
-                                                    .conversationId
-                                            )
-                                    );
-
-
-                                if (!conversation) return;
-
-
-                                if (
-                                    filter ===
-                                    "unread"
-                                ) {
-
-                                    item.style.display =
-                                        conversation.unread >
-                                        0
-                                            ? ""
-                                            : "none";
-
-                                } else if (
-                                    filter ===
-                                    "starred"
-                                ) {
-
-                                    item.style.display =
-                                        conversation.starred
-                                            ? ""
-                                            : "none";
-
-                                } else {
-
-                                    item.style.display =
-                                        "";
-                                }
-                            }
-                        );
-                }
-            );
-        }
-    );
 
 
     /* =========================================
@@ -1519,10 +1460,19 @@ document.addEventListener(
                 "chatCallBtn"
             );
 
-        const videoBtn =
-            document.getElementById(
-                "chatVideoBtn"
-            );
+        chatBackBtn?.addEventListener(
+            "click",
+            () => {
+                document.querySelector(".messages-shell")?.classList.remove("chat-open");
+                document.body.classList.remove("tenant-chat-open");
+                chatContent.style.display = "none";
+                chatEmpty.style.display = "flex";
+                localStorage.removeItem("activeConversationId");
+                document.querySelectorAll(".conversation-item.active").forEach((item) => {
+                    item.classList.remove("active");
+                });
+            }
+        );
 
 
         /* =========================================
@@ -1898,26 +1848,6 @@ document.addEventListener(
            CLICK OWNER HEADER
         ========================================= */
 
-        document
-            .querySelector(
-                ".chat-person"
-            )
-            ?.addEventListener(
-                "click",
-                (event) => {
-
-                    if (
-                        !event.target.closest(
-                            "button"
-                        )
-                    ) {
-
-                        openOwnerProfile();
-                    }
-                }
-            );
-
-
         /* =========================================
            CALL OWNER
         ========================================= */
@@ -1979,36 +1909,6 @@ document.addEventListener(
             }
         );
 
-
-        /* =========================================
-           VIDEO CALL
-        ========================================= */
-
-        videoBtn?.addEventListener(
-            "click",
-            () => {
-
-                const message =
-                    "Video calling is not connected yet. It will be enabled with the real-time backend.";
-
-
-                if (
-                    typeof window.leaseaccomToast ===
-                    "function"
-                ) {
-
-                    window.leaseaccomToast(
-                        message,
-                        "info"
-                    );
-
-                } else {
-
-                    alert(message);
-                }
-            }
-        );
-
     }
 );
 
@@ -2022,6 +1922,7 @@ document.addEventListener("DOMContentLoaded", function () {
     e.stopPropagation();
     var shell = document.querySelector(".messages-shell");
     if (shell) shell.classList.remove("chat-open");
+    document.body.classList.remove("tenant-chat-open");
     var content = document.getElementById("chatContent");
     var empty = document.getElementById("chatEmpty");
     if (content) content.style.display = "none";

@@ -403,29 +403,16 @@
         setupScrollReveal();
         setupDynamicReveal();
         setupImages();
+        if (
+            !window.leaseaccomHelpInitialized &&
+            !document.querySelector('script[data-floating-help], script[src$="JS/floating-help.js"]')
+        ) {
+            const helpScript = document.createElement("script");
+            helpScript.src = "JS/floating-help.js";
+            helpScript.dataset.floatingHelp = "true";
+            document.body.appendChild(helpScript);
+        }
 
         // Notifications are intentionally disabled on the landing page.
     });
 })();
-
-    /* Text logo on non-landing pages */
-    (function brandLogoText() {
-        try {
-            var page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
-            var isLanding = page === "" || page === "index.html" || page === "/";
-            if (isLanding) {
-                document.body.classList.add("is-landing-page");
-            } else {
-                document.body.classList.remove("is-landing-page");
-            }
-            document.querySelectorAll(".navbar .logo, .messages-topbar .logo, a.logo").forEach(function (logo) {
-                if (logo.querySelector(".logo-text")) return;
-                var span = document.createElement("span");
-                span.className = "logo-text";
-                span.setAttribute("aria-label", "LeaseAccom");
-                span.innerHTML = '<span class="lh-lease">Lease</span><span class="lh-accom">Accom</span>';
-                logo.appendChild(span);
-            });
-        } catch (e) {}
-    })();
-
