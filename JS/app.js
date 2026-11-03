@@ -1,3 +1,118 @@
+function propertyShareMarkup(property) {
+    const escapeAttribute = value => String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    }[character]));
+    const propertyId = escapeAttribute(property.id);
+    const title = escapeAttribute(property.title || "LeaseAccom property");
+    const image = escapeAttribute(property.images?.[0] || property.image || "");
+    return `
+        <button type="button" class="share-property-btn" data-share-property
+            data-share-property-id="${propertyId}" data-share-title="${title}" data-share-image="${image}"
+            onclick="event.stopPropagation()"
+            aria-haspopup="true" aria-expanded="false">
+            <i class="bx bx-share-alt" aria-hidden="true"></i> Share
+        </button>
+        <div class="property-share-menu" hidden>
+            <a class="share-property-whatsapp" href="#" target="_blank" rel="noopener noreferrer"
+                onclick="event.stopPropagation()">WhatsApp</a>
+            <a class="share-property-email" href="#" onclick="event.stopPropagation()">Email</a>
+            <button type="button" class="copy-property-link-btn" onclick="event.stopPropagation()">Copy link</button>
+        </div>`;
+}
+
+function propertyShareDetails(button) {
+    const propertyId = button.dataset.sharePropertyId || "";
+    const title = button.dataset.shareTitle || "LeaseAccom property";
+    const image = button.dataset.shareImage || "";
+    const url = new URL(`property-details.html?id=${encodeURIComponent(propertyId)}`, window.location.href).href;
+    const imageUrl = image ? new URL(image, window.location.href).href : "";
+    const message = `${title}\n${url}${imageUrl ? `\nPhoto: ${imageUrl}` : ""}`;
+    return { title, url, imageUrl, message };
+}
+
+function showPropertyShareMenu(button, details) {
+    const card = button.closest(".property-card");
+    const menu = card?.querySelector(".property-share-menu");
+    if (!menu) return;
+    document.querySelectorAll(".property-share-menu:not([hidden])").forEach(openMenu => {
+        if (openMenu !== menu) {
+            openMenu.hidden = true;
+            openMenu.closest(".property-card")?.querySelector(".share-property-btn")?.setAttribute("aria-expanded", "false");
+        }
+    });
+    menu.querySelector(".share-property-whatsapp").href =
+        `https://wa.me/?text=${encodeURIComponent(details.message)}`;
+    menu.querySelector(".share-property-email").href =
+        `mailto:?subject=${encodeURIComponent(details.title)}&body=${encodeURIComponent(details.message)}`;
+    menu.querySelector(".copy-property-link-btn").dataset.shareUrl = details.url;
+    menu.hidden = false;
+    button.setAttribute("aria-expanded", "true");
+}
+
+document.addEventListener("click", async event => {
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    if (!target) return;
+    const shareButton = target.closest(".share-property-btn");
+    const copyButton = target.closest(".copy-property-link-btn");
+    if (shareButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        const details = propertyShareDetails(shareButton);
+        if (typeof navigator.share !== "function") {
+            showPropertyShareMenu(shareButton, details);
+            return;
+        }
+
+        const shareData = { title: details.title, text: details.message, url: details.url };
+        if (details.imageUrl && typeof File === "function" && typeof navigator.canShare === "function") {
+            try {
+                const response = await fetch(details.imageUrl);
+                if (!response.ok) throw new Error(`Image request failed (${response.status}).`);
+                const blob = await response.blob();
+                const extension = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
+                const file = new File([blob], `${details.title.replace(/[^\w-]+/g, "-")}.${extension}`, {
+                    type: blob.type || "image/jpeg"
+                });
+                if (navigator.canShare({ files: [file] })) shareData.files = [file];
+            } catch (error) {
+                console.warn("Could not attach the property image to the share.", error);
+            }
+        }
+
+        try {
+            await navigator.share(shareData);
+        } catch (error) {
+            if (error?.name !== "AbortError") {
+                console.error("Could not share the property.", error);
+                if (typeof window.leaseaccomToast === "function") {
+                    window.leaseaccomToast("Could not share this property. Please try again.");
+                }
+            }
+        }
+        return;
+    }
+
+    if (copyButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+            await navigator.clipboard.writeText(copyButton.dataset.shareUrl || "");
+            if (typeof window.leaseaccomToast === "function") window.leaseaccomToast("Property link copied.");
+        } catch (error) {
+            console.error("Could not copy the property link.", error);
+            if (typeof window.leaseaccomToast === "function") window.leaseaccomToast("Could not copy the property link.");
+        }
+        return;
+    }
+
+    document.querySelectorAll(".property-share-menu:not([hidden])").forEach(menu => {
+        if (!menu.contains(target)) {
+            menu.hidden = true;
+            menu.closest(".property-card")?.querySelector(".share-property-btn")?.setAttribute("aria-expanded", "false");
+        }
+    });
+}, true);
+
 document.addEventListener("DOMContentLoaded", () => {
 
     const featuredContainer =
@@ -146,6 +261,8 @@ function createPropertyCard(property) {
                     </span>
 
                 </div>
+
+                ${propertyShareMarkup(property)}
 
             </div>
 
@@ -4392,6 +4509,7 @@ function createPropertyCard(property) {
                     onclick="event.stopPropagation(); openProperty('${esc(propertyId)}');">
                     View Property ${icon("bx-arrow-right")}
                 </button>
+                ${propertyShareMarkup(property)}
             </div>
         </article>`;
 }

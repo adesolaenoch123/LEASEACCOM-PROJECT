@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any, Dict, Optional
 
@@ -7,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from config import settings
 from services.admin_service import AdminService
+from services.admin_assistant_service import AdminAssistantService
 from services.agreement_service import AgreementService
 from services.ai_service import AIService
 from services.application_service import ApplicationService
@@ -34,6 +36,7 @@ ai_service = AIService()
 auth_service = AuthService()
 property_service = PropertyService()
 admin_service = AdminService()
+admin_assistant_service = AdminAssistantService()
 application_service = ApplicationService()
 viewing_service = ViewingService()
 agreement_service = AgreementService()
@@ -776,6 +779,95 @@ async def create_conversation_message(
     except Exception as exc:  # pragma: no cover
         raise HTTPException(status_code=500, detail="Unable to send message.") from exc
 
+
+
+
+class AdminAssistantRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=4000)
+
+
+class AdminAssistantConfirmRequest(BaseModel):
+    operation: str
+    record_ids: list[str] = Field(..., min_length=1, max_length=100)
+    status: str
+    instruction: str | None = Field(default=None, max_length=4000)
+    confirmed: bool = False
+
+
+class AdminWorkflowRuleRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    rule_type: str = Field(..., pattern="^(overdue_reminder|suspicious_activity|daily_report|weekly_report)$")
+    conditions: dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
+
+
+
+
+async def _admin_workflow_loop() -> None:
+    while True:
+        try:
+            admin_assistant_service.evaluate_workflows()
+        except Exception:
+            logger.exception("Admin AI workflow evaluation failed.")
+        await asyncio.sleep(900)
+
+
+@app.on_event("startup")
+async def start_admin_workflow_loop() -> None:
+    asyncio.create_task(_admin_workflow_loop())
+
+@app.post("/admin/assistant/chat")
+async def admin_assistant_chat(request: AdminAssistantRequest, authorization: Optional[str] = Header(default=None, alias="Authorization")) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required.")
+    try:
+        return admin_assistant_service.respond(request.message)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Admin assistant request failed.")
+        raise HTTPException(status_code=500, detail="Unable to process the admin assistant request.") from exc
+
+
+@app.post("/admin/assistant/confirm")
+async def admin_assistant_confirm(request: AdminAssistantConfirmRequest, authorization: Optional[str] = Header(default=None, alias="Authorization")) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required.")
+    try:
+        return admin_assistant_service.confirm(request.model_dump(), user)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/admin/assistant/workflows")
+async def admin_assistant_workflows(authorization: Optional[str] = Header(default=None, alias="Authorization")) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required.")
+    return {"rules": admin_assistant_service.workflow_rules()}
+
+
+@app.post("/admin/assistant/workflows")
+async def admin_assistant_create_workflow(request: AdminWorkflowRuleRequest, authorization: Optional[str] = Header(default=None, alias="Authorization")) -> dict:
+    user = await auth_service.get_session_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required.")
+    try:
+        rule = admin_assistant_service.create_rule(request.model_dump(), user["id"])
+        return {"rule": rule, "message": "Rule saved. A scheduler is required to run it automatically."}
+    except Exception as exc:
+        logger.exception("Could not create assistant workflow rule.")
+        raise HTTPException(status_code=503, detail="Unable to save workflow rule. Apply the admin assistant migration first.") from exc
 
 @app.post("/chat")
 async def chat(request: ChatRequest) -> dict:

@@ -33,6 +33,24 @@
     </div>
 
     <nav class="owner-sidebar-nav">
+      <div class="owner-sidebar-notifications">
+        <div class="owner-notif-wrap">
+          <button type="button" class="owner-ghost-btn owner-notif-btn" id="ownerNotifBtn" aria-label="Notifications" aria-expanded="false" aria-controls="ownerNotifPanel">
+            <i class="bx bx-list-ul" aria-hidden="true"></i>
+            <span class="owner-notif-badge" id="ownerNotifBadge" hidden>0</span>
+            <span>Notifications</span>
+          </button>
+          <div class="owner-notif-panel" id="ownerNotifPanel" role="dialog" aria-label="Notifications" hidden>
+            <div class="owner-notif-head"><strong>Notifications</strong>
+              <div class="owner-notif-actions">
+                <button type="button" id="ownerNotifReadAll">Mark all read</button>
+                <button type="button" class="owner-notif-close" id="ownerNotifClose" aria-label="Close notifications" title="Close notifications">×</button>
+              </div>
+            </div>
+            <div id="ownerNotifList" class="owner-notif-list"></div>
+          </div>
+        </div>
+      </div>
       <a href="owner-dashboard.html" class="owner-nav-item is-active"><i class="bx bx-home-alt"></i><span>Dashboard</span></a>
       <a href="owner-dashboard.html#myProperties" class="owner-nav-item"><i class="bx bx-building-house"></i><span>Properties</span></a>
       <a href="owner-dashboard.html#ownerViewings" class="owner-nav-item"><i class="bx bx-calendar"></i><span>Viewings</span></a>
@@ -64,7 +82,7 @@
       <button type="button" class="owner-menu-toggle" id="ownerMenuToggle" aria-label="Open menu"><i class="bx bx-menu"></i></button>
       <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseAccom">
         <picture>
-          <source media="(max-width: 820px)" srcset="IMAGES/leaseaccom-logo-icon.png">
+          <source media="(max-width: 900px)" srcset="IMAGES/leaseaccom-logo-icon.png">
           <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
         </picture>
       </a>
@@ -73,22 +91,6 @@
         <h1 id="ownerStoreTitle">Dashboard</h1>
       </div>
       <div class="owner-topbar-actions">
-        <a href="owner-messages.html" class="owner-ghost-btn owner-topbar-icon-link" aria-label="Messages" title="Messages">
-          <i class="bx bx-message-dots" aria-hidden="true"></i>
-          <span class="owner-notif-badge" id="ownerMessageBadge" hidden>0</span>
-        </a>
-        <div class="owner-notif-wrap">
-          <button type="button" class="owner-ghost-btn owner-notif-btn" id="ownerNotifBtn" aria-label="Notifications">
-            <i class="bx bx-bell"></i>
-            <span class="owner-notif-badge" id="ownerNotifBadge" hidden>0</span>
-          </button>
-          <div class="owner-notif-panel" id="ownerNotifPanel" hidden>
-            <div class="owner-notif-head"><strong>Notifications</strong>
-              <button type="button" id="ownerNotifReadAll">Mark all read</button>
-            </div>
-            <div id="ownerNotifList" class="owner-notif-list"></div>
-          </div>
-        </div>
         <button type="button" class="owner-ghost-btn owner-desktop-only" id="ownerRefreshBtn"><i class="bx bx-refresh"></i> Refresh</button>
         <a href="properties.html" class="owner-ghost-btn owner-desktop-only">Exit to Marketplace</a>
       </div>
@@ -446,9 +448,9 @@
     <i class="bx bx-message-dots" aria-hidden="true"></i>
     <span>Messages</span>
   </a>
-  <a href="owner-dashboard.html#ownerStore">
-    <i class="bx bx-user" aria-hidden="true"></i>
-    <span>Property page</span>
+  <a href="owner-payments.html">
+    <i class="bx bx-wallet" aria-hidden="true"></i>
+    <span>Payments</span>
   </a>
 </nav>
 

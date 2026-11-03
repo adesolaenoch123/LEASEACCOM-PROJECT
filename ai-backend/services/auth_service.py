@@ -66,7 +66,7 @@ class AuthService:
                     .execute()
                 )
                 profile = response.data or {}
-                if profile.get("account_type") in {"tenant", "owner"}:
+                if profile.get("account_type") in {"tenant", "owner", "admin"}:
                     role = profile["account_type"]
             except Exception:
                 pass

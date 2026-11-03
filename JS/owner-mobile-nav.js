@@ -10,7 +10,6 @@
     { href: "owner-dashboard.html", icon: "bx-home-alt", label: "Dashboard", match: /owner-dashboard/ },
     { href: "owner-dashboard.html#myProperties", icon: "bx-building-house", label: "Properties", match: /myProperties|add-property|owner-properties/ },
     { href: "owner-messages.html", icon: "bx-message-dots", label: "Messages", match: /owner-messages/ },
-    { href: "owner-plans.html", icon: "bx-diamond", label: "Plans", match: /owner-plans/ },
     { href: "owner-payments.html", icon: "bx-wallet", label: "Payments", match: /owner-payments/ }
   ];
 

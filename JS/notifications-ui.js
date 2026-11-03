@@ -208,12 +208,14 @@
 
     function openPanel() {
       notificationPanel.classList.add("is-open");
+      notificationPanel.querySelector(".leaseaccom-notification-panel__dropdown")?.setAttribute("aria-hidden", "false");
       bellButton.setAttribute("aria-expanded", "true");
       document.body.classList.add("lh-notifications-open");
     }
 
     function closePanel() {
       notificationPanel.classList.remove("is-open");
+      notificationPanel.querySelector(".leaseaccom-notification-panel__dropdown")?.setAttribute("aria-hidden", "true");
       bellButton.setAttribute("aria-expanded", "false");
       document.body.classList.remove("lh-notifications-open");
       bellButton.focus({ preventScroll: true });
@@ -223,6 +225,11 @@
       if (notificationPanel.classList.contains("is-open")) closePanel();
       else openPanel();
     }
+
+    notificationPanel.querySelector(".leaseaccom-notification-panel__dropdown")?.setAttribute(
+      "aria-hidden",
+      String(!notificationPanel.classList.contains("is-open"))
+    );
 
     async function fetchNotifications() {
       try {

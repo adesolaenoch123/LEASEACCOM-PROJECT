@@ -76,12 +76,40 @@
 }
 
 .owner-notif-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 4px 4px 12px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
 }
 
+.owner-notif-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .owner-notif-head button {
   color: #7dd3fc;
+}
+
+.owner-notif-head .owner-notif-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.14);
+  color: #1e293b;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.owner-notif-head .owner-notif-close:hover {
+  background: rgba(148, 163, 184, 0.28);
 }
 
 .owner-notif-item {
@@ -251,12 +279,13 @@
   }
 
   .owner-notif-panel {
-    position: fixed;
-    inset: auto 0 0;
-    width: 100%;
-    max-height: min(72dvh, 620px);
-    padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
-    border-radius: 20px 20px 0 0;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    bottom: auto;
+    width: min(360px, calc(100vw - 24px));
+    max-height: min(70dvh, 540px);
+    overflow-y: auto;
     z-index: 1100;
   }
 
@@ -470,4 +499,11 @@ body.lh-notifications-open {
     max-height: calc(min(70dvh, 540px) - 66px) !important;
     overflow-y: auto;
   }
+}
+
+.leaseaccom-notification-panel:not(.is-open) .leaseaccom-notification-panel__dropdown {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }

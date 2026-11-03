@@ -41,6 +41,7 @@
                 </div>
                 ${extra}
                 <button type="button" class="view-property-btn" data-view-id="${safe(pid)}">View ${cfg.viewLabel || "Listing"} <i class="bx bx-arrow-right"></i></button>
+                ${typeof propertyShareMarkup === "function" ? propertyShareMarkup(p) : ""}
             </div>
         </article>`;
     }

@@ -6,6 +6,7 @@
   <title>LeaseAccom Admin</title>
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
   <link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="admin-assistant.css">
 <link rel="stylesheet" href="../CSS/skeletons.css">
 </head>
 <body>
@@ -39,6 +40,10 @@
       <a href="#users" data-section="users"><i class="bx bx-group"></i> Users</a>
       <a href="#properties" data-section="properties"><i class="bx bx-buildings"></i> Properties</a>
       <a href="#verification" data-section="verification"><i class="bx bx-shield-quarter"></i> Verification</a>
+      <a href="#viewings" data-section="viewings"><i class="bx bx-calendar"></i> Viewings</a>
+      <a href="#conversations" data-section="conversations"><i class="bx bx-message-dots"></i> Conversations</a>
+      <a href="#applications" data-section="applications"><i class="bx bx-file"></i> Applications</a>
+      <a href="#notifications" data-section="notifications"><i class="bx bx-bell"></i> Notifications</a>
       <a href="#payments" data-section="payments"><i class="bx bx-credit-card"></i> Payments</a>
       <a href="#reports" data-section="reports"><i class="bx bx-flag"></i> Reports</a>
       <a href="#audit" data-section="audit"><i class="bx bx-history"></i> Audit</a>
@@ -60,6 +65,8 @@
       </div>
       <div class="admin-topbar-right">
         <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu"><i class="bx bx-menu"></i></button>
+        <button type="button" class="admin-refresh-btn" id="refreshAdminData"><i class="bx bx-refresh"></i><span>Refresh data</span></button>
+        <span class="admin-refresh-status" id="adminRefreshStatus" role="status" aria-live="polite"></span>
         <input class="admin-search desktop-only" id="globalSearch" type="search" placeholder="Search users, properties…">
         <div class="admin-user-chip desktop-only">
           <span id="adminRolePill">Super Admin</span>
@@ -97,6 +104,16 @@
             </div>
             <div id="overviewPayments"></div>
             <div id="overviewSubs" style="margin-top:12px"></div>
+          </div>
+        </div>
+        <div class="panel admin-activity-shortcuts">
+          <div class="panel-head"><h3>Platform activity</h3><span class="chip">Admin tools</span></div>
+          <div class="admin-activity-links">
+            <button type="button" class="btn" data-go="viewings"><i class="bx bx-calendar"></i> Viewing requests <strong id="overviewViewingCount">0</strong></button>
+            <button type="button" class="btn" data-go="conversations"><i class="bx bx-message-dots"></i> Tenant &amp; owner conversations <strong id="overviewConversationCount">0</strong></button>
+            <button type="button" class="btn" data-go="applications"><i class="bx bx-file"></i> Applications <strong id="overviewApplicationCount">0</strong></button>
+            <button type="button" class="btn" data-go="notifications"><i class="bx bx-bell"></i> Notifications <strong id="overviewNotificationCount">0</strong></button>
+            <button type="button" class="btn" data-go="reports"><i class="bx bx-flag"></i> Reports <strong id="overviewReportCount">0</strong></button>
           </div>
         </div>
       </section>
@@ -196,6 +213,88 @@
             <div id="verificationTable"></div>
           </div>
         </div>
+      </section>
+
+      <section class="admin-section" id="section-viewings" data-section-panel="viewings">
+        <div class="section-intro">
+          <h2>Viewing requests</h2>
+          <p>Review viewing requests sent by tenants to property owners, including the requested schedule and message.</p>
+        </div>
+        <div class="admin-filters">
+          <input id="viewingSearch" type="search" placeholder="Search property, tenant, owner or request…">
+          <select id="viewingStatus">
+            <option value="">All statuses</option>
+            <option value="requested">Requested</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <p class="table-meta" id="viewingMeta">Loading viewing requests…</p>
+        <div class="panel"><div class="admin-table-wrap"><div id="viewingsTable" aria-live="polite"></div></div></div>
+      </section>
+
+      <section class="admin-section" id="section-conversations" data-section-panel="conversations">
+        <div class="section-intro">
+          <h2>Tenant &amp; owner conversations</h2>
+          <p>Read-only conversation access for support and moderation. Messages are private and visible only to authorized admins.</p>
+        </div>
+        <p class="muted-note admin-privacy-note">This screen does not send, edit, or delete messages. Before enabling production access, apply <code>migrations/010_admin_activity_access.sql</code> in the Supabase SQL editor so administrator read permissions are enforced by row-level security.</p>
+        <div class="admin-filters">
+          <input id="conversationSearch" type="search" placeholder="Search property or participants…">
+        </div>
+        <p class="table-meta" id="conversationMeta">Loading conversations…</p>
+        <div class="admin-conversation-layout">
+          <div class="panel">
+            <div class="panel-head"><h3>Conversations</h3></div>
+            <div id="conversationsList" aria-live="polite"></div>
+          </div>
+          <div class="panel admin-conversation-thread">
+            <div class="panel-head"><h3 id="conversationTitle">Select a conversation</h3></div>
+            <div id="conversationParticipants" class="muted-note"></div>
+            <div id="conversationMessages" class="admin-message-list" aria-live="polite">
+              <p class="ov-adm-empty">Choose a conversation to view its messages.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section" id="section-applications" data-section-panel="applications">
+        <div class="section-intro">
+          <h2>Rental applications</h2>
+          <p>Review applications submitted by tenants and track their current status.</p>
+        </div>
+        <div class="admin-filters">
+          <input id="applicationSearch" type="search" placeholder="Search property, tenant, owner or application…">
+          <select id="applicationStatus">
+            <option value="">All statuses</option>
+            <option value="submitted">Submitted</option>
+            <option value="under_review">Under review</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
+            <option value="withdrawn">Withdrawn</option>
+          </select>
+        </div>
+        <p class="table-meta" id="applicationMeta">Showing 0 applications</p>
+        <div class="panel"><div class="admin-table-wrap"><div id="applicationsTable"></div></div></div>
+      </section>
+
+      <section class="admin-section" id="section-notifications" data-section-panel="notifications">
+        <div class="section-intro">
+          <h2>Platform notifications</h2>
+          <p>Audit the notifications sent to tenants and property owners. This is a read-only activity view.</p>
+        </div>
+        <div class="admin-filters">
+          <input id="notificationSearch" type="search" placeholder="Search recipient, title or notification text…">
+          <select id="notificationRead">
+            <option value="">All notifications</option>
+            <option value="unread">Unread</option>
+            <option value="read">Read</option>
+          </select>
+        </div>
+        <p class="table-meta" id="notificationMeta">Loading notifications…</p>
+        <div class="panel"><div class="admin-table-wrap"><div id="notificationsTable" aria-live="polite"></div></div></div>
       </section>
 
       <section class="admin-section" id="section-payments" data-section-panel="payments">
@@ -514,16 +613,19 @@ create policy platform_settings_admin on public.platform_settings
 
   <nav class="mobile-bottom-nav" id="mobileBottomNav">
     <button type="button" data-section="overview" class="is-active"><i class="bx bx-home-alt"></i><span>Home</span></button>
-    <button type="button" data-section="properties"><i class="bx bx-buildings"></i><span>Listings</span></button>
+    <button type="button" data-section="viewings"><i class="bx bx-calendar"></i><span>Viewings</span></button>
+    <button type="button" data-section="conversations"><i class="bx bx-message-dots"></i><span>Chats</span></button>
+    <button type="button" data-section="applications"><i class="bx bx-file"></i><span>Apps</span></button>
     <button type="button" data-section="users"><i class="bx bx-group"></i><span>Users</span></button>
-    <button type="button" data-section="verification"><i class="bx bx-shield-quarter"></i><span>Verify</span></button>
   </nav>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../JS/config.js"></script>
 <script src="../JS/supabase-client.js"></script>
+<script src="../JS/api-client.js"></script>
+<script src="admin-assistant.js"></script>
 <script src="admin.js"></script>
 <script src="../JS/skeletons.js"></script>
-<script src="../JS/floating-help.js"></script>
 </body>
 </html>

@@ -1457,20 +1457,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     "viewingRequests",
                     JSON.stringify(requests)
                 );
-                if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.createViewing === "function") {
-                    try {
-                        await window.LeaseAccomCloud.createViewing({
-                            propertyId: viewingRequest.propertyId || property.id,
-                            ownerId: viewingRequest.ownerId || property.ownerId,
-                            date: viewingRequest.date || viewingRequest.preferredDate,
-                            time: viewingRequest.time || viewingRequest.preferredTime,
-                            message: viewingRequest.message || ""
-                        });
-                    } catch (cloudErr) {
-                        console.warn("LeaseAccom cloud viewing:", cloudErr);
-                    }
-                }
-
 
                 localStorage.setItem(
                     "leaseaccomCurrentUser",

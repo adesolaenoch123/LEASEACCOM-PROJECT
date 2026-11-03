@@ -21,7 +21,13 @@
     properties: [],
     verifications: [],
     viewings: [],
+    viewingError: "",
     applications: [],
+    applicationError: "",
+    notifications: [],
+    notificationError: "",
+    conversations: [],
+    conversationError: "",
     payments: [],
     subscriptions: [],
     reports: [],
@@ -31,6 +37,9 @@
   var propertyFilter = "";
   var verFilter = "pending";
   var selectedUserId = null;
+  var selectedConversationId = null;
+  var viewingFilter = "";
+  var applicationFilter = "";
 
   function showLogin(msg) {
     var screen = document.getElementById("adminLoginScreen");
@@ -95,30 +104,71 @@
     }
   }
 
+  async function selectAllRows(table, orderColumn) {
+    var client = sb();
+    if (!client) return { data: [], error: "Supabase is unavailable." };
+    var rows = [];
+    var pageSize = 500;
+    var offset = 0;
+    try {
+      while (true) {
+        var res = await client.from(table)
+          .select("*")
+          .order(orderColumn, { ascending: false })
+          .range(offset, offset + pageSize - 1);
+        if (res.error) return { data: rows, error: res.error.message };
+        var page = res.data || [];
+        rows = rows.concat(page);
+        if (page.length < pageSize) break;
+        offset += pageSize;
+      }
+      return { data: rows, error: "" };
+    } catch (error) {
+      return { data: rows, error: error.message || ("Could not load " + table + ".") };
+    }
+  }
+
+  async function loadAdminConversations() {
+    var result = await selectAllRows("conversations", "last_message_at");
+    state.conversations = result.data;
+    state.conversationError = result.error;
+    if (result.error) console.error("Admin conversations could not be loaded:", result.error);
+  }
+
   async function loadOverviewData() {
     var packs = await Promise.all([
       safeSelect("profiles", 500),
       safeSelect("properties", 500),
       safeSelect("owner_verifications", 200),
-      safeSelect("viewings", 200),
-      safeSelect("applications", 200),
+      selectAllRows("viewings", "created_at"),
+      selectAllRows("applications", "created_at"),
       safeSelect("payments", 100),
       safeSelect("subscriptions", 100),
       safeSelect("reports", 200),
       safeSelect("audit_logs", 200),
-      safeSelect("email_queue", 100)
+      safeSelect("email_queue", 100),
+      selectAllRows("notifications", "created_at"),
+      loadAdminConversations()
     ]);
     state.users = packs[0];
     state.properties = packs[1];
     state.verifications = packs[2];
-    state.viewings = packs[3];
-    state.applications = packs[4];
+    state.viewings = packs[3].data;
+    state.viewingError = packs[3].error;
+    state.applications = packs[4].data;
+    state.applicationError = packs[4].error;
     state.payments = packs[5];
     state.subscriptions = packs[6];
     state.reports = packs[7] || [];
     state.auditLogs = packs[8] || [];
     state.emailQueue = packs[9] || [];
+    state.notifications = packs[10].data;
+    state.notificationError = packs[10].error;
     renderOverview();
+    renderViewings();
+    renderApplications();
+    renderNotifications();
+    renderConversations();
     renderProperties();
     renderUsers();
     renderVerification();
@@ -157,6 +207,16 @@
     });
     var tenants = users.filter(function (u) { return u.account_type === "tenant"; }).length;
     var owners = users.filter(function (u) { return u.account_type === "owner"; }).length;
+    var countViews = document.getElementById("overviewViewingCount");
+    var countConversations = document.getElementById("overviewConversationCount");
+    var countApplications = document.getElementById("overviewApplicationCount");
+    var countNotifications = document.getElementById("overviewNotificationCount");
+    var countReports = document.getElementById("overviewReportCount");
+    if (countViews) countViews.textContent = String(state.viewings.length);
+    if (countConversations) countConversations.textContent = String(state.conversations.length);
+    if (countApplications) countApplications.textContent = String(state.applications.length);
+    if (countNotifications) countNotifications.textContent = String(state.notifications.length);
+    if (countReports) countReports.textContent = String(state.reports.length);
 
     var kpis = [
       { label: "Total users", value: users.length, icon: "bx-group" },
@@ -233,6 +293,272 @@
       subs.innerHTML = state.subscriptions.length
         ? "<p><strong>" + state.subscriptions.length + "</strong> subscription(s).</p>"
         : "<p style='color:var(--la-muted);font-size:13px'>No subscriptions yet.</p>";
+    }
+  }
+
+  function profileFor(id) {
+    return (state.users || []).find(function (user) {
+      return String(user.id) === String(id || "");
+    }) || null;
+  }
+
+  function propertyFor(id) {
+    return (state.properties || []).find(function (property) {
+      return String(property.id) === String(id || "");
+    }) || null;
+  }
+
+  function personLabel(id, fallback) {
+    var person = profileFor(id);
+    return person ? (person.full_name || person.email || fallback || "Unknown") : (fallback || "Unknown");
+  }
+
+  function dateLabel(value) {
+    if (!value) return "—";
+    var date = new Date(value);
+    return isNaN(date.getTime()) ? String(value) : date.toLocaleString("en-NG", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+  }
+
+  function renderViewings() {
+    var query = String((document.getElementById("viewingSearch") || {}).value || "").trim().toLowerCase();
+    var status = String((document.getElementById("viewingStatus") || {}).value || "").toLowerCase();
+    var list = (state.viewings || []).filter(function (viewing) {
+      var property = propertyFor(viewing.property_id);
+      var tenant = personLabel(viewing.tenant_id, viewing.tenant_name || viewing.applicant_name);
+      var owner = personLabel(viewing.owner_id, viewing.owner_name);
+      if (status && String(viewing.status || "requested").toLowerCase() !== status) return false;
+      var searchable = [
+        viewing.id, viewing.status, viewing.message, viewing.notes,
+        viewing.preferred_date, viewing.preferred_time,
+        property && property.title, property && property.location, property && property.city,
+        tenant, owner
+      ].join(" ").toLowerCase();
+      return !query || searchable.indexOf(query) !== -1;
+    }).sort(function (a, b) {
+      return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+    });
+    var meta = document.getElementById("viewingMeta");
+    var box = document.getElementById("viewingsTable");
+    if (meta) meta.textContent = "Showing " + list.length + " of " + (state.viewings || []).length + " viewing requests";
+    if (!box) return;
+    if (!list.length) {
+      box.innerHTML = state.viewingError
+        ? '<p class="admin-data-error">Viewing requests could not be fully loaded: ' + esc(state.viewingError) + "</p>"
+        : '<p class="ov-adm-empty">' + (state.viewings.length ? "No viewing requests match these filters." : "No viewing requests have been recorded.") + "</p>";
+      return;
+    }
+    box.innerHTML = (state.viewingError ? '<p class="admin-data-error">Some viewing requests could not be loaded: ' + esc(state.viewingError) + "</p>" : "") +
+      '<table class="admin-table"><thead><tr><th>Requested</th><th>Property</th><th>Tenant</th><th>Owner</th><th>Preferred schedule</th><th>Status</th><th>Tenant message</th></tr></thead><tbody>' +
+      list.map(function (viewing) {
+        var property = propertyFor(viewing.property_id);
+        var tenant = personLabel(viewing.tenant_id, viewing.tenant_name || viewing.applicant_name);
+        var owner = personLabel(viewing.owner_id, viewing.owner_name);
+        var status = String(viewing.status || "requested");
+        var pill = status === "accepted" || status === "completed" ? "approved" :
+          status === "declined" || status === "cancelled" ? "rejected" : "pending";
+        var propertyName = property ? property.title : (viewing.property_title || "Property");
+        var propertyLocation = property ? (property.location || property.city || "") : "";
+        var detailHref = viewing.property_id
+          ? '<a class="prop-link" href="../property-details.html?id=' + encodeURIComponent(viewing.property_id) + '" target="_blank" rel="noopener">' + esc(propertyName) + "</a>"
+          : esc(propertyName);
+        return "<tr><td>" + esc(dateLabel(viewing.created_at)) + "</td><td>" + detailHref +
+          (propertyLocation ? "<small class='admin-cell-note'>" + esc(propertyLocation) + "</small>" : "") +
+          "</td><td>" + esc(tenant) + "</td><td>" + esc(owner) + "</td><td>" +
+          esc(viewing.preferred_date || viewing.viewing_date || "Unspecified") + (viewing.preferred_time ? "<small class='admin-cell-note'>" + esc(viewing.preferred_time) + "</small>" : "") +
+          "</td><td><span class='status-pill " + pill + "'>" + esc(status) + "</span></td><td class='admin-long-text'>" +
+          esc(viewing.message || viewing.notes || "—") + "</td></tr>";
+      }).join("") + "</tbody></table>";
+  }
+
+  function renderApplications() {
+    var query = String((document.getElementById("applicationSearch") || {}).value || "").trim().toLowerCase();
+    var statusFilter = String((document.getElementById("applicationStatus") || {}).value || "").toLowerCase();
+    var list = (state.applications || []).filter(function (application) {
+      var property = propertyFor(application.property_id);
+      var tenant = personLabel(application.tenant_id, application.applicant_name);
+      var owner = personLabel(application.owner_id, application.owner_name);
+      if (statusFilter && String(application.status || "submitted").toLowerCase() !== statusFilter) return false;
+      var searchable = [
+        application.id, application.status, application.message, application.applicant_email,
+        application.applicant_phone, application.move_in_date,
+        property && property.title, property && property.location,
+        application.property_title, tenant, owner
+      ].join(" ").toLowerCase();
+      return !query || searchable.indexOf(query) !== -1;
+    }).sort(function (a, b) {
+      return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+    });
+    var meta = document.getElementById("applicationMeta");
+    var box = document.getElementById("applicationsTable");
+    if (meta) meta.textContent = "Showing " + list.length + " of " + (state.applications || []).length + " applications";
+    if (!box) return;
+    if (!list.length) {
+      box.innerHTML = state.applicationError
+        ? '<p class="admin-data-error">Rental applications could not be fully loaded: ' + esc(state.applicationError) + "</p>"
+        : '<p class="ov-adm-empty">' + (state.applications.length ? "No applications match these filters." : "No rental applications have been recorded.") + "</p>";
+      return;
+    }
+    box.innerHTML = (state.applicationError ? '<p class="admin-data-error">Some rental applications could not be loaded: ' + esc(state.applicationError) + "</p>" : "") +
+      '<table class="admin-table"><thead><tr><th>Submitted</th><th>Property</th><th>Tenant</th><th>Owner</th><th>Move-in</th><th>Status</th><th>Application message</th></tr></thead><tbody>' +
+      list.map(function (application) {
+        var property = propertyFor(application.property_id);
+        var tenant = personLabel(application.tenant_id, application.applicant_name);
+        var owner = personLabel(application.owner_id, application.owner_name);
+        var status = String(application.status || "submitted");
+        var pill = status === "accepted" ? "approved" : status === "rejected" || status === "withdrawn" ? "rejected" : "pending";
+        var propertyName = property ? property.title : (application.property_title || "Property");
+        var detailHref = application.property_id
+          ? '<a class="prop-link" href="../property-details.html?id=' + encodeURIComponent(application.property_id) + '" target="_blank" rel="noopener">' + esc(propertyName) + "</a>"
+          : esc(propertyName);
+        return "<tr><td>" + esc(dateLabel(application.created_at)) + "</td><td>" + detailHref +
+          "</td><td>" + esc(tenant) + "</td><td>" + esc(owner) + "</td><td>" +
+          esc(application.move_in_date || "—") + "</td><td><span class='status-pill " + pill + "'>" +
+          esc(status.replace(/_/g, " ")) + "</span></td><td class='admin-long-text'>" +
+          esc(application.message || "—") + "</td></tr>";
+      }).join("") + "</tbody></table>";
+  }
+
+  function renderNotifications() {
+    var query = String((document.getElementById("notificationSearch") || {}).value || "").trim().toLowerCase();
+    var readFilter = String((document.getElementById("notificationRead") || {}).value || "").toLowerCase();
+    var list = (state.notifications || []).filter(function (notification) {
+      var recipient = personLabel(notification.user_id, notification.user_email || "Account");
+      if (readFilter === "read" && !notification.read) return false;
+      if (readFilter === "unread" && notification.read) return false;
+      var searchable = [
+        notification.title, notification.message, notification.type,
+        notification.link, recipient
+      ].join(" ").toLowerCase();
+      return !query || searchable.indexOf(query) !== -1;
+    }).sort(function (a, b) {
+      return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+    });
+    var meta = document.getElementById("notificationMeta");
+    var box = document.getElementById("notificationsTable");
+    if (meta) meta.textContent = "Showing " + list.length + " of " + (state.notifications || []).length + " notifications";
+    if (!box) return;
+    if (!list.length) {
+      box.innerHTML = state.notificationError
+        ? '<p class="admin-data-error">Notifications could not be fully loaded: ' + esc(state.notificationError) + " Apply migration 010_admin_activity_access.sql and confirm administrator read access is enabled.</p>"
+        : '<p class="ov-adm-empty">' + (state.notifications.length ? "No notifications match these filters." : "No notifications have been recorded.") + "</p>";
+      return;
+    }
+    box.innerHTML = (state.notificationError ? '<p class="admin-data-error">Some notifications could not be loaded: ' + esc(state.notificationError) + "</p>" : "") +
+      '<table class="admin-table"><thead><tr><th>Sent</th><th>Recipient</th><th>Type</th><th>Notification</th><th>Read</th><th>Link</th></tr></thead><tbody>' +
+      list.map(function (notification) {
+        var recipient = personLabel(notification.user_id, notification.user_email || "Account");
+        var status = notification.read ? "Read" : "Unread";
+        var pill = notification.read ? "approved" : "pending";
+        var link = String(notification.link || "");
+        var linkCell = link
+          ? '<span class="admin-long-text">' + esc(link) + "</span>"
+          : "—";
+        return "<tr><td>" + esc(dateLabel(notification.created_at)) + "</td><td>" + esc(recipient) +
+          "</td><td>" + esc(notification.type || "info") + "</td><td><strong>" + esc(notification.title || "LeaseAccom") +
+          "</strong><small class='admin-cell-note'>" + esc(notification.message || "") + "</small></td><td><span class='status-pill " +
+          pill + "'>" + status + "</span></td><td>" + linkCell + "</td></tr>";
+      }).join("") + "</tbody></table>";
+  }
+
+  function renderConversations() {
+    var query = String((document.getElementById("conversationSearch") || {}).value || "").trim().toLowerCase();
+    var list = (state.conversations || []).filter(function (conversation) {
+      var property = propertyFor(conversation.property_id);
+      var tenant = personLabel(conversation.tenant_id, conversation.tenant_name);
+      var owner = personLabel(conversation.owner_id, conversation.owner_name);
+      var searchable = [
+        conversation.id, conversation.subject, property && property.title,
+        property && property.location, tenant, owner
+      ].join(" ").toLowerCase();
+      return !query || searchable.indexOf(query) !== -1;
+    });
+    var meta = document.getElementById("conversationMeta");
+    var box = document.getElementById("conversationsList");
+    if (meta) meta.textContent = "Showing " + list.length + " of " + (state.conversations || []).length + " conversations";
+    if (!box) return;
+    var errorMessage = state.conversationError
+      ? '<p class="admin-data-error">Cannot load every conversation: ' + esc(state.conversationError) + " Apply migration 010_admin_activity_access.sql and confirm administrator read access is enabled.</p>"
+      : "";
+    if (!list.length) {
+      box.innerHTML = errorMessage || '<p class="ov-adm-empty">' + (state.conversations.length ? "No conversations match this search." : "No conversations have been recorded.") + "</p>";
+      return;
+    }
+    box.innerHTML = errorMessage + '<div class="admin-conversation-items">' + list.map(function (conversation) {
+      var property = propertyFor(conversation.property_id);
+      var propertyName = property ? property.title : (conversation.subject || "Property conversation");
+      var tenant = personLabel(conversation.tenant_id, conversation.tenant_name);
+      var owner = personLabel(conversation.owner_id, conversation.owner_name);
+      return '<button type="button" class="admin-conversation-item' +
+        (String(conversation.id) === String(selectedConversationId) ? " is-selected" : "") +
+        '" data-conversation-id="' + esc(conversation.id) + '">' +
+        "<strong>" + esc(propertyName) + "</strong><span>" + esc(tenant) + " ↔ " + esc(owner) +
+        "</span><small>" + esc(dateLabel(conversation.last_message_at || conversation.created_at)) + "</small></button>";
+    }).join("") + "</div>";
+
+    box.querySelectorAll("[data-conversation-id]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        loadConversationThread(button.getAttribute("data-conversation-id"));
+      });
+    });
+  }
+
+  async function loadConversationThread(id) {
+    var client = sb();
+    var conversation = (state.conversations || []).find(function (item) {
+      return String(item.id) === String(id);
+    });
+    if (!client || !conversation) return;
+    selectedConversationId = String(id);
+    renderConversations();
+    var property = propertyFor(conversation.property_id);
+    var title = document.getElementById("conversationTitle");
+    var participants = document.getElementById("conversationParticipants");
+    var messagesBox = document.getElementById("conversationMessages");
+    if (title) title.textContent = property ? (property.title || "Conversation") : (conversation.subject || "Property conversation");
+    if (participants) participants.textContent =
+      personLabel(conversation.tenant_id, conversation.tenant_name || "Tenant") +
+      " ↔ " + personLabel(conversation.owner_id, conversation.owner_name || "Owner");
+    if (messagesBox) messagesBox.innerHTML = '<p class="ov-adm-empty">Loading messages…</p>';
+    try {
+      var messages = [];
+      var pageSize = 500;
+      var offset = 0;
+      while (true) {
+        var res = await client.from("messages")
+          .select("*")
+          .eq("conversation_id", id)
+          .order("created_at", { ascending: true })
+          .range(offset, offset + pageSize - 1);
+        if (String(selectedConversationId) !== String(id)) return;
+        if (res.error) {
+          if (messagesBox) messagesBox.innerHTML = '<p class="admin-data-error">Cannot load this conversation: ' + esc(res.error.message) + " Apply migration 010_admin_activity_access.sql and confirm administrator read access is enabled.</p>";
+          console.error("Admin messages could not be loaded:", res.error.message);
+          return;
+        }
+        var page = res.data || [];
+        messages = messages.concat(page);
+        if (page.length < pageSize) break;
+        offset += pageSize;
+      }
+      if (!messages.length) {
+        if (messagesBox) messagesBox.innerHTML = '<p class="ov-adm-empty">This conversation has no messages yet.</p>';
+        return;
+      }
+      if (messagesBox) messagesBox.innerHTML = messages.map(function (message) {
+        var isTenant = String(message.sender_id) === String(conversation.tenant_id);
+        var sender = isTenant
+          ? personLabel(conversation.tenant_id, conversation.tenant_name || "Tenant")
+          : personLabel(conversation.owner_id, conversation.owner_name || "Owner");
+        return '<article class="admin-message"><div class="admin-message-meta"><strong>' + esc(sender) +
+          "</strong><time>" + esc(dateLabel(message.created_at)) + "</time></div><p>" +
+          esc(message.body || "") + "</p></article>";
+      }).join("");
+    } catch (error) {
+      if (messagesBox) messagesBox.innerHTML = '<p class="admin-data-error">Conversation messages could not be loaded. ' + esc(error.message || "") + "</p>";
+      console.error("Admin message loading failed:", error);
     }
   }
 
@@ -1446,6 +1772,30 @@
     var search = document.getElementById("propertySearch");
     if (search) search.addEventListener("input", renderProperties);
 
+    ["viewingSearch", "viewingStatus"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", renderViewings);
+      el.addEventListener("change", renderViewings);
+    });
+
+    ["applicationSearch", "applicationStatus"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", renderApplications);
+      el.addEventListener("change", renderApplications);
+    });
+
+    ["notificationSearch", "notificationRead"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", renderNotifications);
+      el.addEventListener("change", renderNotifications);
+    });
+
+    var conversationSearch = document.getElementById("conversationSearch");
+    if (conversationSearch) conversationSearch.addEventListener("input", renderConversations);
+
     ["userSearch", "userType", "userStatus"].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;
@@ -1481,6 +1831,26 @@
 
   async function boot() {
     bindNav();
+    var refreshData = document.getElementById("refreshAdminData");
+    if (refreshData) {
+      refreshData.addEventListener("click", async function () {
+        var status = document.getElementById("adminRefreshStatus");
+        refreshData.disabled = true;
+        if (status) status.textContent = "Refreshing…";
+        try {
+          await loadOverviewData();
+          if (status) status.textContent = "Updated " + new Date().toLocaleTimeString("en-NG", {
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        } catch (error) {
+          console.error("Admin dashboard refresh failed:", error);
+          if (status) status.textContent = "Refresh failed. Check your connection and try again.";
+        } finally {
+          refreshData.disabled = false;
+        }
+      });
+    }
     var back = document.getElementById("backToUsers");
     if (back) {
       back.addEventListener("click", function () {

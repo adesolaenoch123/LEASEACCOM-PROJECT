@@ -22,6 +22,7 @@ test("landing plan buttons explain checkout is pending without changing the owne
 test("admin plan buttons are enabled and show checkout status", async ({ page }) => {
     await page.goto("/admin/admin.html");
 
+    await expect(page.locator("#assistantPanel, #assistantLauncher, #laFloatingHelp")).toHaveCount(0);
     const buttons = page.locator("#planAdminCards [data-plan-checkout]");
     await expect(buttons).toHaveCount(3);
     await expect(buttons.nth(0)).toBeEnabled();

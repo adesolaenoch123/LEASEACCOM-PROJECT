@@ -73,6 +73,7 @@
     const user = currentUser();
     const name = user?.name || 'Owner';
     const initial = name.trim().charAt(0).toUpperCase() || 'O';
+    const count = unreadCount();
     const item = (href, key, icon, label) =>
       `<a href="${href}" class="owner-nav-item${active === key ? ' is-active' : ''}"><i class="bx ${icon}"></i><span>${label}</span></a>`;
     return `
@@ -85,6 +86,25 @@
     <button type="button" class="owner-sidebar-hide" id="ownerSidebarHide" aria-label="Hide menu"><i class="bx bx-chevron-left"></i></button>
   </div>
   <nav class="owner-sidebar-nav">
+    <div class="owner-sidebar-notifications">
+      <div class="owner-notif-wrap">
+        <button type="button" class="owner-ghost-btn owner-notif-btn" id="ownerNotifBtn" aria-label="Notifications" aria-expanded="false" aria-controls="ownerNotifPanel">
+          <i class="bx bx-list-ul" aria-hidden="true"></i>
+          <span class="owner-notif-badge" id="ownerNotifBadge" ${count ? '' : 'hidden'}>${count}</span>
+          <span>Notifications</span>
+        </button>
+        <div class="owner-notif-panel" id="ownerNotifPanel" role="dialog" aria-label="Notifications" hidden>
+          <div class="owner-notif-head">
+            <strong>Notifications</strong>
+            <div class="owner-notif-actions">
+              <button type="button" id="ownerNotifReadAll">Mark all read</button>
+              <button type="button" class="owner-notif-close" id="ownerNotifClose" aria-label="Close notifications" title="Close notifications">×</button>
+            </div>
+          </div>
+          <div id="ownerNotifList" class="owner-notif-list"></div>
+        </div>
+      </div>
+    </div>
     ${item('owner-dashboard.html', 'dashboard', 'bx-home-alt', 'Dashboard')}
     ${item('owner-dashboard.html#myProperties', 'properties', 'bx-building-house', 'Properties')}
     ${item('owner-verification.html', 'verification', 'bx-badge-check', 'Verification')}
@@ -110,13 +130,12 @@
   }
 
   function topbarHTML(title) {
-    const count = unreadCount();
     return `
 <header class="owner-topbar">
   <button type="button" class="owner-menu-toggle" id="ownerMenuToggle" aria-label="Open menu"><i class="bx bx-menu"></i></button>
   <a href="owner-dashboard.html" class="owner-brand-text" aria-label="LeaseAccom">
     <picture>
-      <source media="(max-width: 820px)" srcset="IMAGES/leaseaccom-logo-icon.png">
+      <source media="(max-width: 900px)" srcset="IMAGES/leaseaccom-logo-icon.png">
       <img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom">
     </picture>
   </a>
@@ -125,23 +144,6 @@
     <h1>${title}</h1>
   </div>
   <div class="owner-topbar-actions">
-    <a href="owner-messages.html" class="owner-ghost-btn owner-topbar-icon-link" aria-label="Messages" title="Messages">
-      <i class="bx bx-message-dots" aria-hidden="true"></i>
-      <span class="owner-notif-badge" id="ownerMessageBadge" hidden>0</span>
-    </a>
-    <div class="owner-notif-wrap">
-      <button type="button" class="owner-ghost-btn owner-notif-btn" id="ownerNotifBtn" aria-label="Notifications">
-        <i class="bx bx-bell"></i>
-        <span class="owner-notif-badge" id="ownerNotifBadge" ${count ? '' : 'hidden'}>${count}</span>
-      </button>
-      <div class="owner-notif-panel" id="ownerNotifPanel" hidden>
-        <div class="owner-notif-head">
-          <strong>Notifications</strong>
-          <button type="button" id="ownerNotifReadAll">Mark all read</button>
-        </div>
-        <div id="ownerNotifList" class="owner-notif-list"></div>
-      </div>
-    </div>
     <button type="button" class="owner-ghost-btn owner-desktop-only" id="ownerRefreshBtn"><i class="bx bx-refresh"></i> Refresh</button>
     <a href="properties.html" class="owner-ghost-btn owner-desktop-only">Exit to Marketplace</a>
   </div>
@@ -209,10 +211,24 @@
     window.addEventListener('storage', updateMessageBadge);
     const badge = document.getElementById('ownerNotifBadge');
     const panel = document.getElementById('ownerNotifPanel');
-    document.getElementById('ownerNotifBtn')?.addEventListener('click', (e) => {
+    const notifButton = document.getElementById('ownerNotifBtn');
+    const closeNotifications = () => {
+      if (!panel || panel.hidden) return;
+      panel.hidden = true;
+      notifButton?.setAttribute('aria-expanded', 'false');
+    };
+    notifButton?.setAttribute('aria-expanded', 'false');
+    notifButton?.setAttribute('aria-controls', 'ownerNotifPanel');
+    notifButton?.addEventListener('click', (e) => {
       e.stopPropagation();
       if (!panel) return;
       panel.hidden = !panel.hidden;
+      notifButton.setAttribute('aria-expanded', String(!panel.hidden));
+    });
+    document.getElementById('ownerNotifClose')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeNotifications();
+      notifButton?.focus({ preventScroll: true });
     });
     document.getElementById('ownerNotifReadAll')?.addEventListener('click', async () => {
       if (backendNotifications && window.LeaseAccomApi) {
@@ -238,7 +254,10 @@
       }
     });
     document.addEventListener('click', () => {
-      if (panel) panel.hidden = true;
+      closeNotifications();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeNotifications();
     });
     panel?.addEventListener('click', (e) => e.stopPropagation());
   }
