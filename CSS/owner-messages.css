@@ -1,5 +1,5 @@
 .owner-messages-page {
-  --om-green: #087c55;
+  --om-green: #067240;
   --om-green-dark: #066844;
   --om-mint: #eaf5ef;
   --om-ink: #17211d;
@@ -31,56 +31,75 @@
 .om-brand {
   display: flex;
   align-items: center;
-  gap: 9px;
-  flex: 0 0 235px;
-  color: #fff;
-  font-size: 19px;
-  font-weight: 750;
+  flex: 0 0 190px;
+  min-width: 0;
+  height: 54px;
   text-decoration: none;
-  letter-spacing: -.3px;
 }
 
-.om-brand > span:last-child > span {
-  color: #c9efda;
+.om-brand picture,
+.om-brand img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.om-brand-mark {
-  width: 35px;
-  height: 35px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #ffffff53;
-  border-radius: 11px;
-  color: #fff;
-  font-size: 20px;
+.om-brand img {
+  object-fit: contain;
+  object-position: left center;
 }
 
 .om-search {
   height: 42px;
   width: min(460px, 48vw);
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 14px;
-  border: 1px solid #ffffff2b;
-  border-radius: 11px;
-  color: #e0eee8;
-  background: #ffffff19;
+  padding: 0 15px;
+  border: 1px solid #ffffff45;
+  border-radius: 999px;
+  color: #e5f4ec;
+  background: #064e38;
+  box-shadow: inset 0 1px 2px #001c1433, 0 3px 10px #003b2726;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.om-search:focus-within {
+  border-color: #b7e7cd;
+  background: #06452f;
+  box-shadow: 0 0 0 3px #ffffff20, 0 4px 14px #003b2733;
 }
 
 .om-search i {
+  flex: 0 0 auto;
   font-size: 18px;
+  color: #bce6cf;
 }
 
 .om-search input {
   width: 100%;
   min-width: 0;
+  height: 100%;
+  padding: 0;
   border: 0;
   outline: 0;
   color: #fff;
   background: transparent;
   font: inherit;
   font-size: 13px;
+  appearance: none;
+}
+
+.om-search input:focus,
+.om-search input:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+
+.om-search input::-webkit-search-cancel-button {
+  cursor: pointer;
+  filter: grayscale(1) brightness(0) invert(1);
 }
 
 .om-search input::placeholder {
@@ -870,49 +889,37 @@ body.om-profile-open .om-drawer-backdrop {
   }
 
   .om-brand {
-    flex-basis: auto;
-    gap: 7px;
-    font-size: 16px;
-  }
-
-  .om-brand-mark {
-    width: 31px;
-    height: 31px;
-    border-radius: 9px;
-    font-size: 17px;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
   }
 
   .om-search {
-    width: 38px;
+    width: auto !important;
+    min-width: 0;
+    max-width: 320px;
+    flex: 1 1 120px;
     height: 38px;
     margin-left: auto;
-    padding: 0;
-    justify-content: center;
-    border-color: transparent;
-    background: transparent;
+    padding: 0 12px;
+    gap: 8px;
+    border-color: #ffffff45;
+    border-radius: 999px;
+    background: #064e38;
   }
 
   .om-search input {
-    position: absolute;
-    z-index: 4;
-    top: 62px;
-    left: 0;
+    position: static;
+    z-index: auto;
     width: 100%;
-    height: 0;
+    height: 100%;
+    min-width: 0;
     padding: 0;
-    color: #324139;
-    background: #fff;
-    transition: height .15s ease;
-  }
-
-  .om-search:focus-within input {
-    height: 46px;
-    padding: 0 16px;
-    border-bottom: 1px solid var(--om-line);
+    transition: none;
   }
 
   .om-search input::placeholder {
-    color: #87918b;
+    color: #d7e8df;
   }
 
   .om-header-actions {

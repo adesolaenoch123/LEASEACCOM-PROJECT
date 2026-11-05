@@ -122,6 +122,14 @@ document.documentElement.setAttribute("data-landing-loader-phase", "brand");
           z-index: 0 !important;
           filter: none !important;
           animation: none !important;
+          transform: none !important;
+        }
+        .hero-video-frame {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          overflow: hidden;
+          transform: none;
         }
         .hero::after {
           /* light darken only for text readability — not a solid green wall */
@@ -142,6 +150,7 @@ document.documentElement.setAttribute("data-landing-loader-phase", "brand");
           display: grid;
           place-items: center;
         }
+        #landingSpinnerStage[hidden] { display: none !important; }
         .landing-brand-mark {
           width: min(58vw, 220px);
           height: 110px;
@@ -277,13 +286,9 @@ document.documentElement.setAttribute("data-landing-loader-phase", "brand");
 
         <section class="hero">
 
-            <video class="hero-video" autoplay muted loop playsinline preload="auto">
-                <source
-                    src="hero-banner.mp4"
-                    type="video/mp4"
-                    onerror="this.parentElement && (this.parentElement.style.display='none')"
-                >
-            </video>
+            <div class="hero-video-frame">
+                <video class="hero-video" autoplay muted playsinline preload="auto"></video>
+            </div>
 
             <div class="hero-content">
 
@@ -918,18 +923,51 @@ document.documentElement.setAttribute("data-landing-loader-phase", "brand");
 <script src="JS/skeletons.js"></script>
 <script src="JS/pwa-install.js"></script>
 <script>
-/* hero-video error hide — missing mp4 should not break layout */
+/* Play the supplied homepage banner clips in order, then start over. */
 (function(){
   var v = document.querySelector("video.hero-video");
   if (!v) return;
-  function hide(){ try { v.style.display = "none"; } catch(e){} }
-  v.addEventListener("error", hide);
-  var s = v.querySelector("source");
-  if (s) s.addEventListener("error", hide);
-  // If file 404s, error may fire on video element after load attempt
-  setTimeout(function(){
-    if (v.networkState === 3 || (v.readyState === 0 && v.error)) hide();
-  }, 1500);
+  var clips = [
+    "banner-1-aerial-home.mp4",
+    "banner-2-apartment-building.mp4",
+    "banner-3-highrise.mp4",
+    "banner-4-living-room.mp4",
+    "banner-5-interior.mp4"
+  ];
+  var currentClip = 0;
+  var failedClips = 0;
+
+  function playCurrentClip(){
+    v.pause();
+    v.src = clips[currentClip];
+    v.load();
+    var playRequest = v.play();
+    if (playRequest && typeof playRequest.catch === "function") {
+      playRequest.catch(function(error){
+        if (error.name !== "AbortError") {
+          console.warn("LeaseAccom banner video autoplay could not start.", error);
+        }
+      });
+    }
+  }
+
+  v.addEventListener("ended", function(){
+    failedClips = 0;
+    currentClip = (currentClip + 1) % clips.length;
+    playCurrentClip();
+  });
+  v.addEventListener("error", function(){
+    failedClips += 1;
+    if (failedClips >= clips.length) {
+      v.style.display = "none";
+      console.error("LeaseAccom banner video sequence could not load any clips.");
+      return;
+    }
+    currentClip = (currentClip + 1) % clips.length;
+    playCurrentClip();
+  });
+  v.addEventListener("canplay", function(){ failedClips = 0; }, { once: true });
+  playCurrentClip();
 })();
 </script>
 <script>

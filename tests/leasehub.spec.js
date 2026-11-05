@@ -398,14 +398,23 @@ test("landlord inbox and open chat stay usable on mobile screens", async ({ page
     await expect(page.locator("#ownerChatPropertyCard")).toBeVisible();
     await expect(page.locator("#ownerChatMessages")).toContainText("Could I arrange a viewing?");
 
-    for (const width of [320, 375, 768, 1280]) {
+    const messageSearch = page.locator("#conversationSearch");
+    for (const width of [320, 375, 390, 768, 1280]) {
         await page.setViewportSize({ width, height: 860 });
         await expect.poll(() => page.evaluate(() =>
             document.documentElement.scrollWidth <= window.innerWidth
         )).toBe(true);
+        if (width <= 760) {
+            await expect(messageSearch).toBeVisible();
+            await expect.poll(() => messageSearch.evaluate(input =>
+                input.getBoundingClientRect().height
+            )).toBeGreaterThan(30);
+        }
     }
 
     await page.setViewportSize({ width: 375, height: 812 });
+    await messageSearch.fill("viewing");
+    await expect(messageSearch).toHaveValue("viewing");
     await page.locator("#chatBackBtn").click();
     await expect(page.locator(".om-inbox")).toBeVisible();
     await expect(page.locator(".om-chat")).toBeHidden();
@@ -1278,9 +1287,42 @@ test("owner plans logo aligns to the top-left on mobile", async ({ page }) => {
 });
 
 test("homepage shows its spinner followed by skeleton loading", async ({ page }) => {
+    await page.addInitScript(() => {
+        window.landingLoaderSnapshots = [];
+        const observePhases = () => {
+            const root = document.documentElement;
+            const record = () => {
+                const spinner = document.getElementById("landingSpinnerStage");
+                const skeleton = document.getElementById("landingSkeletonStage");
+                window.landingLoaderSnapshots.push({
+                    phase: root.getAttribute("data-landing-loader-phase"),
+                    spinnerDisplay: spinner ? getComputedStyle(spinner).display : null,
+                    skeletonDisplay: skeleton ? getComputedStyle(skeleton).display : null,
+                    visibleCards: skeleton ? Array.from(skeleton.querySelectorAll(".landing-skeleton-card"))
+                        .filter(card => getComputedStyle(card).display !== "none").length : 0
+                });
+            };
+            new MutationObserver(record).observe(root, { attributes: true, attributeFilter: ["data-landing-loader-phase"] });
+        };
+        if (document.documentElement) observePhases();
+        else document.addEventListener("DOMContentLoaded", observePhases, { once: true });
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("#landingSpinnerStage img")).toHaveAttribute("src", "IMAGES/leaseaccom-logo-full.png");
+    const brandLoader = page.locator("#landingSpinnerStage");
+    const skeleton = page.locator("#landingSkeletonStage");
+    await expect(brandLoader.locator("img")).toHaveAttribute("src", "IMAGES/leaseaccom-logo-full.png");
+    await expect.poll(() => page.evaluate(() =>
+        window.landingLoaderSnapshots.some(snapshot =>
+            snapshot.phase === "skeleton" &&
+            snapshot.spinnerDisplay === "none" &&
+            snapshot.skeletonDisplay !== "none" &&
+            snapshot.visibleCards > 0
+        )
+    )).toBe(true);
     await expect.poll(() => page.locator("html").getAttribute("data-landing-loader-phase"), { timeout: 10000 }).toBe("ready");
+    await expect(brandLoader).toBeHidden();
+    await expect(skeleton).toBeHidden();
     await expect(page.locator(".landing-skeleton-card")).toHaveCount(3);
     await expect(page.locator("#assistantPanel input[type=range]")).toHaveCount(0);
 });

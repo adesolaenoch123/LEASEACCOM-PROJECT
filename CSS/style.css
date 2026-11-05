@@ -144,12 +144,7 @@ select {
     object-position: center;
     background: transparent;
     z-index: 0;
-    animation: hero-video-drift 28s ease-in-out infinite alternate;
-}
-
-@keyframes hero-video-drift {
-    from { transform: scale(1); }
-    to { transform: scale(1.06); }
+    animation: none;
 }
 
 .hero::after {
@@ -8684,7 +8679,6 @@ body.owner-lounge-body[data-owner-page="dashboard"] .owner-featured-video {
   pointer-events: none;
   filter: brightness(0.85) !important;
   animation: none !important;
-  transform: none !important;
 }
 .hero::before { display: none !important; content: none !important; }
 .hero::after {
