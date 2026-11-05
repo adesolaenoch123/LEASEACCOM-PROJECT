@@ -18,10 +18,7 @@
     try {
       const result=await window.LeaseAccomApi.request("/admin/assistant/chat",{method:"POST",body:{message}}); pending.remove();addMessage(result.response||"Done.","assistant");
       if(result.data!==undefined) addMessage(asText(result.data),"data");
-      if(result.draft) addMessage("DRAFT (not sent)
-"+result.draft.subject+"
-
-"+result.draft.body,"data");
+      if (result.draft) addMessage(`DRAFT (not sent)\n${result.draft.subject}\n\n${result.draft.body}`, "data");
       if(result.suggested_rule) addRule(result.suggested_rule);
       if(result.proposed_operation && result.confirmation_required) addConfirm(result.proposed_operation);
     } catch(error) { pending.textContent=error.message||"Could not reach the admin assistant."; }
