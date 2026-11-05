@@ -824,7 +824,7 @@ async def admin_assistant_chat(request: AdminAssistantRequest, authorization: Op
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required.")
     try:
-        return admin_assistant_service.respond(request.message)
+        return await admin_assistant_service.respond(request.message)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:

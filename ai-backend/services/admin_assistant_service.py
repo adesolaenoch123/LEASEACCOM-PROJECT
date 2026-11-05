@@ -3,8 +3,11 @@ from __future__ import annotations
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from difflib import SequenceMatcher
+import json
 import re
 from typing import Any
+
+import httpx
 
 from config import settings
 from services.admin_service import AdminService
@@ -100,6 +103,119 @@ class AdminAssistantService:
         for owner, count in owner_counts.items():
             if count >= 15: alerts.append({"type":"high_listing_volume", "severity":"review", "owner_id":owner, "listing_count":count})
         return alerts
+
+    def urgent_messages(self) -> list[dict]:
+        """Flag message text that may need prompt human attention; never auto-reply."""
+        urgent_terms = ("urgent", "emergency", "unsafe", "scam", "fraud", "threat", "harass", "police", "injury", "broken", "leak", "fire")
+        messages = self.rows("messages", 2000)
+        flagged = []
+        for row in messages:
+            body = str(row.get("body") or "")
+            found = [term for term in urgent_terms if term in body.lower()]
+            if found:
+                flagged.append({"message_id": row.get("id"), "conversation_id": row.get("conversation_id"), "created_at": row.get("created_at"), "signals": found, "message_preview": body[:500]})
+        return flagged
+
+    def application_flags(self) -> list[dict]:
+        """Find duplicate applications and same-tenant/property date collisions."""
+        apps = self.rows("applications", 3000)
+        seen: dict[tuple[str, str, str], dict] = {}
+        flags = []
+        for row in apps:
+            tenant = str(row.get("tenant_id") or "")
+            prop = str(row.get("property_id") or "")
+            move_in = str(row.get("move_in_date") or "")
+            key = (tenant, prop, move_in)
+            if tenant and prop and key in seen and str(row.get("status")) not in {"withdrawn", "rejected"}:
+                flags.append({"type": "possible_duplicate_application", "first": self._brief(seen[key]), "second": self._brief(row), "reason": "same tenant, property, and move-in date"})
+            elif tenant and prop and str(row.get("status")) not in {"withdrawn", "rejected"}:
+                seen[key] = row
+        return flags
+
+    def payment_flags(self) -> list[dict]:
+        payments = self.rows("payments", 3000)
+        flags = []
+        for row in payments:
+            status = str(row.get("status") or "").lower()
+            age = self._days(row)
+            if status == "failed" or (status == "pending" and age >= 1):
+                flags.append({"record": {k: row.get(k) for k in ("id", "user_id", "property_id", "amount", "currency", "type", "purpose", "status", "created_at") if row.get(k) is not None}, "waiting_days": age, "signal": "failed payment" if status == "failed" else "payment pending for at least one day"})
+        return flags
+
+    def property_performance(self) -> list[dict]:
+        properties = self.rows("properties", 2000)
+        applications = self.rows("applications", 5000)
+        try:
+            views = self.rows("property_views", 10000)
+        except Exception:
+            views = []
+        views_by_id = Counter(str(row.get("property_id")) for row in views if row.get("property_id"))
+        apps_by_id = Counter(str(row.get("property_id")) for row in applications if row.get("property_id"))
+        results = []
+        for prop in properties:
+            property_id = str(prop.get("id") or "")
+            view_count = views_by_id[property_id] or int(prop.get("views_count") or 0)
+            app_count = apps_by_id[property_id]
+            results.append({"property": self._brief(prop), "views": view_count, "applications": app_count, "application_rate": round(app_count / view_count, 3) if view_count else None})
+        return sorted(results, key=lambda row: (row["applications"], row["views"]), reverse=True)
+
+    def pricing_benchmarks(self) -> list[dict]:
+        properties = self.rows("properties", 3000)
+        groups: dict[tuple[str, str, str], list[float]] = {}
+        for row in properties:
+            try:
+                price = float(row.get("price") or 0)
+            except (TypeError, ValueError):
+                continue
+            if price <= 0:
+                continue
+            key = (str(row.get("city") or "Unknown"), str(row.get("type") or "Unknown"), str(row.get("period") or "year"))
+            groups.setdefault(key, []).append(price)
+        import statistics
+        benchmarks = []
+        for (city, kind, period), values in groups.items():
+            if len(values) < 3:
+                continue
+            median = statistics.median(values)
+            benchmarks.append({"city": city, "property_type": kind, "price_period": period, "comparable_count": len(values), "median_price": median, "suggested_review_range": [round(median * 0.9, 2), round(median * 1.1, 2)], "note": "Market comparison only; verify property condition and local demand before changing a price."})
+        return benchmarks
+
+    def viewing_calendar(self, days: int = 30) -> dict:
+        today = datetime.now(timezone.utc).date()
+        end = today + timedelta(days=max(1, min(days, 365)))
+        rows = self.rows("viewings", 3000)
+        upcoming = []
+        for row in rows:
+            raw = row.get("preferred_date") or row.get("viewing_date")
+            try:
+                date_value = datetime.fromisoformat(str(raw)).date()
+            except (TypeError, ValueError):
+                continue
+            if today <= date_value <= end and str(row.get("status") or "").lower() not in {"cancelled", "declined"}:
+                upcoming.append({"viewing": self._brief(row), "date": str(date_value), "time": row.get("preferred_time")})
+        return {"upcoming_viewings": sorted(upcoming, key=lambda item: item["date"]), "availability_note": "The app stores viewing requests but not property availability blocks, so open rental dates cannot be inferred from this calendar."}
+
+    def dispute_summary(self) -> dict:
+        rows = self.rows("reports", 1000)
+        open_reports = [row for row in rows if str(row.get("status") or "open").lower() in {"open", "pending", "investigating"}]
+        return {"open_report_count": len(open_reports), "reports": [{"record": self._brief(row), "summary": str(row.get("subject") or row.get("reason") or row.get("details") or row.get("body") or "No report details recorded")[:700], "waiting_days": self._days(row)} for row in open_reports]}
+
+    def maintenance_candidates(self) -> list[dict]:
+        reports = self.rows("reports", 1000)
+        terms = ("repair", "broken", "leak", "maintenance", "electric", "water", "damage", "fault", "plumbing", "mould", "mold")
+        tasks = []
+        for row in reports:
+            body = " ".join(str(row.get(key) or "") for key in ("subject", "reason", "details", "body"))
+            if any(term in body.lower() for term in terms) and str(row.get("status") or "open").lower() in {"open", "pending", "investigating"}:
+                tasks.append({"report_id": row.get("id"), "property_id": row.get("property_id"), "priority": "high" if any(term in body.lower() for term in ("unsafe", "electric", "fire", "leak")) else "normal", "suggested_task": body[:500], "status": "suggested_only"})
+        return tasks
+
+    def move_in_brief(self) -> dict:
+        applications = self.rows("applications", 2000)
+        agreements = self.rows("agreements", 2000)
+        accepted = [row for row in applications if str(row.get("status") or "").lower() == "accepted"]
+        agreements_by_app = {str(row.get("application_id")): row for row in agreements if row.get("application_id")}
+        return {"accepted_applications": [{"application": self._brief(row), "agreement": self._brief(agreements_by_app[str(row.get("id"))]) if str(row.get("id")) in agreements_by_app else None, "checklist": ["Confirm move-in date", "Confirm rent and deposit", "Share verified access instructions", "Record property condition"]} for row in accepted], "note": "No door codes or private access credentials are stored or generated by the assistant."}
 
     def overdue(self, days: int = 3) -> list[dict]:
         checks = (("properties", ("pending", "submitted")), ("owner_verifications", ("pending",)), ("applications", ("submitted", "under_review")), ("reports", ("open", "pending")))
@@ -210,9 +326,197 @@ class AdminAssistantService:
         self.client.table("audit_logs").insert({"actor_id":actor.get("id"),"actor_email":actor.get("email"),"action":"assistant_"+op,"entity_type":table,"entity_id":",".join(ids),"detail":payload.get("instruction") or "Confirmed AI assistant action"}).execute()
         return {"updated":len(changed),"records":[self._brief(r) for r in changed],"action":op,"status":status}
 
-    def respond(self, message: str) -> dict:
+    async def respond(self, message: str) -> dict:
+        """Use the admin-only tools for facts, then let the configured model phrase the answer.
+
+        The model never selects or executes database operations. Tool results and proposed
+        actions remain authoritative, and mutations still go through the confirmation route.
+        """
+        result = self._respond_with_rules(message)
+        if not settings.LLM_API_KEY:
+            return result
+
+        try:
+            if result.get("draft"):
+                result["draft"] = await self._generate_draft(message, result["draft"])
+            result["response"] = await self._phrase_response(message, result)
+        except Exception:
+            # A model outage must not prevent the existing admin tools from working.
+            pass
+        return result
+
+    async def _generate_draft(self, instruction: str, fallback: dict) -> dict:
+        """Generate a review-only message draft; never send it to a customer."""
+        kind = str(fallback.get("kind") or "admin_message")
+        if kind == "translation":
+            task = "Translate the admin-provided text into the target language they request. Preserve meaning and tone; do not add facts."
+        elif kind == "listing_description":
+            task = "Write clear rental listing copy using only facts in the admin's instruction. Use bracketed placeholders for missing property facts; do not invent amenities, safety features, or proximity claims."
+        elif kind == "review_response":
+            task = "Draft a polite public response to the review text provided by the admin. Do not claim facts or promise remedies that were not provided."
+        else:
+            task = "Write a concise, professional LeaseAccom admin message. Use only information in the instruction. Put bracketed placeholders where facts are missing."
+        payload = {
+            "model": settings.LLM_MODEL,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        f"{task} Never claim anything was sent or published. "
+                        "Return only a JSON object with string fields subject and body."
+                    ),
+                },
+                {"role": "user", "content": instruction},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 450,
+            "response_format": {"type": "json_object"},
+        }
+        headers = {
+            "Authorization": f"Bearer {settings.LLM_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        url = f"{settings.LLM_API_BASE_URL.rstrip('/')}/chat/completions"
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+        content = response.json()["choices"][0]["message"]["content"]
+        draft = json.loads(content)
+        subject = str(draft.get("subject", "")).strip()
+        body = str(draft.get("body", "")).strip()
+        if not subject or not body:
+            return fallback
+        return {**fallback, "subject": subject[:200], "body": body[:4000], "send_action": "not_sent_review_required"}
+
+    @staticmethod
+    def _safe_response_context(result: dict) -> dict:
+        """Summarize tool output without sending record-level personal data to the LLM."""
+        context: dict[str, Any] = {
+            "tool_summary": result.get("response", ""),
+            "confirmation_required": bool(result.get("confirmation_required")),
+        }
+        proposal = result.get("proposed_operation")
+        if proposal:
+            context["proposed_action"] = {
+                "operation": proposal.get("operation"),
+                "status": proposal.get("status"),
+                "record_count": len(proposal.get("record_ids") or []),
+            }
+
+        def summarize(value: Any) -> Any:
+            if isinstance(value, list):
+                return {"count": len(value)}
+            if not isinstance(value, dict):
+                return None
+            safe: dict[str, Any] = {}
+            for key, item in value.items():
+                if isinstance(item, (int, float, bool)) or item is None:
+                    safe[key] = item
+                elif isinstance(item, list):
+                    safe[key] = {"count": len(item)}
+                elif isinstance(item, dict):
+                    child = summarize(item)
+                    if child:
+                        safe[key] = child
+            return safe
+
+        if "data" in result:
+            context["data_summary"] = summarize(result["data"])
+        if result.get("draft"):
+            context["draft_type"] = result["draft"].get("kind")
+        if result.get("suggested_rule"):
+            context["suggested_rule"] = {
+                "name": result["suggested_rule"].get("name"),
+                "rule_type": result["suggested_rule"].get("rule_type"),
+            }
+        return context
+
+    async def _phrase_response(self, message: str, result: dict) -> str:
+        context = self._safe_response_context(result)
+        system_prompt = (
+            "You are the private LeaseAccom admin dashboard assistant. Answer only from the "
+            "trusted tool summary provided. Do not invent records, facts, or completed actions. "
+            "The backend, not you, selected all results and proposed actions. If confirmation_required "
+            "is true, clearly say the action is only proposed and still needs the administrator's "
+            "confirmation. Keep the answer concise and useful. Do not request or reveal personal data."
+        )
+        payload = {
+            "model": settings.LLM_MODEL,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Request: {message}\nTrusted admin tool summary: {context}"},
+            ],
+            "temperature": 0.2,
+            "max_tokens": 300,
+        }
+        headers = {
+            "Authorization": f"Bearer {settings.LLM_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        url = f"{settings.LLM_API_BASE_URL.rstrip('/')}/chat/completions"
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+        answer = response.json()["choices"][0]["message"]["content"].strip()
+        return answer or result.get("response", "I couldn't prepare a response.")
+
+    def _respond_with_rules(self, message: str) -> dict:
         text=message.strip(); low=text.lower()
         if not text: return {"response":"Tell me what you want to find or do in the admin dashboard."}
+        if any(k in low for k in ("urgent message", "urgent conversation", "emergency message", "flag urgent")):
+            rows=self.urgent_messages(); return {"response":f"Found {len(rows)} message(s) with urgent safety or service signals. These are prompts for human review; no reply was sent.","data":rows,"capability":"urgent_message_triage"}
+        if any(k in low for k in ("application conflict", "duplicate application", "overlapping application", "booking problem", "booking conflict")):
+            rows=self.application_flags(); return {"response":f"Found {len(rows)} possible duplicate rental application(s). LeaseAccom does not have a reservation table, so I checked applications instead.","data":rows,"capability":"application_conflict_check"}
+        if any(k in low for k in ("cancellation", "cancelled", "canceled", "withdrawn application")):
+            applications=[self._brief(r) for r in self.rows("applications",2000) if str(r.get("status") or "").lower()=="withdrawn"]
+            viewings=[self._brief(r) for r in self.rows("viewings",2000) if str(r.get("status") or "").lower()=="cancelled"]
+            return {"response":f"Found {len(applications)} withdrawn application(s) and {len(viewings)} cancelled viewing(s). Payment and reservation cancellations are not stored as booking records in this app.","data":{"withdrawn_applications":applications,"cancelled_viewings":viewings},"capability":"rental_cancellation_review"}
+        if any(k in low for k in ("payment issue", "failed payment", "overdue payment", "payment problem", "payment anomalies")):
+            rows=self.payment_flags(); return {"response":f"Found {len(rows)} failed payments or payments pending at least one day. This is a review list; I did not change or refund a payment.","data":rows,"capability":"payment_issue_review"}
+        if any(k in low for k in ("refund", "refund recommendation", "should i refund")):
+            rows=self.payment_flags(); return {"response":"I can show payment signals to help with a refund decision, but the app has no refund policy rules or refund action wired to the admin assistant. Review the transaction and your policy before deciding.","data":rows,"capability":"refund_review_only"}
+        if any(k in low for k in ("property performance", "compare properties", "compare listing", "which properties perform", "conversion rate", "views to applications")):
+            rows=self.property_performance(); return {"response":"Here is the property performance comparison using recorded views and rental applications where available.","data":rows,"capability":"property_performance"}
+        if any(k in low for k in ("pricing suggestion", "price recommendation", "recommend a price", "market price", "pricing changes")):
+            rows=self.pricing_benchmarks(); return {"response":f"Prepared {len(rows)} city/type/period price benchmark(s) from your listings. These are recommendations only; no listing prices were changed.","data":rows,"capability":"price_benchmarks"}
+        if any(k in low for k in ("calendar gap", "viewing calendar", "upcoming viewings", "availability calendar")):
+            days_match=re.search(r"(\d+)\s*days?",low); days=int(days_match.group(1)) if days_match else 30
+            return {"response":"Here are upcoming viewing requests. Rental availability gaps cannot be calculated because the app does not store reservation blocks.","data":self.viewing_calendar(days),"capability":"viewing_calendar"}
+        if any(k in low for k in ("occupancy forecast", "forecast occupancy", "occupancy rate", "occupancy")):
+            return {"response":"LeaseAccom does not currently store rental stay reservations or occupied-date ranges, so I cannot calculate occupancy. I can forecast application and viewing activity instead; ask for an application or viewing trend summary.","data":{"available_signals":["rental applications","viewing requests"],"missing_data":["reservation dates","occupied dates","availability blocks"]},"capability":"occupancy_data_gap"}
+        if any(k in low for k in ("forecast", "forecast demand", "application trend")):
+            days=90; rows=self.rows("applications",5000); cutoff=datetime.now(timezone.utc)-timedelta(days=days)
+            recent=[]
+            for row in rows:
+                try:
+                    created=datetime.fromisoformat(str(row.get("created_at") or "").replace("Z","+00:00"))
+                    if created.tzinfo is None: created=created.replace(tzinfo=timezone.utc)
+                    if created>=cutoff: recent.append(row)
+                except ValueError: pass
+            weeks=max(1,days/7); rate=round(len(recent)/weeks,2)
+            return {"response":f"Recorded applications averaged {rate} per week over the last {days} days. This is a simple trend, not an occupancy forecast.","data":{"period_days":days,"applications":len(recent),"average_per_week":rate,"forecast_next_30_days":round(rate*30/7,1),"confidence":"low; based on recent application volume only"},"capability":"application_volume_forecast"}
+        if any(k in low for k in ("maintenance", "repair task", "maintenance task", "broken", "leak")):
+            rows=self.maintenance_candidates(); return {"response":f"Found {len(rows)} open reports that may need a maintenance task. Suggestions are not assigned or dispatched.","data":rows,"capability":"maintenance_triage"}
+        if any(k in low for k in ("dispute", "resolve dispute", "dispute summary", "reports to resolve")):
+            data=self.dispute_summary(); return {"response":f"There are {data['open_report_count']} open reports or disputes for an admin to review.","data":data,"capability":"dispute_summary"}
+        if any(k in low for k in ("handover", "hand-over", "staff handoff", "shift notes")):
+            data={"summary":self.summary(1),"overdue":self.overdue(1)[:30],"upcoming_viewings":self.viewing_calendar(7)["upcoming_viewings"]}
+            return {"response":"Here are suggested staff handover notes from current reports, applications, and viewing requests.","data":data,"capability":"staff_handover"}
+        if any(k in low for k in ("move-in instructions", "move in instructions", "check-in instructions", "arrival instructions")):
+            return {"response":"Here is a move-in preparation checklist based on accepted rental applications. Add verified access details yourself; the assistant does not create door codes.","data":self.move_in_brief(),"capability":"move_in_checklist"}
+        if any(k in low for k in ("translate", "translation", "in spanish", "in french", "in yoruba", "in hausa", "in igbo")):
+            return {"response":"Here is a translation draft for review; it has not been sent.","draft":{"kind":"translation","subject":"Translated message","body":"[Translation will be generated from your instruction.]","send_action":"not_sent_review_required"},"capability":"message_translation"}
+        if any(k in low for k in ("occupancy gap", "review summary", "summarize reviews", "guest reviews", "review response", "reply to review")):
+            if any(k in low for k in ("review response", "reply to review")):
+                return {"response":"I couldn't load a stored review because the app has no review table. Paste the review text and I can draft a response for you to review.","draft":{"kind":"review_response","subject":"Reply to review","body":"[Paste review text and add verified response details.]","send_action":"not_sent_review_required"},"capability":"review_response_draft"}
+            return {"response":"There is no review or star-rating table in the current LeaseAccom schema. I can review property reports and customer messages instead; those records may contain feedback but are not verified reviews.","data":{"available_alternative":"Ask me to summarize disputes/reports or flag urgent messages.","missing_data":["review text","star ratings"]},"capability":"review_data_gap"}
+        if any(k in low for k in ("listing description", "write a description", "improve this listing", "rewrite listing", "listing copy")):
+            return {"response":"Here is a listing description draft for your review. Confirm the property facts before publishing.","draft":{"kind":"listing_description","subject":"Property listing description","body":"[Describe the property and verified amenities.]","send_action":"not_published_review_required"},"capability":"listing_copy_draft"}
+        if any(k in low for k in ("photo", "photos", "images", "image order")):
+            incomplete=self.missing_info()["incomplete_listings"]
+            return {"response":"I can check whether listings have photos and recommend a stronger photo set, but I cannot judge image quality or reorder photos without a visual review tool.","data":{"incomplete_listings":[row for row in incomplete if "images" in row["missing"]],"photo_guidance":["Use a bright lead image of the main room", "Include kitchen, bathroom, bedroom, exterior, and amenities", "Avoid duplicate, blurry, or misleading photos"]},"capability":"photo_completeness"}
+        if any(k in low for k in ("recommend action", "what should i do", "what needs attention", "prioritize", "task list", "to-do list", "todo")):
+            return {"response":"Here are suggested admin tasks ordered from the current open signals. Recommendations do not change records.","data":{"urgent_messages":self.urgent_messages()[:20],"overdue":self.overdue(3)[:30],"payment_flags":self.payment_flags()[:20],"maintenance_candidates":self.maintenance_candidates()[:20]},"capability":"admin_task_prioritization"}
         if any(k in low for k in ("duplicate listing","duplicate listings","duplicates","dupes")):
             rows=self.duplicates(); return {"response":f"Found {len(rows)} possible duplicate pair(s). These are review flags; I made no changes.","data":rows}
         if any(k in low for k in ("suspicious","fraud","unusual activity")):
