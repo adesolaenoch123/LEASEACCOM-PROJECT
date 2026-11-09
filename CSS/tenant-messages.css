@@ -1095,3 +1095,17 @@ body[data-leaseaccom-page="tenant-messages"] .site-footer {
     display: flex !important;
   }
 }
+
+/* Keep the conversation brand pinned left and let search use the free width. */
+body[data-leaseaccom-page="tenant-messages"] .messages-topbar { justify-content: flex-start !important; }
+body[data-leaseaccom-page="tenant-messages"] .messages-logo { margin: 0 auto 0 0 !important; }
+@media (max-width: 650px) {
+  body[data-leaseaccom-page="tenant-messages"] .messages-topbar { gap: 9px !important; padding-inline: 12px !important; }
+  body[data-leaseaccom-page="tenant-messages"] .messages-logo { width: 44px !important; height: 44px !important; flex: 0 0 44px !important; margin: 0 !important; }
+  body[data-leaseaccom-page="tenant-messages"] .conversation-search { width: auto !important; max-width: none !important; min-width: 0 !important; margin: 0 !important; flex: 1 1 auto !important; }
+}
+@media (max-width: 380px) { body[data-leaseaccom-page="tenant-messages"] .messages-logo { width: 42px !important; height: 42px !important; flex-basis: 42px !important; } }
+
+
+/* Beat the legacy global logo-hiding selector on the inbox header. */
+body:not(.is-landing-page) .messages-topbar .logo img { display: block !important; }

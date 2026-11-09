@@ -9441,3 +9441,46 @@ body.owner-lounge-body .owner-topbar-icon-link .owner-notif-badge[hidden] {
     place-items: center;
   }
 }
+
+/* Restore visible brand marks across every page. */
+body:not(.is-landing-page) .navbar .logo img, .messages-topbar .logo img { display: block !important; }
+body:not(.is-landing-page) .navbar .logo .logo-text, .messages-topbar .logo .logo-text { display: none !important; }
+
+/* Property-card sharing action: readable, touch-friendly and consistent. */
+.property-info { position: relative; }
+.property-card .share-property-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; margin-top: 12px; padding: 0 14px; border: 1px solid #087c50; border-radius: 9px; color: #fff; background: #087c50; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .18s ease, box-shadow .18s ease, transform .18s ease; }
+.property-card .share-property-btn:hover { background: #056640; box-shadow: 0 4px 12px #087c5030; transform: translateY(-1px); }
+.property-card .share-property-btn:focus-visible { outline: 3px solid #087c5040; outline-offset: 2px; }
+.property-card .property-share-menu { position: absolute; z-index: 20; right: 0; bottom: 48px; display: grid; gap: 3px; min-width: 145px; padding: 6px; border: 1px solid #e5ece8; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px #10251a24; }
+.property-card .property-share-menu[hidden] { display: none; }
+.property-card .property-share-menu a, .property-card .property-share-menu button { padding: 9px 10px; border: 0; border-radius: 6px; color: #26362d; background: transparent; text-align: left; text-decoration: none; font: inherit; font-size: 13px; cursor: pointer; }
+.property-card .property-share-menu a:hover, .property-card .property-share-menu button:hover { color: #056640; background: #eaf7ef; }
+
+
+/* Tenant application status cards: give each item clear rhythm on mobile. */
+body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card {
+  margin: 18px 0 !important; padding: 20px !important; border: 1px solid #e1ebe5; border-radius: 18px;
+  background: #fff; box-shadow: 0 8px 24px rgba(18, 57, 37, .06);
+}
+body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .request-top {
+  align-items: flex-start; gap: 12px; margin-bottom: 12px;
+}
+body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .request-top h3 {
+  min-width: 0; margin: 0; line-height: 1.3; overflow-wrap: anywhere;
+}
+body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .request-meta {
+  margin: 0 0 14px; color: #66736c; font-size: 14px; line-height: 1.5;
+}
+body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .request-meta strong { color: #25352c; }
+body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .lh-status-timeline {
+  margin: 14px 0 10px; padding: 14px 16px; gap: 12px; border-radius: 14px;
+}
+body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .lh-step { min-height: 22px; font-size: 13px; }
+body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .lh-status-hint { margin-top: 10px; line-height: 1.5; }
+@media (max-width: 600px) {
+  body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card { margin: 14px 0 !important; padding: 16px !important; }
+  body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .request-top { flex-wrap: wrap; }
+  body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .status-badge { flex: 0 0 auto; }
+  body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .request-meta { font-size: 13px; }
+  body[data-leaseaccom-page="tenant-dashboard"] .lh-status-card .lh-status-timeline { padding: 12px 13px; gap: 10px; }
+}

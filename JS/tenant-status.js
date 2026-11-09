@@ -7,6 +7,14 @@
   function escapeHtml(s) {
     return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
+  function formatSubmittedDate(value) {
+    if (!value) return "\u2014";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat("en-NG", {
+      day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit"
+    }).format(date);
+  }
   ready(function () {
     const S = window.LeaseAccomStatus;
     let apps = [];
@@ -34,7 +42,7 @@
       return `<article class="request-card lh-status-card">
         <div class="request-top"><h3>${escapeHtml(app.propertyTitle || "Property")}</h3>
         <span class="status-badge ${cls}">${escapeHtml(label)}</span></div>
-        <p class="request-meta"><strong>Submitted:</strong> ${escapeHtml(app.submittedAt || app.createdAt || "—")}</p>
+        <p class="request-meta"><strong>Submitted:</strong> ${escapeHtml(formatSubmittedDate(app.submittedAt || app.createdAt))}</p>
         ${timeline}
         <p class="lh-status-hint">Owner sees the same status on their applications panel.</p>
       </article>`;

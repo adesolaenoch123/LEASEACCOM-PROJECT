@@ -507,3 +507,33 @@ body.lh-notifications-open {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* Owner Lounge notification panel: readable green-accented surface. */
+.owner-notif-panel {
+  color: #183b2a !important; background: #fff !important; border: 1px solid #cfe6d7 !important;
+  box-shadow: 0 18px 48px rgba(13, 62, 37, .24) !important;
+}
+.owner-notif-head { gap: 12px; border-bottom: 1px solid #e3eee7; }
+.owner-notif-head > strong { color: #075c3c !important; font-size: 16px; }
+.owner-notif-actions { flex: 0 0 auto; gap: 8px; }
+#ownerNotifReadAll { color: #087443 !important; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.owner-notif-head .owner-notif-close, #ownerNotifClose {
+  width: 38px !important; height: 38px !important; flex: 0 0 38px; border: 1px solid #cfe6d7 !important;
+  border-radius: 50% !important; color: #fff !important; background: #087443 !important;
+  font-size: 25px !important; line-height: 1 !important; cursor: pointer;
+}
+.owner-notif-head .owner-notif-close:hover, #ownerNotifClose:hover { background: #055b35 !important; }
+.owner-notif-item { color: #183b2a !important; background: #f7fbf8 !important; border-color: #e1eee6 !important; }
+.owner-notif-item.is-unread { background: #eaf6ee !important; border-color: #aad7bb !important; }
+.owner-notif-item strong { color: #183b2a !important; }
+.owner-notif-item p, .owner-notif-panel .owner-muted { color: #617268 !important; }
+@media (max-width: 900px) {
+  #ownerNotifPanel:not([hidden]) {
+    position: fixed !important; left: 12px !important; right: 12px !important; top: 50% !important; bottom: auto !important;
+    width: auto !important; max-width: 420px !important; max-height: min(68dvh, 560px) !important;
+    margin: 0 auto !important; padding: 16px !important; transform: translateY(-50%);
+    border-radius: 18px !important; overflow-y: auto !important; z-index: 20000 !important;
+  }
+  .owner-notif-head { position: sticky; top: -16px; padding: 10px 0 12px; background: #fff; z-index: 1; }
+  .owner-notif-list { max-height: min(48dvh, 400px); overflow-y: auto; }
+}
