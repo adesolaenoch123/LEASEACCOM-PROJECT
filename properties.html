@@ -62,10 +62,11 @@
             muted
             loop
             playsinline
+            preload="auto"
             aria-hidden="true"
         >
             <source
-                src="aerial_compressed_720p.mp4"
+                src="IMAGES/properties-hero.mp4"
                 type="video/mp4"
             >
         </video>
@@ -413,6 +414,28 @@
 <script src="JS/leaseaccom-polish.js"></script>
 <script src="JS/leaseaccom-mobile-nav.js"></script>
 <script src="JS/skeletons.js"></script>
+<script>
+// Keep the hero video playing reliably on live-server and mobile browsers.
+(function () {
+    var video = document.querySelector('.marketplace-video');
+    if (!video) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+
+    function startVideo() {
+        var attempt = video.play();
+        if (attempt && typeof attempt.catch === 'function') attempt.catch(function () {});
+    }
+
+    video.addEventListener('loadedmetadata', startVideo, { once: true });
+    video.addEventListener('canplay', startVideo);
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden && video.paused) startVideo();
+    });
+    startVideo();
+})();
+</script>
 </body>
 
 </html>

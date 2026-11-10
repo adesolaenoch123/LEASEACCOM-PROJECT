@@ -508,6 +508,7 @@ body.lh-notifications-open {
   pointer-events: none !important;
 }
 
+
 /* Owner Lounge notification panel: readable green-accented surface. */
 .owner-notif-panel {
   color: #183b2a !important; background: #fff !important; border: 1px solid #cfe6d7 !important;
