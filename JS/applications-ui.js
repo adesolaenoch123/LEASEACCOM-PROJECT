@@ -73,14 +73,21 @@
     return false;
   }
 
+  function catalogProperty(propertyId) {
+    const catalog = Array.isArray(window.properties) ? window.properties : [];
+    return catalog.find((property) => String(property.id) === String(propertyId)) || null;
+  }
+
   function toLocalApplication(record) {
     if (!record) return null;
+    const propertyId = String(record.propertyId || record.property_id || "");
+    const property = catalogProperty(propertyId);
     return {
       id: String(record.id),
-      propertyId: String(record.propertyId || record.property_id || ""),
-      propertyTitle: record.propertyTitle || record.property_title || (record.property && record.property.title) || "Property",
+      propertyId: propertyId,
+      propertyTitle: record.propertyTitle || record.property_title || (record.property && record.property.title) || property?.title || "Property",
       propertyImage: record.propertyImage || record.property_image || "",
-      propertyLocation: record.propertyLocation || record.property_location || "",
+      propertyLocation: record.propertyLocation || record.property_location || property?.location || property?.city || "",
       propertyPrice: record.propertyPrice || record.property_price,
       propertyPeriod: record.propertyPeriod || record.property_period || "year",
       ownerId: record.ownerId || record.owner_id || "",

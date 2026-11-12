@@ -22,6 +22,22 @@ document.addEventListener("DOMContentLoaded", () => {
     return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
+  function propertyForRequest(request) {
+    const id = request.propertyId || request.property_id;
+    const catalog = Array.isArray(window.properties) ? window.properties : [];
+    return catalog.find((property) => String(property.id) === String(id)) || null;
+  }
+
+  function propertyTitle(request) {
+    const property = propertyForRequest(request);
+    return request.propertyTitle || request.property_title || property?.title || "Property";
+  }
+
+  function propertyLocation(request) {
+    const property = propertyForRequest(request);
+    return request.propertyLocation || request.property_location || request.location || property?.location || property?.city || "";
+  }
+
   function render() {
     let requests = backendRequests === null ? loadRequests() : backendRequests;
     const user = currentUser();
@@ -36,6 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (countEl) countEl.textContent = String(requests.length);
 
     if (!requests.length) {
+      const empty = document.getElementById("emptyViewings");
+      if (empty) empty.style.display = "flex";
       if (document.getElementById("emptyViewings")) {
         container.innerHTML = "";
         return;
@@ -46,6 +64,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const empty = document.getElementById("emptyViewings");
+    if (empty) empty.style.display = "none";
+
     requests = requests.slice().sort((a, b) =>
       new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0)
     );
@@ -55,23 +76,26 @@ document.addEventListener("DOMContentLoaded", () => {
       const statusClass = S ? S.viewingClass(status) : "status-pending";
       const statusText = S ? S.viewingLabel(status) : status;
       const timeline = S ? S.timelineHtml("viewing", status) : "";
-      let formattedDate = request.viewingDate || "Not set";
-      if (request.viewingDate) {
-        const d = new Date(request.viewingDate);
+      const requestedDate = request.viewingDate || request.date;
+      const requestedTime = request.viewingTime || request.time;
+      let formattedDate = requestedDate || "Not set";
+      if (requestedDate) {
+        const d = new Date(requestedDate);
         if (!isNaN(d)) formattedDate = d.toLocaleDateString("en-NG", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
       }
       return `<article class="request-card lh-status-card">
         <div class="request-info">
           <div class="request-top">
-            <h3>${escapeHtml(request.propertyTitle || "Property")}</h3>
+            <h3>${escapeHtml(propertyTitle(request))}</h3>
             <span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span>
           </div>
-          <div class="request-location">${escapeHtml(request.propertyLocation || request.location || "")}</div>
+          <div class="request-location">${escapeHtml(propertyLocation(request))}</div>
           <p class="request-meta"><strong>Preferred date:</strong> ${escapeHtml(formattedDate)}</p>
-          ${request.viewingTime ? `<p class="request-meta"><strong>Preferred time:</strong> ${escapeHtml(request.viewingTime)}</p>` : ""}
+          ${requestedTime ? `<p class="request-meta"><strong>Preferred time:</strong> ${escapeHtml(requestedTime)}</p>` : ""}
           ${request.message ? `<p class="request-meta"><strong>Note:</strong> ${escapeHtml(request.message)}</p>` : ""}
           ${timeline}
           <p class="lh-status-hint">Owner sees the same status on their dashboard.</p>
+          ${request.propertyId ? `<a class="primary-btn request-property-btn" href="property-details.html?id=${encodeURIComponent(request.propertyId)}">View property <i class="bx bx-arrow-right" aria-hidden="true"></i></a>` : ""}
         </div>
       </article>`;
     }).join("");
@@ -86,8 +110,8 @@ document.addEventListener("DOMContentLoaded", () => {
       backendRequests = (payload.viewing_requests || []).map((record) => ({
         id: record.id,
         propertyId: record.property_id,
-        propertyTitle: record.property?.title || "Property",
-        propertyLocation: record.property?.location || record.property?.city || "",
+        propertyTitle: record.property?.title || record.property_title || "",
+        propertyLocation: record.property?.location || record.property?.city || record.property_location || "",
         viewingDate: record.preferred_date || record.viewing_date,
         viewingTime: record.preferred_time,
         message: record.notes || record.message,
@@ -104,4 +128,5 @@ document.addEventListener("DOMContentLoaded", () => {
   render();
   loadBackendRequests();
   window.addEventListener("storage", (e) => { if (e.key === "viewingRequests") render(); });
+  window.LeaseAccomViewingRequests = { render };
 });

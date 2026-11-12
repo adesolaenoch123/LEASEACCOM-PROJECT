@@ -15,6 +15,10 @@
       day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit"
     }).format(date);
   }
+  function catalogProperty(propertyId) {
+    const catalog = Array.isArray(window.properties) ? window.properties : [];
+    return catalog.find((property) => String(property.id) === String(propertyId)) || null;
+  }
   ready(function () {
     const S = window.LeaseAccomStatus;
     let apps = [];
@@ -35,16 +39,19 @@
     if (!box || !apps.length) return;
     apps = apps.slice().sort((a, b) => new Date(b.updatedAt || b.submittedAt || 0) - new Date(a.updatedAt || a.submittedAt || 0));
     box.innerHTML = apps.map((app) => {
+      const property = catalogProperty(app.propertyId || app.property_id);
+      const propertyId = app.propertyId || app.property_id || "";
       const st = S ? S.normalizeApplicationStatus(app.status) : (app.status || "submitted");
       const label = S ? S.applicationLabel(st) : st;
       const cls = S ? S.applicationClass(st) : "status-pending";
       const timeline = S ? S.timelineHtml("application", st) : "";
       return `<article class="request-card lh-status-card">
-        <div class="request-top"><h3>${escapeHtml(app.propertyTitle || "Property")}</h3>
+        <div class="request-top"><h3>${escapeHtml(app.propertyTitle || app.property_title || property?.title || "Property")}</h3>
         <span class="status-badge ${cls}">${escapeHtml(label)}</span></div>
         <p class="request-meta"><strong>Submitted:</strong> ${escapeHtml(formatSubmittedDate(app.submittedAt || app.createdAt))}</p>
         ${timeline}
         <p class="lh-status-hint">Owner sees the same status on their applications panel.</p>
+        ${propertyId ? `<a class="primary-btn request-property-btn" href="property-details.html?id=${encodeURIComponent(propertyId)}">View property <i class="bx bx-arrow-right" aria-hidden="true"></i></a>` : ""}
       </article>`;
     }).join("");
   });

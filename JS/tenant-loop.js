@@ -243,7 +243,10 @@
           localStorage.setItem("viewingRequests", JSON.stringify(v.data.map(function (r) {
             return {
               id: r.id, propertyId: r.property_id, ownerId: r.owner_id, tenantId: r.tenant_id,
-              status: r.status, date: r.preferred_date, time: r.preferred_time, message: r.message,
+              propertyTitle: r.property_title || r.property?.title || "",
+              propertyLocation: r.property_location || r.property?.location || r.property?.city || "",
+              status: r.status, date: r.preferred_date, viewingDate: r.preferred_date,
+              time: r.preferred_time, viewingTime: r.preferred_time, message: r.message,
               createdAt: r.created_at
             };
           })));
@@ -278,6 +281,7 @@
       renderJourney();
       refreshCounts();
       renderApplicationList();
+      if (global.LeaseAccomViewingRequests?.render) global.LeaseAccomViewingRequests.render();
     } catch (e) {
       console.warn("tenant-loop", e);
     }
