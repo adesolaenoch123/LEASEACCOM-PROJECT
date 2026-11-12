@@ -538,3 +538,19 @@ body.lh-notifications-open {
   .owner-notif-head { position: sticky; top: -16px; padding: 10px 0 12px; background: #fff; z-index: 1; }
   .owner-notif-list { max-height: min(48dvh, 400px); overflow-y: auto; }
 }
+
+/* Keep the Owner Lounge popover inside the viewport on desktop. The
+   notification button is narrower than the panel, so right: 0 makes the
+   panel grow off the left edge of the sidebar. */
+@media (min-width: 901px) {
+  .owner-notif-wrap {
+    position: relative;
+  }
+
+  .owner-notif-panel {
+    left: 0 !important;
+    right: auto !important;
+    width: min(320px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+}

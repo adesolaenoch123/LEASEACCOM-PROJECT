@@ -678,16 +678,24 @@
 
 
             <small id="propertyImageHelp" class="leaseaccom-upload-help">Minimum 3 photos · Maximum 20 photos. You can remove, reorder and choose a cover photo before submitting.</small>
-            <div class="leaseaccom-upload-block" style="margin-top:16px">
-                <label class="leaseaccom-upload-label" for="propertyVideo">
+            <label class="upload-box upload-box-video" for="propertyVideo">
+                <span>
+                    <i class="bx bx-video" aria-hidden="true"></i>
+                </span>
+
+                <strong>
+                    Choose property videos <em>(optional)</em>
+                </strong>
+
+                <small id="propertyVideoHelp">
                     <strong>Property video (optional)</strong>
                     <span>Show rooms, walkthroughs or exterior. MP4/WEBM/MOV · max 3 · under 40MB each</span>
-                </label>
-                <label class="leaseaccom-file-btn" for="propertyVideo">
-                    <i class="bx bx-video"></i> Choose property videos
-                </label>
-                <input type="file" id="propertyVideo" accept="video/*,.mp4,.webm,.mov" multiple hidden>
-            </div>
+                </small>
+
+                <span class="upload-cta" aria-hidden="true">Choose Videos</span>
+
+                <input type="file" id="propertyVideo" accept="video/*,.mp4,.webm,.mov" multiple aria-describedby="propertyVideoHelp">
+            </label>
 
 
             <div

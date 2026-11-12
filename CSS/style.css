@@ -7135,6 +7135,34 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   word-break: break-word;
 }
 
+/* Video upload uses the same drop-zone treatment as property photos. */
+.upload-box-video {
+  margin-top: 16px;
+  border-color: #d7e7dd;
+  background: linear-gradient(180deg, #fff 0%, #fbfefc 100%);
+}
+.upload-box-video:hover,
+.upload-box-video:focus-within {
+  border-color: var(--green, #15945c);
+  background: #f5fbf7;
+  box-shadow: 0 8px 24px rgba(13, 117, 71, .08);
+}
+.upload-box-video > span:first-child {
+  color: var(--green-dark, #0d7547);
+}
+.upload-box-video em {
+  color: var(--gray, #66706a);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+}
+.upload-box-video small strong {
+  display: none;
+}
+.upload-box-video small span {
+  display: inline;
+}
+
 /* Filters — less boring */
 .filters {
   background: #fff;
