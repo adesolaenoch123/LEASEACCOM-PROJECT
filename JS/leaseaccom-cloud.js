@@ -203,8 +203,17 @@
 
   async function updateViewingStatus(id, status) {
     if (!hasSb()) return { ok: false, offline: true };
-    const { data, error } = await sb().from("viewings").update({ status: status, updated_at: new Date().toISOString() }).eq("id", id).select().maybeSingle();
+    const userId = await uid();
+    if (!userId) return { ok: false, error: "Not signed in" };
+    const { data, error } = await sb()
+      .from("viewings")
+      .update({ status: status, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("owner_id", userId)
+      .select()
+      .maybeSingle();
     if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: "Viewing request was not found or cannot be changed." };
     return { ok: true, data: data };
   }
 

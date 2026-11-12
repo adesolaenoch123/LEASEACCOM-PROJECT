@@ -7851,6 +7851,188 @@ html.lh-loader-on body #leaseaccomPageLoader {
 .application-actions .primary-btn,
 .application-actions .secondary-btn { min-height:40px; }
 
+/* Owner dashboard: clearer request cards, actions and plan overview. */
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-panel-subtitle {
+  margin: 6px 0 0;
+  max-width: 680px;
+  color: #718078;
+  font-size: 12px;
+  line-height: 1.5;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-list {
+  display: grid;
+  gap: 14px;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-card {
+  padding: 20px;
+  border: 1px solid #dfeae3;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #fbfefc 100%);
+  box-shadow: 0 8px 24px rgba(17, 55, 34, .06);
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #edf2ee;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-card-top h3 {
+  margin: 5px 0 0;
+  color: #17221b;
+  font-size: 18px;
+  line-height: 1.25;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .section-label {
+  color: #087443;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-card-body,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-card-body p,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-details > p {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #edf2ee;
+  border-radius: 10px;
+  background: #f7faf8;
+  color: #66736b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-card-body p strong,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-details > p strong {
+  display: block;
+  margin-bottom: 2px;
+  color: #25352c;
+  font-size: 11px;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-message {
+  grid-column: 1 / -1;
+  padding: 12px 14px;
+  border-left: 3px solid #15945c;
+  border-radius: 10px;
+  background: #eff8f2;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-message strong {
+  color: #087443;
+  font-size: 11px;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .application-message p {
+  margin: 4px 0 0;
+  color: #526259;
+  font-size: 12px;
+  line-height: 1.5;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .lh-status-timeline {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-request-actions,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #edf2ee;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-request-actions button,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-actions button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-request-actions button:hover,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-actions button:hover {
+  transform: translateY(-1px);
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-request-actions button:disabled,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-actions button:disabled {
+  cursor: wait;
+  opacity: .6;
+  transform: none;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-request-actions .primary-btn,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-actions .primary-btn {
+  background: #087443;
+  color: #fff;
+  box-shadow: 0 7px 16px rgba(8, 116, 67, .18);
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-request-actions .secondary-btn,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-actions .secondary-btn {
+  border-color: #d4e2d9;
+  background: #fff;
+  color: #526259;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .viewing-request-actions .decline-viewing-btn,
+body.owner-lounge-body[data-owner-page="dashboard"] .application-actions button[data-application-status="rejected"] {
+  border-color: #f1caca;
+  background: #fff7f7;
+  color: #b42318;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-card {
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid #dfeae3;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f4fbf6, #fff);
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-card > div:first-child strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #dff4e7;
+  color: #087443;
+  font-size: 14px;
+}
+body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-card .owner-ghost-btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border-color: #cfe3d6;
+  border-radius: 10px;
+  color: #087443;
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  body.owner-lounge-body[data-owner-page="dashboard"] .viewing-card {
+    padding: 16px;
+  }
+  body.owner-lounge-body[data-owner-page="dashboard"] .viewing-card-top {
+    flex-direction: column;
+  }
+  body.owner-lounge-body[data-owner-page="dashboard"] .viewing-request-actions,
+  body.owner-lounge-body[data-owner-page="dashboard"] .application-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  body.owner-lounge-body[data-owner-page="dashboard"] .viewing-request-actions button,
+  body.owner-lounge-body[data-owner-page="dashboard"] .application-actions button {
+    width: 100%;
+  }
+  body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-card {
+    flex-direction: column;
+  }
+  body.owner-lounge-body[data-owner-page="dashboard"] .owner-plan-card .owner-ghost-btn {
+    width: 100%;
+  }
+}
+
 
 /* Owner verification prompt */
 .owner-verify-banner {
