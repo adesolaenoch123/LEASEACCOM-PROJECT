@@ -8,6 +8,9 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0d7547">
+    <link rel="apple-touch-icon" href="./IMAGES/leaseaccom-pwa-square-192.png">
 
     <title>LeaseAccom — Find Your Place</title>
 <meta name="description" content="LeaseAccom connects tenants with property owners while helping people discover homes, shortlets, student housing, hotels and commercial spaces across Nigeria.">
@@ -989,5 +992,14 @@ html.lh-skeleton-on .la-home-skeleton { display: flex; }
   <script src="JS/leaseaccom-standout.js"></script>
   <script src="JS/leaseaccom-next4.js"></script>
   <script src="JS/leaseaccom-features-912.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(function (error) {
+          console.warn("LeaseAccom offline support could not be enabled.", error);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
