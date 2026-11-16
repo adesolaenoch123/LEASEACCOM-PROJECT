@@ -400,3 +400,9 @@ body.owner-lounge-body[data-owner-page="dashboard"] .owner-subscription-checkout
     grid-template-columns: 1fr;
   }
 }
+
+.owner-launch-promo {
+  margin: 22px 0 0; padding: 13px 18px; border-radius: 12px;
+  background: linear-gradient(90deg, #06291f, #0d7547); color: #fff;
+  font-size: 13px; line-height: 1.45; text-align: center;
+}

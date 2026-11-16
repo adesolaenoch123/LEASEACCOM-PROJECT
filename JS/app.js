@@ -285,7 +285,6 @@ function loadFeatured() {
         // Enterprise partners first, then admin-featured, then Business, then rest
         if (plan === "enterprise" || featured) return featured && plan === "enterprise" ? 0 : plan === "enterprise" ? 1 : 2;
         if (plan === "business") return 3;
-        if (plan === "professional") return 4;
         return 5;
     }
 

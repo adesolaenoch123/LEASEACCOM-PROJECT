@@ -2,7 +2,7 @@
    Network-first for HTML so site updates appear in the installed app.
    Cache-first for static assets.
 */
-const CACHE = "leaseaccom-pwa-v14";
+const CACHE = "leaseaccom-pwa-v15";
 
 self.addEventListener("install", function (event) {
   event.waitUntil(

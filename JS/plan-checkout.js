@@ -2,7 +2,6 @@
   "use strict";
 
   var planNames = {
-    professional: "Professional",
     business: "Business",
     enterprise: "Enterprise"
   };

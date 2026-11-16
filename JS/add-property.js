@@ -6,8 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!form) return;
 
     const MIN_IMAGES = 3;
-    const MAX_IMAGES = 20;
-    const MAX_VIDEOS = 3;
+    let MAX_IMAGES = 10;
+    let MAX_VIDEOS = 2;
     let selectedVideos = [];
     let selectedImages = [];
     let coverIndex = 0;
@@ -38,6 +38,11 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.replace("owner-verification.html?need=list");
         return;
     }
+    if (window.LeaseAccomPlans && typeof window.LeaseAccomPlans.getPlanLimits === "function") {
+        const planLimits = window.LeaseAccomPlans.getPlanLimits(currentUser);
+        MAX_IMAGES = planLimits.maxPhotos || MAX_IMAGES;
+        MAX_VIDEOS = planLimits.maxVideos || MAX_VIDEOS;
+    }
 
     // Subscription unit limit
     function enforceUnitLimit() {
@@ -47,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const gate = window.LeaseAccomPlans.canAddUnit(currentUser);
         if (!gate.ok) {
             showFormStatus(
-                gate.message + " Open Plans to upgrade (Professional ₦5k · Business ₦10k · Enterprise ₦20k).",
+                gate.message + " Open Plans to upgrade (Business ₦10k · Enterprise ₦20k).",
                 "error"
             );
             const upgrade = document.createElement("p");
@@ -258,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (window.LeaseAccomPlans && typeof window.LeaseAccomPlans.canAddUnitAsync === "function") {
             const gateAsync = await window.LeaseAccomPlans.canAddUnitAsync(currentUser);
             if (!gateAsync.ok) {
-                showFormStatus(gateAsync.message + " Open Plans to upgrade (Professional ₦5k · Business ₦10k · Enterprise ₦20k).", "error");
+                showFormStatus(gateAsync.message + " Open Plans to upgrade (Business ₦10k · Enterprise ₦20k).", "error");
                 return;
             }
         } else if (typeof enforceUnitLimit === "function" && !enforceUnitLimit()) return;

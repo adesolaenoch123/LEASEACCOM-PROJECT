@@ -131,6 +131,21 @@
   }
 
   function setupstore() {
+    try {
+      const rawUser = localStorage.getItem("leaseaccomCurrentUser") || localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("currentUser");
+      const user = rawUser ? JSON.parse(rawUser) : null;
+      if (window.LeaseAccomPlans && user && !window.LeaseAccomPlans.canAccessFeature("property_page_appearance", user)) {
+        const panel = document.getElementById("ownerStore");
+        if (panel) {
+          panel.querySelectorAll("input, button").forEach((control) => { control.disabled = true; });
+          const notice = document.createElement("div");
+          notice.className = "plan-lock-msg";
+          notice.innerHTML = "<strong>Property page appearance</strong> is available on Business and Enterprise. <a href=\"#ownerPricingPlans\">Upgrade your plan</a>";
+          panel.querySelector(".owner-store-form")?.prepend(notice);
+        }
+        return;
+      }
+    } catch (e) {}
     window.LeaseAccomCloud?.getOwnerStorefront?.().then((result) => {
       if (result?.ok) { storeData = result.data || {}; applystoreToUI(storeData); }
     });

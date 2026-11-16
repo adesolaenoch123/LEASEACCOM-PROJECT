@@ -128,6 +128,12 @@
 }
 .op-perk strong { display: block; margin-bottom: 6px; color: #0d7547; }
 
+.op-launch-promo {
+  margin-top: 22px; padding: 13px 18px; border-radius: 12px;
+  background: linear-gradient(90deg, #06291f, #0d7547); color: #fff;
+  font-size: 13px; line-height: 1.45; text-align: center;
+}
+
 .op-cta-bar {
   margin-top: 40px; background: linear-gradient(90deg, #06291f, #0d7547);
   border-radius: 18px; padding: 22px 24px; color: #fff;
