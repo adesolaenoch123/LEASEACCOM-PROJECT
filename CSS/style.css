@@ -7880,8 +7880,9 @@ body:not(.is-landing-page) .navbar .logo {
 @media (max-width: 820px) {
   .owner-topbar-title--desktop { display: none !important; }
   .owner-desktop-only { display: none !important; }
-  .owner-brand-text { display: inline-flex; }
-  .owner-topbar-actions { margin-left: auto; }
+  .owner-brand-text { display: inline-flex; order: 1; }
+  .owner-topbar-actions { margin-left: 0; order: 2; }
+  .owner-menu-toggle { display: inline-grid; place-items: center; order: 3; margin-left: auto; }
 }
 @media (min-width: 821px) {
   .owner-brand-text { display: none !important; }
