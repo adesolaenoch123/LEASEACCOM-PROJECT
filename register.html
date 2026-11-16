@@ -134,8 +134,10 @@
                 >
 
                 <span>
-                    I agree to the LeaseAccom terms and
-                    privacy policy.
+                    I agree to the LeaseAccom
+                    <a href="terms.html" target="_blank" rel="noopener">Terms of Use</a>
+                    and
+                    <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
                 </span>
 
             </label>
@@ -198,6 +200,15 @@
     var roleEl = document.getElementById("accountType");
     var role = roleEl ? roleEl.value : "tenant";
     var status = document.getElementById("authStatus");
+    var terms = document.getElementById("agreeTerms");
+    if (terms && !terms.checked) {
+      if (status) {
+        status.textContent = "Please agree to the Terms of Use and Privacy Policy before creating an account.";
+        status.className = "form-status is-visible is-error";
+      }
+      terms.focus();
+      return;
+    }
     if (status) { status.textContent = "Redirecting to Google…"; status.className = "form-status is-visible"; }
     try {
       var result = await window.LeaseAccomAuth.signInWithGoogle(role);
