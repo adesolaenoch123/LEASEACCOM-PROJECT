@@ -7309,6 +7309,60 @@ button.clear-filters:hover,
   opacity: .88;
   box-shadow: 0 10px 24px rgba(21, 148, 92, .28);
 }
+.pay-amount-field {
+  display: block;
+  margin-top: 16px;
+  color: #56635c;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.pay-amount-control {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  min-height: 48px;
+  overflow: hidden;
+  border: 1px solid #dbe4df;
+  border-radius: 12px;
+  background: #fff;
+  transition: border-color .2s, box-shadow .2s;
+}
+.pay-amount-control:focus-within {
+  border-color: #15945c;
+  box-shadow: 0 0 0 3px rgba(21,148,92,.12);
+}
+.pay-amount-currency {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  min-width: 48px;
+  border-right: 1px solid #e7eeea;
+  background: #f5faf7;
+  color: #0d7547;
+  font-size: 16px;
+  font-weight: 800;
+}
+.pay-amount-control input {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  padding: 0 14px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #101311;
+  font: inherit;
+  font-size: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.pay-amount-control input:disabled {
+  color: #6b746e;
+  cursor: not-allowed;
+  opacity: .8;
+}
 .pay-withdraw-btn i { font-size: 20px; }
 .pay-withdraw-label { letter-spacing: -0.2px; }
 .pay-withdraw-soon {

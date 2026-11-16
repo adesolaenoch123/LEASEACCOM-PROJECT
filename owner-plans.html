@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Owner Plans — LeaseAccom</title>
+  <link rel="stylesheet" href="CSS/style.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
   <link rel="stylesheet" href="CSS/plans.css"><link rel="stylesheet" href="CSS/plans-premium.css">
 </head>
@@ -17,6 +18,8 @@
   <div class="op-perks"><div class="op-perk"><strong>Transaction fee discounts</strong>Business 10% · Enterprise 15% when you subscribe.</div><div class="op-perk"><strong>Annual savings</strong>Save 10% when you pay yearly.</div><div class="op-perk"><strong>Ad policy</strong>Business &amp; Enterprise are ad-free. Free includes standard platform placement.</div></div>
 </section>
 <footer class="op-foot"><a href="index.html"><img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom"></a><span>Find your place. Live better.</span></footer>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="JS/supabase-client.js"></script><script src="JS/paystack-checkout.js"></script><script src="JS/plans.js"></script><script src="JS/floating-help.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="JS/supabase-client.js"></script><script src="JS/paystack-checkout.js"></script><script src="JS/plans.js"></script>
+<script>document.addEventListener("DOMContentLoaded", function () { if (window.LeaseAccomPlans) window.LeaseAccomPlans.renderPricingGrid(document.getElementById("plansGrid")); });</script>
+<script src="JS/floating-help.js"></script>
 </body>
 </html>
