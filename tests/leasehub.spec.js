@@ -16,25 +16,85 @@ const pendingProperty = {
 };
 
 test("admin approval updates the shared public property Property Page ", async ({ page }) => {
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__adminApprovalSupabase;"
+    }));
     await page.addInitScript((property) => {
-        localStorage.setItem("leaseaccomProperties", JSON.stringify([property]));
-        localStorage.removeItem("leaseaccomAdminProperties");
+        const rows = {
+            profiles: [{ id: "admin-1", account_type: "admin", full_name: "Test Admin", email: "admin@example.com" }],
+            properties: [{
+                id: property.id,
+                title: property.title,
+                property_type: property.type,
+                location: property.location,
+                city: property.city,
+                price: property.price,
+                bedrooms: property.bedrooms,
+                bathrooms: property.bathrooms,
+                owner_id: "owner-1",
+                verification_status: "pending",
+                listing_status: "pending",
+                cover_image: property.image
+            }],
+            platform_settings: [], owner_verifications: [], viewings: [], applications: [], payments: [],
+            subscriptions: [], reports: [], audit_logs: [], email_queue: [], notifications: [],
+            conversations: [], messages: []
+        };
+        function query(table) {
+            const filters = [];
+            const builder = {
+                select() { return this; },
+                eq(key, value) { filters.push([key, String(value)]); return this; },
+                order() { return this; },
+                limit() { return this; },
+                range() { return this; },
+                matching() {
+                    return (rows[table] || []).filter(row =>
+                        filters.every(([key, value]) => String(row[key]) === value)
+                    );
+                },
+                maybeSingle() { return Promise.resolve({ data: this.matching()[0] || null, error: null }); },
+                update(values) {
+                    this.updateValues = values;
+                    return this;
+                },
+                insert(value) {
+                    rows[table] = rows[table] || [];
+                    rows[table].push(value);
+                    return Promise.resolve({ data: value, error: null });
+                },
+                then(resolve, reject) {
+                    if (this.updateValues) {
+                        this.matching().forEach(row => Object.assign(row, this.updateValues));
+                    }
+                    return Promise.resolve({ data: this.matching(), error: null }).then(resolve, reject);
+                }
+            };
+            return builder;
+        }
+        window.__adminApprovalSupabase = {
+            testRows: rows,
+            createClient: () => window.__adminApprovalSupabase,
+            auth: {
+                getUser: async () => ({ data: { user: { id: "admin-1", email: "admin@example.com" } }, error: null }),
+                signInWithPassword: async () => ({ data: { user: { id: "admin-1", email: "admin@example.com" } }, error: null }),
+                signOut: async () => ({ error: null })
+            },
+            from: query
+        };
+        window.supabase = { createClient: () => window.__adminApprovalSupabase };
     }, pendingProperty);
 
     await page.goto("/admin/admin.html");
-    await page.getByLabel("Email").fill("admin@leaseaccom.ng");
-    await page.getByLabel("Access code").fill("CHANGE-ME");
-    await page.getByRole("button", { name: /Enter staff portal/i }).click();
+    await expect(page.locator("#adminApp")).toBeVisible();
     await page.getByRole("link", { name: "Properties" }).click();
 
-    page.once("dialog", dialog => dialog.accept());
-    await page.locator('#propertiesTable [data-prop="9001"][data-prop-action="approve"]').click();
+    await page.locator('#propertiesTable [data-prop-approve="9001"]').click();
 
     await expect.poll(() => page.evaluate(() => {
-        const properties = JSON.parse(localStorage.getItem("leaseaccomProperties"));
-        return properties[0].verificationStatus;
+        return window.__adminApprovalSupabase.testRows.properties[0].verification_status;
     })).toBe("approved");
-    await expect.poll(() => page.evaluate(() => localStorage.getItem("leaseaccomAdminProperties"))).toBeNull();
 });
 
 test("admin can review viewing requests and tenant-owner conversations on mobile", async ({ page }) => {

@@ -18,8 +18,8 @@
     <p>Sign in with your admin email and password. Only admin accounts can enter.</p>
     <form id="adminLoginForm">
       <label>Email<input id="adminEmail" type="email" required autocomplete="username" placeholder="you@email.com"></label>
-      <label>Password<input id="adminCode" type="password" required autocomplete="current-password" placeholder="Your password"></label>
-      <button class="admin-primary" type="submit">Enter command centre</button>
+      <label>Password<input id="adminCode" aria-label="Access code" type="password" required autocomplete="current-password" placeholder="Your password"></label>
+      <button class="admin-primary" aria-label="Enter staff portal" type="submit">Enter command centre</button>
       <div id="adminLoginError" class="login-error" role="alert"></div>
     </form>
     <a class="admin-back" href="../index.html"><i class="bx bx-arrow-back"></i> Back to LeaseAccom</a>

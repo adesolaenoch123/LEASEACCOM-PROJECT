@@ -1963,7 +1963,13 @@ LeaseAccom will process your request.`
 
                 /* Cloud-first conversation (fixes Conversation not found) */
                 try {
-                    if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.getOrCreateConversation === "function") {
+                    var signedInUser = null;
+                    try {
+                        signedInUser = JSON.parse(localStorage.getItem("leaseaccomCurrentUser") || "null");
+                    } catch (userError) {
+                        signedInUser = null;
+                    }
+                    if (signedInUser && window.LeaseAccomCloud && typeof window.LeaseAccomCloud.getOrCreateConversation === "function") {
                         var ownerId = property.ownerId || property.owner_id || property.user_id;
                         if (ownerId) {
                             var cre = await window.LeaseAccomCloud.getOrCreateConversation(property.id, ownerId);

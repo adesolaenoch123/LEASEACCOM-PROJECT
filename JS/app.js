@@ -1708,9 +1708,10 @@ viewingForm.addEventListener(
         };
 
 
-        currentUser.viewingRequests.push(
-            viewingRequest
-        );
+        currentUser.viewingRequests = Array.isArray(currentUser.viewingRequests)
+            ? currentUser.viewingRequests
+            : [];
+        currentUser.viewingRequests.push(viewingRequest);
         /* Save request for owner dashboard */
 
 const ownerRequests =
@@ -1795,14 +1796,40 @@ localStorage.setItem(
         contactOwner.addEventListener(
             "click",
             () => {
-
-                alert(
-                    "💬 LeaseAccom Messaging\\n\\n" +
-                    "The tenant-owner chat system will be connected in the next stage."
-                );
+                const conversationId = `property-${property.id}`;
+                let conversations = [];
+                try {
+                    conversations = JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]");
+                } catch (error) {
+                    console.warn("Unable to load LeaseAccom messages.", error);
+                }
+                if (!Array.isArray(conversations)) conversations = [];
+                if (!conversations.some(item => String(item.id) === conversationId)) {
+                    conversations.unshift({
+                        id: conversationId,
+                        propertyId: property.id,
+                        propertyTitle: property.title || "LeaseAccom listing",
+                        propertyImage: property.image || "",
+                        propertyLocation: property.location || property.city || "Nigeria",
+                        ownerName: property.ownerName || "Property Owner",
+                        ownerId: property.ownerId || property.owner_id || null,
+                        ownerPhone: property.ownerPhone || "",
+                        unread: 0,
+                        messages: [],
+                        createdAt: new Date().toISOString()
+                    });
+                    localStorage.setItem("leaseaccomMessages", JSON.stringify(conversations));
+                }
+                localStorage.setItem("activeConversationId", conversationId);
+                window.location.href = "messages.html";
+                return;
 
             }
         );
+
+        document.getElementById("contactOwnerBtn")?.addEventListener("click", () => {
+            contactOwner.click();
+        });
 
     }
 
