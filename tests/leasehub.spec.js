@@ -15,6 +15,81 @@ const pendingProperty = {
     image: "https://example.com/test-property.jpg"
 };
 
+test("verified owner can open the add-property page after backend approval", async ({ page }) => {
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__verifiedOwnerSupabase;"
+    }));
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "owner-refresh-test",
+            accountType: "owner",
+            verificationStatus: "unverified",
+            ownerVerificationStatus: "unverified"
+        }));
+        const profile = {
+            id: "owner-refresh-test",
+            account_type: "owner",
+            verification_status: "verified",
+            full_name: "Verified Owner"
+        };
+        const builder = {
+            select() { return this; },
+            eq() { return this; },
+            maybeSingle() { return Promise.resolve({ data: profile, error: null }); }
+        };
+        window.__verifiedOwnerSupabase = {
+            createClient: () => window.__verifiedOwnerSupabase,
+            auth: {
+                getUser: async () => ({
+                    data: { user: { id: "owner-refresh-test", email: "owner@example.com" } },
+                    error: null
+                })
+            },
+            from: () => builder
+        };
+        window.supabase = { createClient: () => window.__verifiedOwnerSupabase };
+    });
+
+    await page.goto("/add-property.html");
+    await expect(page).toHaveURL(/add-property\.html$/);
+    await expect(page.locator("#addPropertyForm")).toBeVisible();
+    await expect.poll(() => page.evaluate(() => {
+        return JSON.parse(localStorage.getItem("leaseaccomCurrentUser")).verificationStatus;
+    })).toBe("verified");
+});
+
+test("landlords cannot open the admin owner-verification queue", async ({ page }) => {
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__ownerAccessSupabase;"
+    }));
+    await page.addInitScript(() => {
+        const builder = {
+            select() { return this; },
+            eq() { return this; },
+            maybeSingle() {
+                return Promise.resolve({ data: { account_type: "owner" }, error: null });
+            }
+        };
+        window.__ownerAccessSupabase = {
+            createClient: () => window.__ownerAccessSupabase,
+            auth: {
+                getUser: async () => ({
+                    data: { user: { id: "owner-access-test", email: "owner@example.com" } },
+                    error: null
+                }),
+                signOut: async () => ({ error: null })
+            },
+            from: () => builder
+        };
+        window.supabase = { createClient: () => window.__ownerAccessSupabase };
+    });
+
+    await page.goto("/admin-owner-verification.html");
+    await expect(page).toHaveURL(/admin\/admin\.html$/);
+});
+
 test("admin approval updates the shared public property Property Page ", async ({ page }) => {
     await page.route(/supabase-js/, route => route.fulfill({
         contentType: "application/javascript",

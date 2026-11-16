@@ -137,11 +137,23 @@
       if (window.LeaseAccomPlans && user && !window.LeaseAccomPlans.canAccessFeature("property_page_appearance", user)) {
         const panel = document.getElementById("ownerStore");
         if (panel) {
-          panel.querySelectorAll("input, button").forEach((control) => { control.disabled = true; });
-          const notice = document.createElement("div");
-          notice.className = "plan-lock-msg";
-          notice.innerHTML = "<strong>Property page appearance</strong> is available on Business and Enterprise. <a href=\"#ownerPricingPlans\">Upgrade your plan</a>";
-          panel.querySelector(".owner-store-form")?.prepend(notice);
+          panel.classList.add("is-locked");
+          const form = panel.querySelector(".owner-store-form");
+          if (form) {
+            form.innerHTML = `
+              <div class="owner-store-upgrade-card">
+                <div class="owner-store-upgrade-icon"><i class="bx bx-lock-alt" aria-hidden="true"></i></div>
+                <span class="owner-store-upgrade-label">PREMIUM FEATURE</span>
+                <h3>Build a stronger property brand</h3>
+                <p>Give tenants a clearer reason to trust your business with a branded banner, logo, tagline, and public owner page.</p>
+                <ul>
+                  <li><i class="bx bx-check" aria-hidden="true"></i> Custom property page identity</li>
+                  <li><i class="bx bx-check" aria-hidden="true"></i> Branded banner and logo</li>
+                  <li><i class="bx bx-check" aria-hidden="true"></i> Public owner profile for tenants</li>
+                </ul>
+                <a class="primary-btn owner-store-upgrade-btn" href="#ownerPricingPlans">View upgrade plans</a>
+              </div>`;
+          }
         }
         return;
       }

@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const form = document.getElementById("addPropertyForm");
     const imageInput = document.getElementById("propertyImage");
     const imagePreview = document.getElementById("imagePreview");
@@ -27,7 +27,18 @@ document.addEventListener("DOMContentLoaded", () => {
         ); }
         catch { return null; }
     }
-    const currentUser = readCurrentUser();
+    // Refresh the cached session from Supabase before applying the listing gate.
+    // Verification can be approved in the admin/Supabase dashboard while an
+    // owner still has an older "unverified" value in localStorage.
+    let currentUser = readCurrentUser();
+    if (window.LeaseAccomData && typeof window.LeaseAccomData.syncLegacySession === "function") {
+        try {
+            const syncedUser = await window.LeaseAccomData.syncLegacySession();
+            if (syncedUser) currentUser = syncedUser;
+        } catch (error) {
+            console.warn("Could not refresh owner verification status:", error);
+        }
+    }
     if (!currentUser || currentUser.accountType !== "owner") {
         window.location.href = "login.html";
         return;

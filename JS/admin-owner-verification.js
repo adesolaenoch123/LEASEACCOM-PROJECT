@@ -252,15 +252,50 @@
     );
   }
 
-  document.querySelectorAll("[data-filter]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      filter = btn.getAttribute("data-filter");
-      document.querySelectorAll("[data-filter]").forEach(function (b) {
-        b.classList.toggle("is-active", b === btn);
-      });
-      render();
-    });
-  });
+  async function hasAdminAccess() {
+    var client = window.leaseaccomSupabase || window.leasehubSupabase || null;
+    if (!client || !client.auth || typeof client.auth.getUser !== "function") return false;
+    try {
+      var userResult = await client.auth.getUser();
+      var user = userResult && userResult.data && userResult.data.user;
+      if (!user) return false;
+      var profileResult = await client
+        .from("profiles")
+        .select("account_type")
+        .eq("id", user.id)
+        .maybeSingle();
+      return !!(
+        profileResult &&
+        !profileResult.error &&
+        profileResult.data &&
+        String(profileResult.data.account_type || "").toLowerCase() === "admin"
+      );
+    } catch (e) {
+      console.warn("Admin verification access check failed:", e);
+      return false;
+    }
+  }
 
-  render();
+  async function startAdminVerificationPage() {
+    document.body.style.visibility = "hidden";
+    document.body.setAttribute("aria-busy", "true");
+    if (!(await hasAdminAccess())) {
+      window.location.replace("admin/admin.html");
+      return;
+    }
+    document.body.style.visibility = "";
+    document.body.removeAttribute("aria-busy");
+    document.querySelectorAll("[data-filter]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        filter = btn.getAttribute("data-filter");
+        document.querySelectorAll("[data-filter]").forEach(function (b) {
+          b.classList.toggle("is-active", b === btn);
+        });
+        render();
+      });
+    });
+    render();
+  }
+
+  startAdminVerificationPage();
 })();

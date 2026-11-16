@@ -2295,6 +2295,36 @@ body.modal-open {
     margin-top: 2px;
 }
 
+.auth-legal {
+    margin: 12px 0 0;
+    color: #66706a;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.auth-legal-links {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 5px;
+}
+
+.auth-legal a,
+.checkbox-label a {
+    color: #0d7547;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+}
+
+.auth-legal a:hover,
+.checkbox-label a:hover {
+    color: #095b37;
+}
+
 .auth-submit {
     width: 100%;
     margin-top: 5px;
@@ -8734,6 +8764,62 @@ body.owner-lounge-body[data-owner-page="dashboard"] .owner-featured-video {
   line-height: 1.45;
   font-weight: 500;
 }
+.owner-store-upgrade-card {
+  min-height: 318px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 26px;
+  border: 1px solid #d9eee2;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #f5fbf7 0%, #eef8f2 100%);
+}
+.owner-store-upgrade-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: #d8f1e3;
+  color: #0d7547;
+  font-size: 22px;
+}
+.owner-store-upgrade-label {
+  color: #0d7547;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.owner-store-upgrade-card h3 {
+  margin: 8px 0 6px;
+  color: #101311;
+  font-size: 20px;
+}
+.owner-store-upgrade-card p {
+  max-width: 430px;
+  margin: 0;
+  color: #66706a;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.owner-store-upgrade-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 20px;
+  padding: 0;
+  list-style: none;
+  color: #34453c;
+  font-size: 13px;
+}
+.owner-store-upgrade-card li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.owner-store-upgrade-card li i { color: #0d7547; font-size: 17px; }
+.owner-store-upgrade-btn { text-decoration: none; }
 .owner-store-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
