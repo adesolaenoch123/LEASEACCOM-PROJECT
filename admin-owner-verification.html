@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Owner verification | LeaseAccom</title>
+  <style>body[data-auth-gate]:not([data-auth-approved="true"]) { visibility: hidden; }</style>
   <link rel="stylesheet" href="CSS/verification.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
-<body style="background:#f4f7f5;margin:0;font-family:system-ui,sans-serif">
+<body data-auth-gate="admin" style="background:#f4f7f5;margin:0;font-family:system-ui,sans-serif">
   <div class="ov-adm">
     <div style="margin-bottom:14px;font-size:13px">
       <a href="admin/admin.html" style="color:#0d7547;font-weight:700;text-decoration:none">← Command Centre</a>
@@ -29,6 +30,7 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="JS/supabase-client.js"></script>
+  <script src="JS/auth-gate.js" data-gate="admin"></script>
 <script src="JS/leaseaccom-live-mode.js"></script>
 <script src="JS/leaseaccom-cloud.js"></script>
 <script src="JS/admin-owner-verification.js"></script>

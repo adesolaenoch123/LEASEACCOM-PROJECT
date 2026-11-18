@@ -28,6 +28,10 @@ body {
     color: var(--black);
 }
 
+body[data-auth-gate]:not([data-auth-approved="true"]) {
+    visibility: hidden;
+}
+
 a {
     color: inherit;
     text-decoration: none;

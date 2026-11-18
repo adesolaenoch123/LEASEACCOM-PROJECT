@@ -86,3 +86,6 @@ Still **never** stored or shown. Supabase Auth keeps hashes only.
 
 ## Fallback
 If Supabase is offline, `LeaseAccomStore` still reads localStorage so the UI does not crash.
+
+## Role and record access hardening
+After applying the required schema and migrations through `012_owner_request_updates.sql`, apply `013_role_access_hardening.sql` in the SQL Editor. This migration tightens profile privilege changes and role/participant checks for private records. Page-level role gates only control the UI; database RLS is still required to protect data. Do not rerun earlier migrations blindly on an existing project.

@@ -21,7 +21,7 @@
 </head>
 
 
-<body class="owner-lounge-body" data-leaseaccom-page="add-property" data-owner-page="add" data-owner-title="Add property">
+<body data-auth-gate="owner" class="owner-lounge-body" data-leaseaccom-page="add-property" data-owner-page="add" data-owner-title="Add property">
 
 
 
@@ -760,6 +760,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="JS/supabase-client.js"></script>
+<script src="JS/auth-gate.js" data-gate="owner"></script>
 <script src="JS/leaseaccom-live-mode.js"></script>
 <script src="JS/leaseaccom-cloud.js"></script>
 <script src="JS/leaseaccom-data.js"></script>

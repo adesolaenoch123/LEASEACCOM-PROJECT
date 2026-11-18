@@ -14,5 +14,7 @@ Open:
 Owner dashboard: add a nav link to owner-plans.html (Plans / Upgrade).
 Tenant dashboard: add a link to tenant-payments.html (Payments).
 
-Paystack: JS saves plan intent in localStorage key leaseaccomPlanIntent
-until you connect the gateway with Copilot/Supabase.
+Plan checkout: selecting a paid plan saves an intent in localStorage key
+leaseaccomPlanIntent and opens a checkout preview. Monthly and annual
+billing are selectable. No payment is taken and no plan is activated until
+secure server-side payment processing is connected.

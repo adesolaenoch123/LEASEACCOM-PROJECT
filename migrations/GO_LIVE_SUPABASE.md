@@ -26,6 +26,8 @@ Supabase → **SQL Editor** → run in order if not already done:
 
 Confirm tables exist under **Table Editor**.
 
+After the applicable migrations through `012_owner_request_updates.sql` have been applied, run `013_role_access_hardening.sql`. It tightens profile privilege changes and participant-scoped RLS policies; the browser role gates are not a substitute for this database migration. Do not rerun earlier migrations blindly on an existing project.
+
 ## Step 2 — Storage buckets
 
 Supabase → **Storage** → New bucket:

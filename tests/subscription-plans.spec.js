@@ -80,9 +80,14 @@ test("owner dashboard contains the full subscription page inline", async ({ page
     await expect(page.locator('#ownerPlan [data-annual-note="business"]')).toContainText("₦108,000");
     await expect(page.locator('#ownerPlan [data-billing="annual"]')).toHaveAttribute("aria-pressed", "true");
 
-    page.once("dialog", (dialog) => dialog.accept());
     await page.locator('#ownerPlan [data-select-plan="business"]').click();
     await expect(page.locator("#ownerPlanSummary")).toContainText("Free");
+    const checkout = page.getByRole("dialog", { name: "Review your plan" });
+    await expect(checkout).toBeVisible();
+    await expect(checkout).toContainText("Business");
+    await expect(checkout).toContainText("Annual billing");
+    await expect(checkout).toContainText("₦108,000");
+    await expect(checkout).toContainText("No payment will be taken");
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomPlanIntent") || "null")))
         .toMatchObject({ planId: "business", billing: "annual", amount: 108000 });
 });

@@ -87,7 +87,54 @@ test("landlords cannot open the admin owner-verification queue", async ({ page }
     });
 
     await page.goto("/admin-owner-verification.html");
-    await expect(page).toHaveURL(/admin\/admin\.html$/);
+    await expect(page).toHaveURL(/owner-dashboard\.html$/);
+});
+
+test("owner dashboard trusts the authenticated Supabase profile over browser role data", async ({ page }) => {
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__roleGateSupabase;"
+    }));
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "role-gate-test",
+            accountType: "owner"
+        }));
+        const profile = {
+            id: "role-gate-test",
+            full_name: "Test Tenant",
+            account_type: "tenant",
+            account_status: "active"
+        };
+        function query() {
+            return {
+                select() { return this; },
+                eq() { return this; },
+                order() { return this; },
+                limit() { return this; },
+                range() { return this; },
+                maybeSingle() { return Promise.resolve({ data: profile, error: null }); },
+                single() { return Promise.resolve({ data: profile, error: null }); },
+                then(resolve, reject) {
+                    return Promise.resolve({ data: [], error: null }).then(resolve, reject);
+                }
+            };
+        }
+        window.__roleGateSupabase = {
+            createClient() { return this; },
+            auth: {
+                getUser: async () => ({
+                    data: { user: { id: "role-gate-test", email: "tenant@example.com" } },
+                    error: null
+                })
+            },
+            from: query
+        };
+        window.supabase = { createClient: () => window.__roleGateSupabase };
+    });
+
+    await page.goto("/owner-dashboard.html");
+    await expect(page).toHaveURL(/tenant-dashboard\.html$/);
 });
 
 test("admin approval updates the shared public property Property Page ", async ({ page }) => {
@@ -1384,10 +1431,11 @@ test("owner dashboard shows the house tour and subscription plans", async ({ pag
     await expect(page.locator("#ownerPricingPlans .owner-subscription-card")).toHaveCount(3);
     await expect(page.locator("#ownerPricingPlans")).toContainText("₦20,000");
 
-    page.once("dialog", dialog => dialog.accept());
     await page.locator('#ownerPlan [data-select-plan="enterprise"]').click();
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomPlanIntent") || "null")?.planId))
         .toBe("enterprise");
+    await page.getByRole("dialog", { name: "Review your plan" })
+        .getByRole("button", { name: "Back to plans" }).click();
 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.locator(".owner-brand-text img")).toHaveAttribute("src", "IMAGES/leaseaccom-logo-full.png");
@@ -1463,7 +1511,7 @@ test("homepage shows its spinner followed by skeleton loading", async ({ page })
     await expect(page.locator("#assistantPanel input[type=range]")).toHaveCount(0);
 });
 
-test("owner plan checkout remains paused", async ({ page }) => {
+test("owner plan selection opens an intent-only checkout preview", async ({ page }) => {
     await page.addInitScript(() => {
         localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "owner-payment-test",
@@ -1478,14 +1526,20 @@ test("owner plan checkout remains paused", async ({ page }) => {
     });
     await page.goto("/owner-plans.html");
 
-    await page.once("dialog", async dialog => {
-        expect(dialog.message()).toContain("currently paused");
-        await dialog.accept();
-    });
+    await page.locator('[data-billing="annual"]').click();
     await page.locator('[data-select-plan="business"]').click();
 
     expect(paystackRequests).toHaveLength(0);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomCurrentUser")).plan || null)).toBeNull();
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomPlanIntent") || "null")))
-        .toMatchObject({ planId: "business", billing: "monthly", amount: 10000 });
+        .toMatchObject({ planId: "business", billing: "annual", amount: 108000 });
+    const checkout = page.getByRole("dialog", { name: "Review your plan" });
+    await expect(checkout).toBeVisible();
+    await expect(checkout).toContainText("Business");
+    await expect(checkout).toContainText("Annual billing");
+    await expect(checkout).toContainText("₦108,000");
+    await expect(checkout).toContainText("No payment will be taken");
+    await expect(checkout.getByRole("button", { name: "Payment setup coming soon" })).toBeDisabled();
+    await checkout.getByRole("button", { name: "Back to plans" }).click();
+    await expect(checkout).toBeHidden();
 });

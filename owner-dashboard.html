@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="CSS/skeletons.css">
   <link rel="stylesheet" href="CSS/notifications.css">
   <link rel="stylesheet" href="CSS/owner-subscription.css">
+  <link rel="stylesheet" href="CSS/plan-checkout.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
 <body data-auth-gate="owner" class="owner-lounge-body" data-owner-page="dashboard">
@@ -423,7 +424,7 @@
               <div><strong>Annual savings</strong><span>Save 10% when you pay yearly.</span></div>
               <div><strong>Ad policy</strong><span>Business &amp; Enterprise are ad-free. Free includes standard platform placement.</span></div>
             </div>
-            <p class="owner-subscription-checkout">Plan checkout is not connected yet. Selecting a plan will save your choice for later.</p>
+            <p class="owner-subscription-checkout">Selecting a paid plan opens a checkout summary. Secure payment setup is not connected yet, so no payment is taken and your plan will not change.</p>
           </div>
         </section>
 
@@ -455,9 +456,9 @@
   </a>
 </nav>
 
-<script src="JS/auth-gate.js" data-gate="owner" id="leaseaccom-auth-gate"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="JS/supabase-client.js"></script>
+<script src="JS/auth-gate.js" data-gate="owner" id="leaseaccom-auth-gate"></script>
 <script src="JS/leaseaccom-live-mode.js"></script>
 <script src="JS/leaseaccom-cloud.js"></script>
 <script src="JS/leaseaccom-data.js"></script>
@@ -467,7 +468,7 @@
 <script src="JS/app.js"></script>
 <script src="JS/config.js"></script>
 <script src="JS/api-client.js"></script>
-<script src="JS/paystack-checkout.js"></script>
+<script src="JS/plan-checkout.js"></script>
 <script src="JS/plans.js"></script>
 <script src="JS/owner-cloud-properties.js"></script>
 <script src="JS/owner-viewings.js"></script>

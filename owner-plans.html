@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="CSS/style.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
   <link rel="stylesheet" href="CSS/plans.css"><link rel="stylesheet" href="CSS/plans-premium.css">
+  <link rel="stylesheet" href="CSS/plan-checkout.css">
 </head>
 <body class="op-body">
 <header class="op-top"><a class="brand" href="index.html" aria-label="LeaseAccom home"><picture><source media="(max-width: 820px)" srcset="IMAGES/leaseaccom-logo-icon.png"><img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom"></picture></a><nav><a href="index.html">Home</a><a href="properties.html">Properties</a><a href="owner-dashboard.html">Dashboard</a><a href="owner-plans.html" style="color:#0d7547">Plans</a></nav><a class="op-user" href="owner-dashboard.html">Property Owner</a></header>
@@ -13,12 +14,16 @@
   <div class="op-choose">Choose your plan</div>
   <h1 style="text-align:center;margin:0 0 8px">Simple, transparent pricing</h1>
   <p class="sub">Select a plan to grow your property business. Save 10% when you choose annual billing.</p>
+  <div class="op-billing" role="group" aria-label="Billing period">
+    <button type="button" class="is-active" data-billing="monthly" aria-pressed="true">Monthly</button>
+    <button type="button" data-billing="annual" aria-pressed="false">Annually <span>Save 10%</span></button>
+  </div>
   <div class="op-grid" id="plansGrid"></div>
   <div class="op-launch-promo">Launch promo: First 90 days — every new verified owner gets <strong>Business free</strong>. First 200 verified owners also get <strong>Enterprise</strong> (AI + spotlight) for <strong>6 months</strong>.</div>
   <div class="op-perks"><div class="op-perk"><strong>Transaction fee discounts</strong>Business 10% · Enterprise 15% when you subscribe.</div><div class="op-perk"><strong>Annual savings</strong>Save 10% when you pay yearly.</div><div class="op-perk"><strong>Ad policy</strong>Business &amp; Enterprise are ad-free. Free includes standard platform placement.</div></div>
 </section>
 <footer class="op-foot"><a href="index.html"><img src="IMAGES/leaseaccom-logo-full.png" alt="LeaseAccom"></a><span>Find your place. Live better.</span></footer>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="JS/supabase-client.js"></script><script src="JS/paystack-checkout.js"></script><script src="JS/plans.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="JS/supabase-client.js"></script><script src="JS/plan-checkout.js"></script><script src="JS/plans.js"></script>
 <script>document.addEventListener("DOMContentLoaded", function () { if (window.LeaseAccomPlans) window.LeaseAccomPlans.renderPricingGrid(document.getElementById("plansGrid")); });</script>
 <script src="JS/floating-help.js"></script>
 </body>

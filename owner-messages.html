@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="CSS/style.css">
   <link rel="stylesheet" href="CSS/owner-messages.css?v=message-logo-search-v2">
 </head>
-<body class="owner-messages-page" data-leaseaccom-page="owner-messages">
+<body data-auth-gate="owner" class="owner-messages-page" data-leaseaccom-page="owner-messages">
   <header class="om-header">
     <a class="om-brand" href="owner-dashboard.html" aria-label="LeaseAccom dashboard">
       <img src="IMAGES/leaseaccom-messages-logo.png" alt="LeaseAccom">
@@ -113,6 +113,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="JS/supabase-client.js"></script>
+  <script src="JS/auth-gate.js" data-gate="owner"></script>
   <script src="JS/leaseaccom-live-mode.js"></script>
   <script src="JS/leaseaccom-cloud.js"></script>
   <script src="JS/config.js"></script>

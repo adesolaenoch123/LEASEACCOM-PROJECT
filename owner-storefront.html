@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="CSS/style.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
-<body class="owner-lounge-body" data-owner-page="propertypage" data-owner-title="Public property page">
+<body data-auth-gate="owner" class="owner-lounge-body" data-owner-page="propertypage" data-owner-title="Public property page">
   <div id="ownerShellMount">
     <section class="owner-panel">
       <div class="owner-panel-head">
@@ -36,6 +36,9 @@
       </div>
     </section>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="JS/supabase-client.js"></script>
+  <script src="JS/auth-gate.js" data-gate="owner"></script>
   <script src="JS/owner-shell.js"></script>
   <script src="JS/data.js"></script>
   <script src="JS/app.js"></script>

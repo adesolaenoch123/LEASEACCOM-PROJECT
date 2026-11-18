@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="CSS/verification.css">
   <link rel="stylesheet" href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css">
 </head>
-<body style="background:#f5f7f6;margin:0;font-family:system-ui,-apple-system,sans-serif">
+<body data-auth-gate="owner" style="background:#f5f7f6;margin:0;font-family:system-ui,-apple-system,sans-serif">
   <div class="ov-shell">
     <div class="ov-top">
       <a href="owner-dashboard.html">← Owner Lounge</a>
@@ -185,6 +185,9 @@
       </div>
     </form>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="JS/supabase-client.js"></script>
+  <script src="JS/auth-gate.js" data-gate="owner"></script>
   <script src="JS/leaseaccom-live-mode.js"></script>
 <script src="JS/leaseaccom-cloud.js"></script>
 <script src="JS/owner-verification.js"></script>

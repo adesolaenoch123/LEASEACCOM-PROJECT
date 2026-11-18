@@ -75,9 +75,13 @@
       return null;
     }
     var profile = res.data;
-    if (!profile || String(profile.account_type).toLowerCase() !== "admin") {
+    if (
+      !profile ||
+      String(profile.account_type).toLowerCase() !== "admin" ||
+      String(profile.account_status || "active").toLowerCase() !== "active"
+    ) {
       await client.auth.signOut();
-      showLogin("This account is not an admin.");
+      showLogin("This account is not an active admin.");
       return null;
     }
     state.profile = Object.assign({}, profile, { email: user.email });

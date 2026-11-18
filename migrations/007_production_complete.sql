@@ -264,11 +264,11 @@ create policy saved_all on public.saved_properties for all using (auth.uid() = u
 
 -- OWNER VERIFICATIONS
 drop policy if exists ov_select on public.owner_verifications;
-create policy ov_select on public.owner_verifications for select using (auth.uid() = user_id or public.is_admin());
+create policy ov_select on public.owner_verifications for select using (auth.uid() = owner_id or public.is_admin());
 drop policy if exists ov_insert on public.owner_verifications;
-create policy ov_insert on public.owner_verifications for insert with check (auth.uid() = user_id);
+create policy ov_insert on public.owner_verifications for insert with check (auth.uid() = owner_id);
 drop policy if exists ov_update on public.owner_verifications;
-create policy ov_update on public.owner_verifications for update using (public.is_admin() or auth.uid() = user_id);
+create policy ov_update on public.owner_verifications for update using (public.is_admin() or auth.uid() = owner_id);
 
 -- PROPERTY VIEWS: anyone authenticated can insert; owners can read their property views
 drop policy if exists pv_insert on public.property_views;
