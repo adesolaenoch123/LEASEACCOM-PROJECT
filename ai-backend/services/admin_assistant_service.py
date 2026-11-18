@@ -256,7 +256,9 @@ class AdminAssistantService:
         cutoff = datetime.now(timezone.utc) - timedelta(days=period_days) if period_days else None
         paid_statuses = {"paid", "success", "successful", "completed"}
         totals = Counter()
-        currencies: Counter[str] = Counter()
+        gross_by_currency: Counter[str] = Counter()
+        refunds_by_currency: Counter[str] = Counter()
+        payouts_by_currency: Counter[str] = Counter()
         included = 0
         for row in payments:
             status = str(row.get("status") or "").lower()
@@ -279,10 +281,11 @@ class AdminAssistantService:
             kind = str(row.get("type") or row.get("purpose") or "other").lower()
             if kind in {"refund", "payout"}:
                 totals[kind] += amount
+                (refunds_by_currency if kind == "refund" else payouts_by_currency)[currency] += amount
             else:
                 totals["gross"] += amount
                 totals[kind] += amount
-            currencies[currency] += amount
+                gross_by_currency[currency] += amount
             included += 1
         return {
             "period_days": period_days,
@@ -291,7 +294,9 @@ class AdminAssistantService:
             "refunds": round(totals["refund"], 2),
             "payouts": round(totals["payout"], 2),
             "net_revenue": round(totals["gross"] - totals["refund"] - totals["payout"], 2),
-            "by_currency": {key: round(value, 2) for key, value in currencies.items()},
+            "by_currency": {key: round(value, 2) for key, value in gross_by_currency.items()},
+            "refunds_by_currency": {key: round(value, 2) for key, value in refunds_by_currency.items()},
+            "payouts_by_currency": {key: round(value, 2) for key, value in payouts_by_currency.items()},
             "by_type": {key: round(value, 2) for key, value in totals.items() if key not in {"gross", "refund", "payout"}},
             "note": "Revenue is based on successful rows in the payments ledger; pending, failed, and cancelled rows are excluded.",
         }
@@ -361,7 +366,7 @@ class AdminAssistantService:
         tablemap={"listing_review":"properties","owner_verification":"owner_verifications","report_resolution":"reports","user_status":"profiles","plan_assignment":"profiles"}
         if op not in tablemap: raise ValueError("Unsupported admin action.")
         table=tablemap[op]; status=payload.get("status")
-        allowed={"listing_review":{"approved","rejected"},"owner_verification":{"verified","rejected"},"report_resolution":{"resolved"},"user_status":{"active","suspended"},"plan_assignment":{"free","professional","business","enterprise"}}
+        allowed={"listing_review":{"approved","rejected"},"owner_verification":{"verified","rejected"},"report_resolution":{"resolved"},"user_status":{"active","suspended"},"plan_assignment":{"free","business","enterprise"}}
         if status not in allowed[op]: raise ValueError("Invalid status for this action.")
         if op=="plan_assignment":
             response=self.client.table(table).update({"plan":status,"subscription_plan":status}).in_("id",ids).execute()
