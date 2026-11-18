@@ -326,16 +326,16 @@
           <div class="op-grid" id="planAdminCards">
             <article class="op-card">
               <div class="ico">🏠</div>
-              <h3>Professional</h3>
-              <p class="aud">For individual landlords and small property owners.</p>
-              <div><span class="price">₦5,000</span> <span class="period">/ month</span></div>
-              <div class="annual">Annual: ₦54,000 (10% off)</div>
+              <h3>Free</h3>
+              <p class="aud">For private landlords listing on LeaseAccom.</p>
+              <div><span class="price">₦0</span> <span class="period">forever</span></div>
+              <div class="annual">No subscription required</div>
               <button type="button" class="cta" disabled>Get Started →</button>
               <p class="feat-head">Property Listings</p>
               <ul>
                 <li>✓ Up to 5 active listings</li>
-                <li>✓ Up to 15 photos per listing</li>
-                <li>✓ 1 video per listing (when available)</li>
+                <li>✓ Up to 10 photos per listing</li>
+                <li>✓ Up to 2 videos per listing (when available)</li>
                 <li>✓ Property verification eligibility</li>
                 <li>✓ Standard search placement</li>
                 <li>✓ Availability calendar</li>
@@ -362,8 +362,8 @@
               <button type="button" class="cta" disabled>Get Started →</button>
               <p class="feat-head">Property Listings</p>
               <ul>
-                <li>✓ Up to 10 active listings</li>
-                <li>✓ Up to 20 photos per listing</li>
+                <li>✓ Up to 15 active listings</li>
+                <li>✓ Up to 15 photos per listing</li>
                 <li>✓ Up to 3 videos per listing (when available)</li>
                 <li>✓ Property verification eligibility</li>
                 <li>✓ Priority search placement</li>
@@ -371,8 +371,8 @@
               </ul>
               <p class="feat-head">Management &amp; Growth Tools</p>
               <ul>
-                <li>✓ Everything in Professional</li>
-                <li>✓ Advanced property &amp; enquiry analytics</li>
+                <li>✓ Everything in Free</li>
+                <li>✓ Full portfolio analytics</li>
                 <li>✓ Lead tracking &amp; applicant management</li>
                 <li>✓ Bulk listing management</li>
                 <li>✓ Dedicated account manager support</li>
@@ -391,8 +391,8 @@
               <p class="feat-head">Property Listings</p>
               <ul>
                 <li>✓ Up to 30 active listings</li>
-                <li>✓ Up to 20 photos per listing</li>
-                <li>✓ Up to 3 videos per listing (when available)</li>
+                <li>✓ Up to 30 photos per listing</li>
+                <li>✓ Up to 5 videos per listing (when available)</li>
                 <li>✓ Property verification eligibility</li>
                 <li>✓ Priority search placement</li>
                 <li>✓ Availability calendar</li>
@@ -414,9 +414,9 @@
           </div>
 
           <div class="op-perks">
-            <div class="op-perk"><strong>Transaction Fee Discounts</strong> Professional 5% · Business 10% · Enterprise 15%</div>
+            <div class="op-perk"><strong>Transaction Fee Discounts</strong> Business 10% · Enterprise 15%</div>
             <div class="op-perk"><strong>Annual Savings</strong> Save 10% when you pay yearly.</div>
-            <div class="op-perk"><strong>Ad Policy</strong> Business &amp; Enterprise are ad-free. Professional includes standard platform ads.</div>
+            <div class="op-perk"><strong>Ad Policy</strong> Business &amp; Enterprise are ad-free. Free includes standard platform ads.</div>
           </div>
 
           <p class="muted-note" style="margin-top:16px">Public page for owners: <a href="../owner-plans.html" target="_blank" rel="noopener">owner-plans.html</a></p>
@@ -437,7 +437,6 @@
             <select id="assignOwnerSelect"><option value="">Select owner…</option></select>
             <select id="assignPlanSelect">
               <option value="free">Free</option>
-              <option value="professional">Professional (₦5,000/mo)</option>
               <option value="business">Business (₦10,000/mo)</option>
               <option value="enterprise">Enterprise (₦20,000/mo)</option>
             </select>
@@ -563,9 +562,8 @@
           <div class="panel-head"><h3>Listing limits by plan</h3></div>
           <p class="muted-note" style="margin-top:0">Owners cannot exceed these active listing counts (enforced when they add a property, if owner code uses these values).</p>
           <div class="limits-grid" id="limitsGrid">
-            <label>Free <input type="number" id="limitFree" min="0" value="1"></label>
-            <label>Professional <input type="number" id="limitProfessional" min="0" value="5"></label>
-            <label>Business <input type="number" id="limitBusiness" min="0" value="10"></label>
+            <label>Free <input type="number" id="limitFree" min="0" value="5"></label>
+            <label>Business <input type="number" id="limitBusiness" min="0" value="15"></label>
             <label>Enterprise <input type="number" id="limitEnterprise" min="0" value="30"></label>
           </div>
           <button type="button" class="btn btn-primary" id="btnSaveLimits" style="margin-top:12px">Save limits</button>

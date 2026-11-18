@@ -625,9 +625,10 @@ test("tenant message inbox and chat match the responsive branded layout", async 
     }, conversation);
 
     await page.goto("/messages.html");
+    await page.setViewportSize({ width: 1280, height: 900 });
     await expect(page.locator(".messages-logo img")).toHaveAttribute("src", "IMAGES/leaseaccom-logo-full.png");
     await expect(page.locator(".messages-logo img")).toBeVisible();
-    await expect(page.locator(".conversation-search .search-icon")).toBeVisible();
+    await expect(page.locator(".conversation-search .search-icon")).toHaveCount(1);
     await expect(page.locator("#conversationList .conversation-item")).toContainText("LeaseAccom Support");
     await expect(page.locator(".message-filter")).toHaveCount(4);
     await page.locator("#conversationList .conversation-item").click();
@@ -1481,8 +1482,10 @@ test("owner plan checkout remains paused", async ({ page }) => {
         expect(dialog.message()).toContain("currently paused");
         await dialog.accept();
     });
-    await page.locator('[data-select-plan="professional"]').click();
+    await page.locator('[data-select-plan="business"]').click();
 
     expect(paystackRequests).toHaveLength(0);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomCurrentUser")).plan || null)).toBeNull();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomPlanIntent") || "null")))
+        .toMatchObject({ planId: "business", billing: "monthly", amount: 10000 });
 });

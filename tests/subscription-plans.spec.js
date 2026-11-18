@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-test("landing plan buttons explain checkout is pending without changing the owner's plan", async ({ page }) => {
+test("owner plan buttons save a checkout intent without changing the owner's plan", async ({ page }) => {
     await page.addInitScript(() => {
         localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "owner-plans-test",
@@ -8,26 +8,29 @@ test("landing plan buttons explain checkout is pending without changing the owne
             plan: "free"
         }));
     });
-    await page.goto("/");
+    await page.goto("/owner-plans.html");
 
-    await expect(page.locator("#owner-plans .op-card")).toHaveCount(3);
-    const businessButton = page.locator('#owner-plans [data-plan-checkout="business"]');
+    await expect(page.locator("#plansGrid .op-card")).toHaveCount(3);
+    const businessButton = page.locator('#plansGrid [data-select-plan="business"]');
     await expect(businessButton).toBeEnabled();
+    page.once("dialog", dialog => dialog.accept());
     await businessButton.click();
-    await expect(page.locator("#owner-plans [data-plan-message]")).toContainText("checkout is not available yet");
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomCurrentUser")).plan)).toBe("free");
-    expect(await page.evaluate(() => localStorage.getItem("leaseaccomPlanIntent"))).toBeNull();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomPlanIntent") || "null")))
+        .toMatchObject({ planId: "business", billing: "monthly", amount: 10000 });
 });
 
-test("admin plan buttons are enabled and show checkout status", async ({ page }) => {
+test("admin plan cards match the three-plan contract while checkout is paused", async ({ page }) => {
     await page.goto("/admin/admin.html");
 
     await expect(page.locator("#assistantPanel, #assistantLauncher, #laFloatingHelp")).toHaveCount(0);
-    const buttons = page.locator("#planAdminCards [data-plan-checkout]");
+    const cards = page.locator("#planAdminCards .op-card");
+    await expect(cards).toHaveCount(3);
+    await expect(cards).toContainText(["Free", "Business", "Enterprise"]);
+    const buttons = page.locator("#planAdminCards .cta");
     await expect(buttons).toHaveCount(3);
-    await expect(buttons.nth(0)).toBeEnabled();
-    await buttons.nth(0).evaluate((button) => button.click());
-    await expect(page.locator("#section-payments [data-plan-message]")).toContainText("checkout is not available yet");
+    await expect(buttons).toHaveCount(3);
+    await expect(buttons.nth(0)).toBeDisabled();
 });
 
 test("owner plans do not activate a paid plan before checkout is connected", async ({ page }) => {
@@ -46,7 +49,8 @@ test("owner plans do not activate a paid plan before checkout is connected", asy
     page.once("dialog", (dialog) => dialog.accept());
     await page.locator('[data-select-plan="business"]').click();
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomCurrentUser")).plan)).toBe("free");
-    expect(await page.evaluate(() => localStorage.getItem("leaseaccomPlanIntent"))).toBeNull();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomPlanIntent") || "null")))
+        .toMatchObject({ planId: "business", billing: "monthly", amount: 10000 });
 });
 
 test("owner dashboard contains the full subscription page inline", async ({ page }) => {
@@ -63,7 +67,7 @@ test("owner dashboard contains the full subscription page inline", async ({ page
     await expect(page.locator("#ownerPlan .owner-subscription-card")).toHaveCount(3);
     await expect(page.locator("#ownerPricingPlans")).toBeVisible();
     await expect(page.locator("#ownerPlan .owner-subscription-card").nth(0)).toContainText("Up to 5 active listings");
-    await expect(page.locator("#ownerPlan .owner-subscription-card").nth(1)).toContainText("Advanced property and enquiry analytics");
+    await expect(page.locator("#ownerPlan .owner-subscription-card").nth(1)).toContainText("Full portfolio analytics");
     await expect(page.locator("#ownerPlan .owner-subscription-card").nth(2)).toContainText("AI assistant");
     await expect(page.locator("#ownerFeatured .owner-featured-video")).toBeVisible();
     await expect(page.locator("#ownerPlan a[href='owner-plans.html']")).toHaveCount(0);
@@ -72,8 +76,8 @@ test("owner dashboard contains the full subscription page inline", async ({ page
     await expect(page).toHaveURL(/owner-dashboard\.html$/);
 
     await page.locator('#ownerPlan [data-billing="annual"]').click();
-    await expect(page.locator('#ownerPlan [data-price-for="professional"]')).toHaveText("₦4,500");
-    await expect(page.locator('#ownerPlan [data-annual-note="professional"]')).toContainText("₦54,000");
+    await expect(page.locator('#ownerPlan [data-price-for="business"]')).toHaveText("₦9,000");
+    await expect(page.locator('#ownerPlan [data-annual-note="business"]')).toContainText("₦108,000");
     await expect(page.locator('#ownerPlan [data-billing="annual"]')).toHaveAttribute("aria-pressed", "true");
 
     page.once("dialog", (dialog) => dialog.accept());

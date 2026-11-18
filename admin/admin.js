@@ -1451,7 +1451,7 @@
 
 
 
-  var defaultLimits = { free: 1, professional: 5, business: 10, enterprise: 30 };
+  var defaultLimits = { free: 5, business: 15, enterprise: 30 };
   var defaultFlags = {
     maintenance: false,
     newSignups: true,
@@ -1488,7 +1488,6 @@
 
     var map = {
       limitFree: limits.free,
-      limitProfessional: limits.professional,
       limitBusiness: limits.business,
       limitEnterprise: limits.enterprise
     };
@@ -1516,7 +1515,6 @@
     var msg = document.getElementById("limitsMsg");
     var value = {
       free: Number((document.getElementById("limitFree") || {}).value) || 0,
-      professional: Number((document.getElementById("limitProfessional") || {}).value) || 0,
       business: Number((document.getElementById("limitBusiness") || {}).value) || 0,
       enterprise: Number((document.getElementById("limitEnterprise") || {}).value) || 0
     };
