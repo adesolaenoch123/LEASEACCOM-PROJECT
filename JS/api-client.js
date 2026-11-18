@@ -31,7 +31,7 @@
       if (options.body && !headers.has("Content-Type")) {
         headers.set("Content-Type", "application/json");
       }
-      const response = await fetch(`${apiBaseUrl}${path}`, {
+      let response = await fetch(`${apiBaseUrl}${path}`, {
         ...options,
         headers,
         body:
@@ -39,6 +39,21 @@
             ? JSON.stringify(options.body)
             : options.body
       });
+      if (response.status === 401 && token) {
+        localStorage.removeItem("leaseaccom_session_token");
+        const refreshedToken = await window.LeaseAccomAuth?.getAccessToken?.();
+        if (refreshedToken && refreshedToken !== token) {
+          headers.set("Authorization", `Bearer ${refreshedToken}`);
+          response = await fetch(`${apiBaseUrl}${path}`, {
+            ...options,
+            headers,
+            body:
+              options.body && typeof options.body !== "string"
+                ? JSON.stringify(options.body)
+                : options.body
+          });
+        }
+      }
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         const detail = payload.detail;

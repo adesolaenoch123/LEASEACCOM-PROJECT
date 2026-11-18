@@ -121,7 +121,7 @@
     if (!host) return;
     const video = document.createElement("video");
     video.className = "owner-featured-video";
-    video.src = "hero-banner.mp4";
+    video.src = "IMAGES/properties-hero.mp4";
     video.controls = true;
     video.muted = true;
     video.playsInline = true;

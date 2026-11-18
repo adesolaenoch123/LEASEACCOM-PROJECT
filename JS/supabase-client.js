@@ -74,18 +74,18 @@
     },
 
     async getAccessToken() {
-      var storedToken = localStorage.getItem("leaseaccom_session_token");
-      if (storedToken) return storedToken;
-      if (!leaseaccomSupabase) return null;
-      try {
-        var result = await leaseaccomSupabase.auth.getSession();
-        if (result && result.error) throw result.error;
-        var token = result && result.data && result.data.session && result.data.session.access_token;
-        if (token) rememberSessionToken(token);
-        return token || null;
-      } catch (e) {
-        return null;
+      if (leaseaccomSupabase) {
+        try {
+          var result = await leaseaccomSupabase.auth.getSession();
+          if (result && result.error) throw result.error;
+          var token = result && result.data && result.data.session && result.data.session.access_token;
+          if (token) return rememberSessionToken(token);
+          rememberSessionToken(null);
+        } catch (e) {
+          // Fall back to the cached token only when Supabase cannot be queried.
+        }
       }
+      return localStorage.getItem("leaseaccom_session_token") || null;
     },
 
     async signOut() {

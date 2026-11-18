@@ -8,7 +8,7 @@ setTimeout(function(){try{document.documentElement.classList.remove("lh-preload-
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="./manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d7547">
     <link rel="apple-touch-icon" href="./IMAGES/leaseaccom-pwa-square-192.png">
 
@@ -288,6 +288,8 @@ html.lh-skeleton-on .la-home-skeleton { display: flex; }
             <a href="register.html" class="owner-btn">
                 List a Property
             </a>
+
+            <button type="button" id="installAppBtn" hidden>Install app</button>
         </div>
 
         <button class="menu-btn" id="menuBtn" type="button" aria-label="Open navigation" aria-expanded="false"><i class="bx bx-menu" aria-hidden="true"></i></button>
@@ -992,6 +994,7 @@ html.lh-skeleton-on .la-home-skeleton { display: flex; }
   <script src="JS/leaseaccom-standout.js"></script>
   <script src="JS/leaseaccom-next4.js"></script>
   <script src="JS/leaseaccom-features-912.js"></script>
+  <script src="JS/pwa-install.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () {
