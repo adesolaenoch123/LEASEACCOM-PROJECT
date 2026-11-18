@@ -245,6 +245,57 @@ class AdminAssistantService:
             if name == "reports": metrics[name]["open"] = sum(1 for x in rows if str(x.get("status","")).lower() in ("open","pending"))
         return {"period_days":period_days, "metrics":metrics}
 
+    def platform_revenue(self, period_days: int | None = None) -> dict:
+        """Calculate collected platform revenue from the payments ledger.
+
+        Only successful payments are included. Payouts and refunds are separated
+        from gross fees so the answer remains auditable across the two payment
+        schemas used by older deployments.
+        """
+        payments = self.rows("payments", 10000)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=period_days) if period_days else None
+        paid_statuses = {"paid", "success", "successful", "completed"}
+        totals = Counter()
+        currencies: Counter[str] = Counter()
+        included = 0
+        for row in payments:
+            status = str(row.get("status") or "").lower()
+            if status not in paid_statuses:
+                continue
+            if cutoff:
+                try:
+                    created = datetime.fromisoformat(str(row.get("created_at") or "").replace("Z", "+00:00"))
+                    if created.tzinfo is None:
+                        created = created.replace(tzinfo=timezone.utc)
+                    if created < cutoff:
+                        continue
+                except ValueError:
+                    continue
+            try:
+                amount = float(row.get("amount") or 0)
+            except (TypeError, ValueError):
+                continue
+            currency = str(row.get("currency") or "NGN").upper()
+            kind = str(row.get("type") or row.get("purpose") or "other").lower()
+            if kind in {"refund", "payout"}:
+                totals[kind] += amount
+            else:
+                totals["gross"] += amount
+                totals[kind] += amount
+            currencies[currency] += amount
+            included += 1
+        return {
+            "period_days": period_days,
+            "successful_payment_count": included,
+            "gross_revenue": round(totals["gross"], 2),
+            "refunds": round(totals["refund"], 2),
+            "payouts": round(totals["payout"], 2),
+            "net_revenue": round(totals["gross"] - totals["refund"] - totals["payout"], 2),
+            "by_currency": {key: round(value, 2) for key, value in currencies.items()},
+            "by_type": {key: round(value, 2) for key, value in totals.items() if key not in {"gross", "refund", "payout"}},
+            "note": "Revenue is based on successful rows in the payments ledger; pending, failed, and cancelled rows are excluded.",
+        }
+
     def summary(self, period_days: int = 1) -> dict:
         data = self.analytics(period_days)
         data["pending_listings"] = sum(1 for r in self.rows("properties") if str(r.get("verification_status") or r.get("listing_status") or "").lower()=="pending")
@@ -473,6 +524,12 @@ class AdminAssistantService:
             return {"response":f"Found {len(applications)} withdrawn application(s) and {len(viewings)} cancelled viewing(s). Payment and reservation cancellations are not stored as booking records in this app.","data":{"withdrawn_applications":applications,"cancelled_viewings":viewings},"capability":"rental_cancellation_review"}
         if any(k in low for k in ("payment issue", "failed payment", "overdue payment", "payment problem", "payment anomalies")):
             rows=self.payment_flags(); return {"response":f"Found {len(rows)} failed payments or payments pending at least one day. This is a review list; I did not change or refund a payment.","data":rows,"capability":"payment_issue_review"}
+        if any(k in low for k in ("revenue", "earnings", "income", "platform fees", "platform fee", "money made")):
+            period_match=re.search(r"(\d+)\s*days?", low)
+            period_days=int(period_match.group(1)) if period_match else (30 if any(k in low for k in ("month", "monthly")) else None)
+            data=self.platform_revenue(period_days)
+            label=f"the last {period_days} days" if period_days else "all available time"
+            return {"response":f"Platform revenue for {label}: {data['net_revenue']:,.2f} net from {data['successful_payment_count']} successful payment(s).","data":data,"capability":"platform_revenue"}
         if any(k in low for k in ("refund", "refund recommendation", "should i refund")):
             rows=self.payment_flags(); return {"response":"I can show payment signals to help with a refund decision, but the app has no refund policy rules or refund action wired to the admin assistant. Review the transaction and your policy before deciding.","data":rows,"capability":"refund_review_only"}
         if any(k in low for k in ("property performance", "compare properties", "compare listing", "which properties perform", "conversion rate", "views to applications")):

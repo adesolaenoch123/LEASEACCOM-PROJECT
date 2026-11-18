@@ -141,6 +141,30 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    // Some cloud catalog mappers keep photos but omit newer video fields.
+    // Re-read the selected row here so the details gallery can preserve all media.
+    if (property && window.leaseaccomSupabase
+        && !(Array.isArray(property.videos) && property.videos.length)
+        && !(Array.isArray(property.video_urls) && property.video_urls.length)
+        && !property.video) {
+        try {
+            const cloudResult = await window.leaseaccomSupabase
+                .from("properties")
+                .select("*")
+                .eq("id", propertyId)
+                .maybeSingle();
+            if (cloudResult && cloudResult.data) {
+                property = Object.assign({}, property, {
+                    videos: cloudResult.data.videos,
+                    video_urls: cloudResult.data.video_urls,
+                    video: cloudResult.data.video
+                });
+            }
+        } catch (e) {
+            console.warn("LeaseAccom: property video media refresh skipped.", e);
+        }
+    }
+
 
     /* =====================================================
        PROPERTY NOT FOUND
@@ -414,6 +438,25 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
     `).join("");
 
+    const photos = (
+        Array.isArray(property.images) && property.images.length
+            ? property.images
+            : [property.image || ""]
+    ).filter(Boolean);
+    const videos = (
+        Array.isArray(property.videos) && property.videos.length
+            ? property.videos
+            : Array.isArray(property.video_urls) && property.video_urls.length
+                ? property.video_urls
+                : property.video
+                    ? [property.video]
+                    : []
+    ).filter(Boolean);
+    const galleryMedia = [
+        ...photos.map(src => ({ type: "photo", src })),
+        ...videos.map(src => ({ type: "video", src }))
+    ];
+
 
     /* =====================================================
        PROPERTY DETAILS HTML
@@ -435,14 +478,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 <div class="property-gallery-carousel" id="propertyGalleryCarousel" data-autoplay="true">
                     <div class="gallery-track" id="galleryTrack">
-                        ${(
-                            (Array.isArray(property.images) && property.images.length
-                                ? property.images
-                                : [property.image || ""]
-                            ).filter(Boolean)
-                        ).map((src, i) => `
+                        ${galleryMedia.map((media, i) => media.type === "video" ? `
+                            <div class="gallery-slide is-video">
+                                <video src="${media.src}" controls playsinline preload="metadata"></video>
+                            </div>
+                        ` : `
                             <div class="gallery-slide">
-                                <img src="${src}" alt="${(property.title || "Property")} photo ${i + 1}"
+                                <img src="${media.src}" alt="${(property.title || "Property")} photo ${i + 1}"
                                     onerror="this.style.opacity=.3">
                             </div>
                         `).join("")}
@@ -1046,7 +1088,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             ).join("");
         }
 
+        function pauseCurrentVideo() {
+            const video = slides[index]?.querySelector("video");
+            if (video) video.pause();
+        }
+
         function go(i) {
+            pauseCurrentVideo();
             index = (i + n) % n;
             track.style.transform = `translateX(-${index * 100}%)`;
             if (counter) counter.textContent = `${index + 1} / ${n}`;
@@ -1059,8 +1107,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         function startAuto() {
             stopAuto();
-            if (n <= 1) return;
-            timer = setInterval(() => go(index + 1), 3500);
+            if (n <= 1 || slides[index].querySelector("video")) return;
+            timer = setInterval(() => {
+                if (!slides[index].querySelector("video")) go(index + 1);
+            }, 3500);
         }
         function stopAuto() {
             if (timer) clearInterval(timer);
@@ -1078,6 +1128,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         root.addEventListener("mouseenter", stopAuto);
         root.addEventListener("mouseleave", startAuto);
         root.addEventListener("touchstart", stopAuto, { passive: true });
+        slides.forEach(slide => {
+            const video = slide.querySelector("video");
+            if (!video) return;
+            video.addEventListener("play", stopAuto);
+            video.addEventListener("pause", () => {
+                if (slides[index] === slide) startAuto();
+            });
+            video.addEventListener("ended", () => {
+                if (slides[index] === slide) {
+                    go(index + 1);
+                    startAuto();
+                }
+            });
+        });
 
         go(0);
         startAuto();

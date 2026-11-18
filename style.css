@@ -7031,11 +7031,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   min-width: 100%;
   height: 100%;
 }
-.property-gallery-carousel .gallery-slide img {
+.property-gallery-carousel .gallery-slide img,
+.property-gallery-carousel .gallery-slide video {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+.property-gallery-carousel .gallery-slide.is-video {
+  background: #111;
 }
 .gallery-nav {
   position: absolute;

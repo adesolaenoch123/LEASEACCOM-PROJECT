@@ -21,7 +21,12 @@
       if (result.draft) addMessage(`DRAFT (not sent)\n${result.draft.subject}\n\n${result.draft.body}`, "data");
       if(result.suggested_rule) addRule(result.suggested_rule);
       if(result.proposed_operation && result.confirmation_required) addConfirm(result.proposed_operation);
-    } catch(error) { pending.textContent=error.message||"Could not reach the admin assistant."; }
+    } catch(error) {
+      const message = error && error.message ? error.message : "Could not reach the admin assistant.";
+      pending.textContent = message === "Failed to fetch"
+        ? "The AI backend is offline. Start the FastAPI service on port 8000, then try again."
+        : message;
+    }
   }
   function addConfirm(proposal) { const box=document.getElementById("adminAiMessages");const wrap=document.createElement("div");wrap.className="admin-ai-confirm";wrap.innerHTML='<p>Review bulk action: '+esc(proposal.record_ids.length)+' listing(s) → '+esc(proposal.status)+'.</p><button type="button">Confirm this action</button>';wrap.querySelector("button").addEventListener("click",async()=>{if(!window.confirm("Apply this change to the listed records?"))return;const b=wrap.querySelector("button");b.disabled=true;try{const res=await window.LeaseAccomApi.request("/admin/assistant/confirm",{method:"POST",body:{...proposal,confirmed:true}});wrap.textContent="Action completed: "+res.updated+" record(s) changed. This was recorded in the audit log.";}catch(e){wrap.textContent=e.message;} });box.appendChild(wrap);box.scrollTop=box.scrollHeight; }
   function addRule(rule) { const box=document.getElementById("adminAiMessages");const wrap=document.createElement("div");wrap.className="admin-ai-confirm";wrap.innerHTML='<p>Save suggested reminder: '+esc(rule.name)+'</p><button type="button">Save workflow rule</button>';wrap.querySelector("button").addEventListener("click",async()=>{try{const res=await window.LeaseAccomApi.request("/admin/assistant/workflows",{method:"POST",body:rule});wrap.textContent=res.message;}catch(e){wrap.textContent=e.message;}});box.appendChild(wrap); }

@@ -134,6 +134,10 @@
     try {
       const rawUser = localStorage.getItem("leaseaccomCurrentUser") || localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("currentUser");
       const user = rawUser ? JSON.parse(rawUser) : null;
+      if (window.LeaseAccomPlans && user && typeof window.LeaseAccomPlans.grantFoundingPromo === "function") {
+        window.LeaseAccomPlans.grantFoundingPromo(user);
+        window.setTimeout(refreshOwnerPlanUI, 250);
+      }
       if (window.LeaseAccomPlans && user && !window.LeaseAccomPlans.canAccessFeature("property_page_appearance", user)) {
         const panel = document.getElementById("ownerStore");
         if (panel) {
