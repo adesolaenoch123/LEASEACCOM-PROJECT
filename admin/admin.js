@@ -18,8 +18,11 @@
   var state = {
     profile: null,
     users: [],
+    userError: "",
     properties: [],
+    propertyError: "",
     verifications: [],
+    verificationError: "",
     viewings: [],
     viewingError: "",
     applications: [],
@@ -63,13 +66,27 @@
       showLogin("Supabase not loaded. Check ../JS/supabase-client.js");
       return null;
     }
-    var userRes = await client.auth.getUser();
+    var userRes;
+    try {
+      userRes = await client.auth.getUser();
+    } catch (error) {
+      showLogin("Could not verify the current Supabase session. Please try again.");
+      console.error("Admin session check failed:", error);
+      return null;
+    }
     var user = userRes && userRes.data && userRes.data.user;
     if (!user) {
       showLogin("");
       return null;
     }
-    var res = await client.from("profiles").select("*").eq("id", user.id).maybeSingle();
+    var res;
+    try {
+      res = await client.from("profiles").select("*").eq("id", user.id).maybeSingle();
+    } catch (error) {
+      showLogin("Could not verify the admin profile. Please try again.");
+      console.error("Admin profile check failed:", error);
+      return null;
+    }
     if (res.error) {
       showLogin(res.error.message);
       return null;
@@ -139,11 +156,23 @@
     if (result.error) console.error("Admin conversations could not be loaded:", result.error);
   }
 
+  async function loadAdminOwnerVerifications() {
+    var cloud = window.LeaseAccomCloud;
+    if (!cloud || typeof cloud.listOwnerVerifications !== "function") {
+      return { data: [], error: "Owner verification data is unavailable." };
+    }
+    var result = await cloud.listOwnerVerifications("all");
+    if (!result || !result.ok) {
+      return { data: [], error: (result && result.error) || "Owner verification requests could not be loaded." };
+    }
+    return { data: result.data || [], error: "" };
+  }
+
   async function loadOverviewData() {
     var packs = await Promise.all([
-      safeSelect("profiles", 500),
-      safeSelect("properties", 500),
-      safeSelect("owner_verifications", 200),
+      selectAllRows("profiles", "created_at"),
+      selectAllRows("properties", "created_at"),
+      loadAdminOwnerVerifications(),
       selectAllRows("viewings", "created_at"),
       selectAllRows("applications", "created_at"),
       safeSelect("payments", 100),
@@ -154,9 +183,12 @@
       selectAllRows("notifications", "created_at"),
       loadAdminConversations()
     ]);
-    state.users = packs[0];
-    state.properties = packs[1];
-    state.verifications = packs[2];
+    state.users = packs[0].data;
+    state.userError = packs[0].error;
+    state.properties = packs[1].data;
+    state.propertyError = packs[1].error;
+    state.verifications = packs[2].data;
+    state.verificationError = packs[2].error;
     state.viewings = packs[3].data;
     state.viewingError = packs[3].error;
     state.applications = packs[4].data;
@@ -196,15 +228,13 @@
     var users = state.users;
     var props = state.properties;
     var pendingProps = props.filter(function (p) {
-      return String(p.verification_status || p.listing_status || "").toLowerCase().indexOf("pending") !== -1;
+      return propertyStatus(p) === "pending";
     });
     var liveProps = props.filter(function (p) {
-      var v = String(p.verification_status || "").toLowerCase();
-      var l = String(p.listing_status || "").toLowerCase();
-      return v === "approved" || l === "live";
+      return propertyStatus(p) === "approved";
     });
     var rejectedProps = props.filter(function (p) {
-      return String(p.verification_status || "").toLowerCase() === "rejected";
+      return propertyStatus(p) === "rejected";
     });
     var pendingVer = state.verifications.filter(function (v) {
       return String(v.status || "").toLowerCase() === "pending";
@@ -223,14 +253,14 @@
     if (countReports) countReports.textContent = String(state.reports.length);
 
     var kpis = [
-      { label: "Total users", value: users.length, icon: "bx-group" },
-      { label: "Live listings", value: liveProps.length, icon: "bx-buildings" },
-      { label: "Pending verifications", value: pendingVer.length, icon: "bx-shield-quarter" },
+      { label: "Total users", value: state.userError ? "—" : users.length, icon: "bx-group" },
+      { label: "Live listings", value: state.propertyError ? "—" : liveProps.length, icon: "bx-buildings" },
+      { label: "Pending verifications", value: state.verificationError ? "—" : pendingVer.length, icon: "bx-shield-quarter" },
       { label: "Viewings", value: state.viewings.length, icon: "bx-calendar" },
       { label: "Applications", value: state.applications.length, icon: "bx-file" },
-      { label: "Tenants", value: tenants, icon: "bx-user" },
-      { label: "Owners", value: owners, icon: "bx-home" },
-      { label: "Pending listings", value: pendingProps.length, icon: "bx-time" }
+      { label: "Tenants", value: state.userError ? "—" : tenants, icon: "bx-user" },
+      { label: "Owners", value: state.userError ? "—" : owners, icon: "bx-home" },
+      { label: "Pending listings", value: state.propertyError ? "—" : pendingProps.length, icon: "bx-time" }
     ];
     var grid = document.getElementById("kpiGrid");
     if (grid) {
@@ -261,22 +291,32 @@
     var pipe = document.getElementById("propertyPipeline");
     if (pipe) {
       var stages = [
-        { name: "Pending", n: pendingProps.length },
-        { name: "Live", n: liveProps.length },
-        { name: "Rejected", n: rejectedProps.length },
-        { name: "All", n: props.length }
+        { name: "Pending", n: state.propertyError ? "—" : pendingProps.length },
+        { name: "Live", n: state.propertyError ? "—" : liveProps.length },
+        { name: "Rejected", n: state.propertyError ? "—" : rejectedProps.length },
+        { name: "All", n: state.propertyError ? "—" : props.length }
       ];
       pipe.innerHTML = stages.map(function (s) {
-        var pct = s.name === "All" ? 100 : Math.round((s.n / totalP) * 100);
+        var pct = state.propertyError ? 0 : s.name === "All" ? 100 : Math.round((s.n / totalP) * 100);
         return '<div class="pipeline-row"><span>' + esc(s.name) +
           '</span><div class="pipeline-track"><div class="pipeline-fill" style="width:' + pct +
-          '%"></div></div><strong>' + s.n + "</strong></div>";
+          '%"></div></div><strong>' + esc(s.n) + "</strong></div>";
       }).join("");
+      if (state.propertyError) {
+        pipe.insertAdjacentHTML("afterbegin", '<p class="admin-data-error">Property counts unavailable: ' +
+          esc(state.propertyError) + " Apply migrations/009_admin_read_policies.sql and migrations/013_role_access_hardening.sql.</p>");
+      }
     }
 
     var alerts = document.getElementById("overviewAlerts");
     if (alerts) {
       var items = [];
+      if (state.verificationError) {
+        items.push({ level: "high", title: "Verification data unavailable", text: state.verificationError });
+      }
+      if (state.propertyError) {
+        items.push({ level: "high", title: "Listing data unavailable", text: state.propertyError });
+      }
       if (pendingVer.length) items.push({ level: "high", title: "Verification backlog", text: pendingVer.length + " waiting" });
       if (pendingProps.length) items.push({ level: "med", title: "Listings pending", text: pendingProps.length + " need approval" });
       if (!items.length) items.push({ level: "low", title: "All clear", text: "No critical alerts" });
@@ -567,15 +607,20 @@
   }
 
   function propertyStatus(p) {
-    return String(p.verification_status || p.listing_status || "pending").toLowerCase();
+    var verification = String(p.verification_status || "").trim().toLowerCase();
+    var listing = String(p.listing_status || "").trim().toLowerCase();
+    if (verification === "rejected" || listing === "rejected") return "rejected";
+    if (verification === "approved" || ["approved", "live", "active"].indexOf(listing) !== -1) {
+      return "approved";
+    }
+    return "pending";
   }
 
   function renderProperties() {
-    var q = String((document.getElementById("propertySearch") || {}).value || "").toLowerCase();
+    var q = String((document.getElementById("propertySearch") || {}).value || "").trim().toLowerCase();
     var list = state.properties.filter(function (p) {
       var st = propertyStatus(p);
-      if (propertyFilter === "pending" && st.indexOf("pending") === -1) return false;
-      if (propertyFilter === "approved" && st !== "approved" && st !== "live") return false;
+      if (propertyFilter && st !== propertyFilter) return false;
       if (propertyFilter === "rejected" && st !== "rejected") return false;
       if (!q) return true;
       return ((p.title || "") + " " + (p.city || "") + " " + (p.location || "") + " " + (p.id || ""))
@@ -588,11 +633,17 @@
     var box = document.getElementById("propertiesTable");
     if (!box) return;
     if (!list.length) {
-      box.innerHTML = '<p class="ov-adm-empty">No properties match.</p>';
+      box.innerHTML = state.propertyError
+        ? '<p class="admin-data-error">Properties could not be loaded: ' + esc(state.propertyError) +
+          " Apply migrations/009_admin_read_policies.sql and migrations/013_role_access_hardening.sql.</p>"
+        : '<p class="ov-adm-empty">' + (state.properties.length ? "No properties match these filters." : "No property listings have been submitted.") + "</p>";
       return;
     }
 
-    box.innerHTML =
+    box.innerHTML = (state.propertyError
+      ? '<p class="admin-data-error">Some properties could not be loaded: ' + esc(state.propertyError) +
+        " Apply migrations/009_admin_read_policies.sql and migrations/013_role_access_hardening.sql.</p>"
+      : "") +
       '<table class="admin-table"><thead><tr>' +
       "<th>Property</th><th>City</th><th>Price</th><th>Status</th><th>Featured</th><th>Actions</th>" +
       "</tr></thead><tbody>" +
@@ -608,7 +659,7 @@
           "<tr><td><div class='prop-cell'>" + thumb + "<div><strong><a class='prop-link' href='../property-details.html?id=" + encodeURIComponent(p.id) + "' target='_blank' rel='noopener'>" + esc(p.title || "Untitled") +
           "</a></strong><small>" + esc((p.bedrooms != null ? p.bedrooms + " Bed · " : "") + (p.property_type || p.type || "")) +
           "</small></div></div></td><td>" + esc(p.city || p.location || "—") + "</td><td>" + money(p.price) +
-          '</td><td><span class="status-pill ' + pill + '">' + esc(p.verification_status || p.listing_status || "pending") +
+          '</td><td><span class="status-pill ' + pill + '">' + esc(st) +
           '</span></td><td><button type="button" class="star-btn' + (featured ? " is-on" : "") +
           '" data-prop-feature="' + esc(p.id) + '">' + (featured ? "★" : "☆") +
           '</button></td><td class="admin-row-actions">' +
@@ -775,6 +826,9 @@
     if (verification === "approved") {
       try {
         var flagRes = await client.from("platform_settings").select("value").eq("key", "platform_flags").maybeSingle();
+        if (flagRes.error) {
+          console.warn("Could not load listing approval flags:", flagRes.error.message);
+        }
         var flags = (flagRes.data && flagRes.data.value) || {};
         if (flags.requireOwnerVerif) {
           var prop = state.properties.find(function (x) { return String(x.id) === String(id); });
@@ -788,13 +842,25 @@
             }
           }
         }
-      } catch (e) {}
+      } catch (error) {
+        console.warn("Could not verify owner approval requirements:", error);
+      }
     }
-    var res = await client.from("properties").update({
-      verification_status: verification,
-      listing_status: listing
-    }).eq("id", id);
+    var res;
+    try {
+      res = await client.from("properties").update({
+        verification_status: verification,
+        listing_status: listing
+      }).eq("id", id).select("id, verification_status, listing_status");
+    } catch (error) {
+      alert("Could not save the listing decision: " + (error.message || "Please try again."));
+      return;
+    }
     if (res.error) { alert(res.error.message); return; }
+    if (!Array.isArray(res.data) || !res.data.length) {
+      alert("No property was updated. Confirm admin permissions and try again.");
+      return;
+    }
     try {
       var prop = state.properties.find(function (x) { return String(x.id) === String(id); });
       var ownerId = prop && (prop.owner_id || prop.user_id);
@@ -823,7 +889,9 @@
         id,
         title
       );
-    } catch (e) {}
+    } catch (error) {
+      console.warn("Listing decision was saved, but follow-up actions failed:", error);
+    }
     await loadOverviewData();
   }
 
@@ -873,11 +941,17 @@
     var box = document.getElementById("usersTable");
     if (!box) return;
     if (!list.length) {
-      box.innerHTML = '<p class="ov-adm-empty">No users match.</p>';
+      box.innerHTML = state.userError
+        ? '<p class="admin-data-error">User profiles could not be loaded: ' + esc(state.userError) +
+          " Apply migrations/009_admin_read_policies.sql and migrations/013_role_access_hardening.sql.</p>"
+        : '<p class="ov-adm-empty">' + (state.users.length ? "No users match these filters." : "No users have registered yet.") + "</p>";
       return;
     }
 
-    box.innerHTML =
+    box.innerHTML = (state.userError
+      ? '<p class="admin-data-error">Some user profiles could not be loaded: ' + esc(state.userError) +
+        " Apply migrations/009_admin_read_policies.sql and migrations/013_role_access_hardening.sql.</p>"
+      : "") +
       '<table class="admin-table"><thead><tr>' +
       "<th>Name</th><th>Role</th><th>Status</th><th>Verification</th><th>Actions</th>" +
       "</tr></thead><tbody>" +
@@ -967,6 +1041,7 @@
     var list = (state.verifications || []).filter(function (v) {
       var st = String(v.status || "pending").toLowerCase();
       if (!verFilter) return true;
+      if (verFilter === "approved") return st === "verified" || st === "approved";
       return st === verFilter || (verFilter === "pending" && st.indexOf("pending") !== -1);
     });
 
@@ -979,11 +1054,17 @@
     if (!box) return;
 
     if (!list.length) {
-      box.innerHTML = '<p class="ov-adm-empty">No verification applications in this filter. Owners submit from the owner verification page.</p>';
+      box.innerHTML = state.verificationError
+        ? '<p class="admin-data-error">Owner verification requests could not be loaded: ' + esc(state.verificationError) +
+          " Apply migrations/009_admin_read_policies.sql and migrations/013_role_access_hardening.sql.</p>"
+        : '<p class="ov-adm-empty">' + (state.verifications.length ? "No verification applications match this filter." : "No owner verification requests have been submitted.") + "</p>";
       return;
     }
 
-    box.innerHTML =
+    box.innerHTML = (state.verificationError
+      ? '<p class="admin-data-error">Some owner verification requests could not be loaded: ' + esc(state.verificationError) +
+        " Apply migrations/009_admin_read_policies.sql and migrations/013_role_access_hardening.sql.</p>"
+      : "") +
       '<table class="admin-table"><thead><tr>' +
       "<th>Full name</th><th>Phone</th><th>NIN / ID</th><th>ID type</th><th>City</th><th>Documents</th><th>Status</th><th>Actions</th>" +
       "</tr></thead><tbody>" +
@@ -996,8 +1077,10 @@
           var nin = v.nin || v.id_number || v.national_id || "—";
           var idType = v.id_type || v.national_id_type || v.document_type || "—";
           var city = v.city || v.state || "—";
-          var idPath = v.id_file_path || v.id_url || v.national_id_url || "";
-          var proofPath = v.proof_file_path || v.proof_url || v.ownership_url || "";
+          var idPath = v.id_file_url || v.id_url || v.national_id_url ||
+            (/^https?:\/\//i.test(String(v.id_file_path || "")) ? v.id_file_path : "");
+          var proofPath = v.proof_file_url || v.proof_url || v.ownership_url ||
+            (/^https?:\/\//i.test(String(v.proof_file_path || "")) ? v.proof_file_path : "");
           var docs = '<div class="ver-docs">';
           if (idPath) {
             docs += '<div><a href="' + esc(idPath) + '" target="_blank" rel="noopener"><img class="ver-doc" src="' + esc(idPath) + '" alt="ID" onerror="this.alt=\'ID\'"></a><span class="ver-doc-label">ID</span></div>';
@@ -1047,62 +1130,119 @@
     });
     box.querySelectorAll("[data-ver-reject]").forEach(function (b) {
       b.addEventListener("click", function () {
-        setVerificationStatus(b.getAttribute("data-ver-reject"), "rejected");
+        var note = prompt("Optional rejection reason for the owner:", "");
+        setVerificationStatus(b.getAttribute("data-ver-reject"), "rejected", note || "");
       });
     });
   }
 
-  async function setVerificationStatus(id, status) {
+  async function setVerificationStatus(id, status, reviewNote) {
     var client = sb();
     if (!client) return;
-    var payload = { status: status };
-    var res = await client.from("owner_verifications").update(payload).eq("id", id);
-    if (res.error) {
-      alert(res.error.message);
+    var row = (state.verifications || []).find(function (x) {
+      return String(x.id) === String(id);
+    });
+    if (!row || !row.owner_id) {
+      alert("This verification request is missing its owner account. Refresh the queue and try again.");
       return;
     }
-    // Optional: mark owner profile verified
+
+    var dbStatus = status === "approved" ? "verified" : status;
+    var cloud = window.LeaseAccomCloud;
+    if (!cloud || typeof cloud.reviewOwnerVerification !== "function") {
+      alert("Owner verification updates are unavailable. Reload the admin dashboard and try again.");
+      return;
+    }
+    var review;
     try {
-      var row = (state.verifications || []).find(function (x) {
-        return String(x.id) === String(id);
-      });
-      if (row && row.owner_id && status === "approved") {
-        await client
-          .from("profiles")
-          .update({ verification_status: "verified" })
-          .eq("id", row.owner_id);
+      review = await cloud.reviewOwnerVerification(id, dbStatus, reviewNote);
+    } catch (error) {
+      alert("Could not save the owner verification decision: " + (error.message || "Please try again."));
+      return;
+    }
+    if (!review || !review.ok) {
+      alert("Could not save the owner verification decision: " + ((review && review.error) || "Please try again."));
+      return;
+    }
+
+    var verifiedAt = dbStatus === "verified"
+      ? (review.profile && review.profile.verified_at) || new Date().toISOString()
+      : null;
+    var ownerProfile = Object.assign({}, review.profile || profileFor(row.owner_id) || {}, {
+      id: row.owner_id,
+      email: (review.profile && review.profile.email) || row.email || "",
+      verification_status: dbStatus,
+      verificationStatus: dbStatus,
+      ownerVerificationStatus: dbStatus,
+      verified: dbStatus === "verified",
+      verified_at: verifiedAt,
+      verifiedAt: verifiedAt,
+      promoType: (review.profile && (review.profile.promo_type || review.profile.promoType)) || "",
+      promoEndsAt: (review.profile && (review.profile.promo_ends_at || review.profile.promoEndsAt)) || "",
+      plan: (review.profile && (review.profile.plan || review.profile.subscription_plan)) || "free",
+      subscriptionPlan: (review.profile && (review.profile.subscription_plan || review.profile.plan)) || "free",
+      createdAt: (review.profile && (review.profile.created_at || review.profile.createdAt)) || ""
+    });
+    if (dbStatus === "verified" && window.LeaseAccomPlans &&
+        typeof window.LeaseAccomPlans.grantFoundingPromo === "function") {
+      ownerProfile = window.LeaseAccomPlans.grantFoundingPromo(ownerProfile) || ownerProfile;
+    }
+
+    if (dbStatus === "verified" && ownerProfile.promoType && ownerProfile.promoEndsAt) {
+      var promoSave;
+      try {
+        promoSave = await client.from("profiles").update({
+          promo_type: ownerProfile.promoType,
+          promo_ends_at: ownerProfile.promoEndsAt
+        }).eq("id", row.owner_id);
+      } catch (error) {
+        promoSave = { error: error };
       }
-      if (row && row.owner_id && status === "rejected") {
-        await client
-          .from("profiles")
-          .update({ verification_status: "rejected" })
-          .eq("id", row.owner_id);
+      if (promoSave.error) {
+        await loadOverviewData();
+        alert("Owner verified, but the launch promo could not be saved: " + promoSave.error.message);
+        return;
       }
-      if (row && row.owner_id && status === "approved") {
-        await notifyOwner(
-          row.owner_id,
-          "Owner verification approved",
-          "Your identity documents were verified. You can list properties on LeaseAccom.",
-          "success",
-          "owner-dashboard.html"
-        );
+    }
+
+    try {
+      var cachedUsers = JSON.parse(localStorage.getItem("leaseaccomUsers") || "[]");
+      if (Array.isArray(cachedUsers)) {
+        var cachedIndex = cachedUsers.findIndex(function (user) {
+          return String(user.id) === String(row.owner_id);
+        });
+        if (cachedIndex >= 0) {
+          cachedUsers[cachedIndex] = Object.assign({}, cachedUsers[cachedIndex], ownerProfile);
+          localStorage.setItem("leaseaccomUsers", JSON.stringify(cachedUsers));
+        }
       }
-      if (row && row.owner_id && status === "rejected") {
-        await notifyOwner(
-          row.owner_id,
-          "Owner verification rejected",
-          "Your verification was not approved. Please resubmit clear documents.",
-          "warning",
-          "owner-verification.html"
-        );
-      }
-      await writeAudit(
-        status === "approved" ? "verification.approve" : "verification.reject",
-        "owner_verification",
-        id,
-        row && row.full_name ? row.full_name : ""
+    } catch (error) {
+      console.warn("Could not update the local owner profile cache:", error);
+    }
+
+    if (dbStatus === "verified") {
+      await notifyOwner(
+        row.owner_id,
+        "Owner verification approved",
+        "Your identity documents were verified. You can list properties on LeaseAccom.",
+        "success",
+        "owner-dashboard.html"
       );
-    } catch (e) {}
+    } else {
+      await notifyOwner(
+        row.owner_id,
+        "Owner verification rejected",
+        "Your verification was not approved. Please resubmit clear documents.",
+        "warning",
+        "owner-verification.html"
+      );
+    }
+    await writeAudit(
+      dbStatus === "verified" ? "verification.approve" : "verification.reject",
+      "owner_verification",
+      id,
+      row.full_name || ""
+    );
     await loadOverviewData();
   }
 
@@ -1925,7 +2065,11 @@
     }
 
     var existing = await requireAdmin();
-    if (existing) await loadOverviewData();
+    if (existing) {
+      await loadOverviewData();
+      var requestedSection = String(window.location.hash || "").replace(/^#/, "");
+      if (requestedSection) goSection(requestedSection);
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

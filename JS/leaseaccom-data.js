@@ -35,14 +35,23 @@
   function toLegacyUser(authUser, profile) {
     if (!authUser) return null;
     const p = profile || {};
+    const verificationStatus = p.verification_status || "unverified";
     return {
       id: authUser.id,
       email: authUser.email,
       name: p.full_name || p.name || authUser.user_metadata?.full_name || "",
       phone: p.phone || authUser.user_metadata?.phone || "",
       accountType: p.account_type || authUser.user_metadata?.account_type || "tenant",
-      verificationStatus: p.verification_status || "unverified",
-      ownerVerificationStatus: p.verification_status || "unverified",
+      verificationStatus,
+      ownerVerificationStatus: verificationStatus,
+      verification_status: verificationStatus,
+      verified: verificationStatus === "verified",
+      verifiedAt: p.verified_at || null,
+      verified_at: p.verified_at || null,
+      plan: p.plan || p.subscription_plan,
+      subscriptionPlan: p.subscription_plan || p.plan,
+      promoType: p.promo_type || null,
+      promoEndsAt: p.promo_ends_at || null,
       avatar: p.avatar_url || "",
       properties: []
     };
@@ -55,20 +64,28 @@
     const legacy = toLegacyUser(authUser, profile);
     try {
       localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(legacy));
-      localStorage.setItem("leaseaccomCurrentUser", JSON.stringify(legacy));
+      localStorage.setItem("leasehubCurrentUser", JSON.stringify(legacy));
     } catch (e) {}
     return legacy;
   }
 
+  function getPublicListingStatus(row) {
+    const verification = String(row.verification_status || row.verificationStatus || "").toLowerCase();
+    const listing = String(row.listing_status || row.listingStatus || "").toLowerCase();
+    if (verification === "rejected" || listing === "rejected") return null;
+    if (verification === "approved" || ["approved", "live", "active"].indexOf(listing) !== -1) return "approved";
+    return null;
+  }
+
   function mapPropertyRow(row) {
     const images = Array.isArray(row.images) ? row.images : [];
-    const v =
-      String(row.listing_status || row.verification_status || "pending").toLowerCase();
-    const live = v === "live" || v === "approved";
+    const publicStatus = getPublicListingStatus(row);
+    const verification = String(row.verification_status || row.verificationStatus || "pending").toLowerCase();
+    const listing = String(row.listing_status || row.listingStatus || verification).toLowerCase();
     return {
       id: row.id,
       title: row.title,
-      type: row.type,
+      type: row.type || row.property_type,
       location: row.location,
       city: row.city,
       state: row.state || "",
@@ -80,12 +97,13 @@
       description: row.description || "",
       bedrooms: row.bedrooms,
       bathrooms: row.bathrooms,
-      listingStatus: live ? "live" : v,
-      verificationStatus: live ? "approved" : v,
-      verified: live,
+      listingStatus: publicStatus ? "live" : listing,
+      verificationStatus: publicStatus ? "approved" : verification,
+      verified: !!publicStatus,
       ownerVerified: true,
       image: row.cover_image || row.image || images[0] || "",
       images: images.length ? images : [row.cover_image || row.image].filter(Boolean),
+      videos: Array.isArray(row.videos) ? row.videos : [],
       ownerId: row.owner_id,
       ownerName: row.owner_name || "LeaseAccom Owner",
       amenities: row.amenities || []
@@ -99,7 +117,7 @@
       let { data, error } = await global.leaseaccomSupabase
         .from("properties")
         .select("*")
-        .or("listing_status.eq.live,verification_status.eq.approved")
+        .or("verification_status.eq.approved,listing_status.in.(approved,live,active)")
         .order("updated_at", { ascending: false });
 
       if (error) {
@@ -115,7 +133,9 @@
         }
         data = res2.data;
       }
-      return (data || []).map(mapPropertyRow);
+      return (data || []).filter(function (row) {
+        return !!getPublicListingStatus(row);
+      }).map(mapPropertyRow);
     } catch (e) {
       return null;
     }
@@ -235,6 +255,7 @@
     createProperty,
     createViewing,
     toLegacyUser,
+    getPublicListingStatus,
     mapPropertyRow,
     hasSupabase: hasSb
   };

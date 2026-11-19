@@ -2024,174 +2024,81 @@ LeaseAccom will process your request.`
         contactLandlordBtn.addEventListener(
             "click",
             async () => {
-
-                /* Cloud-first conversation (fixes Conversation not found) */
                 try {
-                    var signedInUser = null;
-                    try {
-                        signedInUser = JSON.parse(localStorage.getItem("leaseaccomCurrentUser") || "null");
-                    } catch (userError) {
-                        signedInUser = null;
+                    var signedInUser = JSON.parse(localStorage.getItem("leaseaccomCurrentUser") || "null");
+                    if (!signedInUser) {
+                        window.location.href = "login.html";
+                        return;
                     }
-                    if (signedInUser && window.LeaseAccomCloud && typeof window.LeaseAccomCloud.getOrCreateConversation === "function") {
-                        var ownerId = property.ownerId || property.owner_id || property.user_id;
-                        if (ownerId) {
-                            var cre = await window.LeaseAccomCloud.getOrCreateConversation(property.id, ownerId);
-                            if (cre && cre.ok && cre.data && cre.data.id) {
-                                var convId = cre.data.id;
-                                var list = [];
-                                try { list = JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]") || []; } catch (e1) { list = []; }
-                                if (!Array.isArray(list)) list = [];
-                                if (!list.some(function (c) { return String(c.id) === String(convId); })) {
-                                    list.unshift({
-                                        id: convId,
-                                        propertyId: property.id,
-                                        propertyTitle: property.title || "Listing",
-                                        propertyImage: property.image || "",
-                                        propertyLocation: property.location || property.city || "Nigeria",
-                                        ownerName: property.ownerName || "Property Owner",
-                                        ownerId: ownerId,
-                                        messages: [],
-                                        serverBacked: true,
-                                        updatedAt: new Date().toISOString()
-                                    });
-                                    localStorage.setItem("leaseaccomMessages", JSON.stringify(list));
-                                }
-                                localStorage.setItem("activeConversationId", convId);
-                                window.location.href = "messages.html";
-                                return;
-                            }
+
+                    var ownerId = property.ownerId || property.owner_id || property.user_id;
+                    if (!ownerId) throw new Error("The property owner could not be identified.");
+
+                    var conversation = null;
+                    var cloud = window.LeaseAccomCloud;
+                    if (cloud && typeof cloud.hasSb === "function" && cloud.hasSb()) {
+                        conversation = await window.LeaseAccomChatApi?.createConversation?.({
+                            propertyId: property.id,
+                            propertyTitle: property.title || "Listing",
+                            propertyImage: property.image || property.cover_image || "",
+                            propertyLocation: property.location || property.city || "Nigeria",
+                            ownerId: String(ownerId),
+                            ownerName: property.ownerName || property.owner_name || "Property Owner",
+                            ownerAvatar: property.ownerAvatar || property.owner_avatar || "",
+                            ownerPhone: property.ownerPhone || property.owner_phone || "",
+                            tenantId: signedInUser.id ? String(signedInUser.id) : "",
+                            tenantName: signedInUser.name || signedInUser.full_name || "Tenant",
+                            tenantAvatar: signedInUser.avatar || signedInUser.avatar_url || ""
+                        });
+                        if (!conversation) {
+                            throw new Error("The messaging service could not create or load this conversation.");
                         }
+                    } else {
+                        var localConversations = [];
+                        try {
+                            localConversations = JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]");
+                        } catch (storageError) {
+                            console.warn("Unable to load cached conversations:", storageError);
+                        }
+                        if (!Array.isArray(localConversations)) localConversations = [];
+                        var tenantId = String(signedInUser.id || "");
+                        var existing = localConversations.find(function (item) {
+                            return String(item.propertyId) === String(property.id) &&
+                                String(item.tenantId || "") === tenantId &&
+                                String(item.ownerId || "") === String(ownerId);
+                        });
+                        conversation = existing || {
+                            id: "local-" + [property.id, tenantId, ownerId].map(encodeURIComponent).join(":"),
+                            propertyId: String(property.id),
+                            propertyTitle: property.title || "Listing",
+                            propertyImage: property.image || property.cover_image || "",
+                            propertyLocation: property.location || property.city || "Nigeria",
+                            ownerName: property.ownerName || property.owner_name || "Property Owner",
+                            ownerId: String(ownerId),
+                            ownerAvatar: property.ownerAvatar || property.owner_avatar || "",
+                            ownerPhone: property.ownerPhone || property.owner_phone || "",
+                            tenantId: tenantId,
+                            tenantName: signedInUser.name || signedInUser.full_name || "Tenant",
+                            participants: { tenantId: tenantId, ownerId: String(ownerId) },
+                            messages: [],
+                            serverBacked: false,
+                            createdAt: new Date().toISOString()
+                        };
+                        if (!existing) localConversations.unshift(conversation);
+                        localStorage.setItem("leaseaccomMessages", JSON.stringify(localConversations));
                     }
-                } catch (cloudErr) {
-                    console.warn("cloud conversation", cloudErr);
-                }
 
-                /* -----------------------------------------
-                   GET EXISTING CONVERSATIONS
-                   ----------------------------------------- */
-
-                let conversations = [];
-
-                try {
-
-                    conversations =
-                        JSON.parse(
-                            localStorage.getItem(
-                                "leaseaccomMessages"
-                            )
-                        ) || [];
-
+                    localStorage.setItem("activeConversationId", String(conversation.id));
+                    window.location.href = "messages.html";
                 } catch (error) {
-
-                    console.error(
-                        "Unable to load LeaseAccom messages.",
-                        error
-                    );
-
-                    conversations = [];
-
+                    console.error("Unable to open the owner conversation:", error);
+                    var message = error.message || "Please try again.";
+                    if (typeof window.leaseaccomToast === "function") {
+                        window.leaseaccomToast("Couldn't start conversation: " + message, "error");
+                    } else {
+                        window.alert("Couldn't start conversation: " + message);
+                    }
                 }
-
-
-                /* -----------------------------------------
-                   CREATE CONVERSATION ID
-                   ----------------------------------------- */
-
-                const conversationId =
-                    `property-${property.id}`;
-
-
-                /* -----------------------------------------
-                   CHECK IF CONVERSATION ALREADY EXISTS
-                   ----------------------------------------- */
-
-                const existingConversation =
-                    conversations.find(
-                        conversation =>
-                            conversation.id ===
-                            conversationId
-                    );
-
-
-                /* -----------------------------------------
-                   CREATE NEW CONVERSATION
-                   ----------------------------------------- */
-
-                if (!existingConversation) {
-
-                    conversations.push({
-
-                        id:
-                            conversationId,
-
-                        propertyId:
-                            property.id,
-
-                        propertyTitle:
-                            property.title,
-
-                        propertyImage:
-                            property.image || "",
-
-                        propertyLocation:
-                            property.location ||
-                            property.city ||
-                            "Nigeria",
-
-                        ownerName:
-                            property.ownerName ||
-                            "Property Owner",
-
-                        ownerId:
-                            property.ownerId || null,
-
-                        ownerAvatar:
-                            property.ownerAvatar || "",
-
-                        ownerPhone:
-                            property.ownerPhone || "",
-
-                        ownerBio:
-                            property.ownerBio || "",
-
-                        createdAt:
-                            new Date().toISOString(),
-
-                        unread: 0,
-
-                        messages: []
-
-                    });
-
-
-                    localStorage.setItem(
-                        "leaseaccomMessages",
-                        JSON.stringify(
-                            conversations
-                        )
-                    );
-
-                }
-
-
-                /* -----------------------------------------
-                   REMEMBER SELECTED CONVERSATION
-                   ----------------------------------------- */
-
-                localStorage.setItem(
-                    "activeConversationId",
-                    conversationId
-                );
-
-
-                /* -----------------------------------------
-                   OPEN MESSAGES PAGE
-                   ----------------------------------------- */
-
-                window.location.href =
-                    "messages.html";
-
             }
         );
 

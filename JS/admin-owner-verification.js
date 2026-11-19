@@ -28,6 +28,21 @@
       .replace(/"/g, "&quot;");
   }
 
+  function applyOwnerVerifiedAndPromo(userOrProfile) {
+    var verifiedAt = (userOrProfile && (userOrProfile.verified_at || userOrProfile.verifiedAt)) || new Date().toISOString();
+    var user = Object.assign({}, userOrProfile || {}, {
+      verificationStatus: "verified",
+      ownerVerificationStatus: "verified",
+      verification_status: "verified",
+      verified: true,
+      verified_at: verifiedAt,
+      verifiedAt: verifiedAt
+    });
+    if (window.LeaseAccomPlans && typeof window.LeaseAccomPlans.grantFoundingPromo === "function") {
+      return window.LeaseAccomPlans.grantFoundingPromo(user) || user;
+    }
+    return user;
+  }
 
   async function cloudReview(id, status, note) {
     if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.reviewOwnerVerification === "function" && id && String(id).indexOf("ov-") !== 0) {
@@ -35,40 +50,101 @@
         return await window.LeaseAccomCloud.reviewOwnerVerification(id, status, note);
       } catch (e) {
         console.warn(e);
+        return { ok: false, error: e.message || "Could not save the verification decision" };
       }
     }
-    return { ok: false };
+    return { ok: false, error: "Cloud owner verification review is unavailable" };
   }
 
-  function setUserStatus(email, userId, status, note) {
+  async function loadCloudOwnerProfile(userId) {
+    var client = window.leaseaccomSupabase || window.leasehubSupabase;
+    if (!client || !userId) return null;
+    try {
+      var result = await client.from("profiles").select("*").eq("id", userId).maybeSingle();
+      if (result && result.error) {
+        console.warn("Could not load the verified owner's profile:", result.error);
+        return null;
+      }
+      return result && result.data || null;
+    } catch (error) {
+      console.warn("Could not load the verified owner's profile:", error);
+      return null;
+    }
+  }
+
+  function mergeOwnerProfile(profile, user) {
+    var merged = Object.assign({}, user || {}, profile || {});
+    if (profile) {
+      merged.email = merged.email || profile.email;
+      merged.promoType = profile.promo_type || profile.promoType || merged.promoType;
+      merged.promoEndsAt = profile.promo_ends_at || profile.promoEndsAt || merged.promoEndsAt;
+    }
+    return merged;
+  }
+
+  function setUserStatus(email, userId, status, note, cloudProfile) {
+    var matchesUser = function (user) {
+      return (userId != null && user.id != null && String(user.id) === String(userId)) ||
+        (!!email && String(user.email || "").toLowerCase() === String(email).toLowerCase());
+    };
     var users = readJSON(USERS_KEY, []);
+    var promoUser = cloudProfile ? mergeOwnerProfile(cloudProfile, { email: email }) : null;
     if (Array.isArray(users)) {
       users.forEach(function (u, i) {
-        if (String(u.id) === String(userId) || String(u.email).toLowerCase() === String(email).toLowerCase()) {
+        if (matchesUser(u)) {
           users[i] = Object.assign({}, u, {
             verificationStatus: status,
             ownerVerificationStatus: status,
             verificationNote: note || "",
-            verifiedAt: status === "verified" ? new Date().toISOString() : u.verifiedAt
+            verification_status: status,
+            verified: status === "verified",
+            verified_at: status === "verified" ? (u.verified_at || u.verifiedAt || new Date().toISOString()) : null,
+            verifiedAt: status === "verified" ? (u.verifiedAt || new Date().toISOString()) : null
           });
+          if (!promoUser) promoUser = users[i];
         }
       });
       writeJSON(USERS_KEY, users);
     }
     try {
       var cur = readJSON(CURRENT_KEY, null);
-      if (
-        cur &&
-        (String(cur.id) === String(userId) ||
-          String(cur.email).toLowerCase() === String(email).toLowerCase())
-      ) {
-        cur.verificationStatus = status;
-        cur.ownerVerificationStatus = status;
-        cur.verificationNote = note || "";
+      if (cur && matchesUser(cur)) {
+        cur = Object.assign({}, cur, {
+          verificationStatus: status,
+          ownerVerificationStatus: status,
+          verification_status: status,
+          verificationNote: note || "",
+          verified: status === "verified",
+          verified_at: status === "verified" ? (cur.verified_at || cur.verifiedAt || new Date().toISOString()) : null,
+          verifiedAt: status === "verified" ? (cur.verifiedAt || new Date().toISOString()) : null
+        });
+        if (status === "verified") promoUser = mergeOwnerProfile(cloudProfile, cur);
         writeJSON(CURRENT_KEY, cur);
-        writeJSON("leaseaccomCurrentUser", cur);
+        writeJSON("leasehubCurrentUser", cur);
+        writeJSON("currentUser", cur);
       }
     } catch (e) {}
+
+    if (status === "verified") {
+      promoUser = applyOwnerVerifiedAndPromo(promoUser || { id: userId, email: email });
+      users = readJSON(USERS_KEY, []);
+      if (Array.isArray(users)) {
+        users.forEach(function (u, i) {
+          if (matchesUser(u)) users[i] = Object.assign({}, u, promoUser);
+        });
+        writeJSON(USERS_KEY, users);
+      }
+      try {
+        var current = readJSON(CURRENT_KEY, null);
+        if (current && matchesUser(current)) {
+          current = Object.assign({}, current, promoUser);
+          writeJSON(CURRENT_KEY, current);
+          writeJSON("leasehubCurrentUser", current);
+          writeJSON("currentUser", current);
+        }
+      } catch (e) {}
+    }
+    return promoUser;
   }
 
   async function loadCloudQueue() {
@@ -113,20 +189,28 @@
     }
   }
 
-  function render() {
-    var queue = readJSON(QUEUE_KEY, []);
-    if (!Array.isArray(queue)) queue = [];
-    paintQueue(queue);
-    loadCloudQueue().then(function (cloudList) {
-      if (cloudList && cloudList.length) {
-        writeJSON(QUEUE_KEY, cloudList.slice(0, 100));
-        paintQueue(cloudList);
-      }
-    });
+  var cloudQueue = [];
+
+  async function render() {
+    var cloudList = await loadCloudQueue();
+    if (cloudList === null) {
+      cloudQueue = [];
+      paintQueue([], "Could not load owner verifications from Supabase. Check the admin RLS policies and try again.");
+      return;
+    }
+    cloudQueue = cloudList;
+    writeJSON(QUEUE_KEY, cloudList.slice(0, 100));
+    paintQueue(cloudList);
   }
 
-  function paintQueue(queue) {
+  function paintQueue(queue, errorMessage) {
     if (!Array.isArray(queue)) queue = [];
+
+    var box = document.getElementById("admOwnerQueue");
+    if (errorMessage) {
+      box.innerHTML = '<div class="ov-adm-empty">' + escapeHtml(errorMessage) + "</div>";
+      return;
+    }
 
     var pending = queue.filter(function (q) { return q.status === "pending"; }).length;
     var verified = queue.filter(function (q) { return q.status === "verified"; }).length;
@@ -144,7 +228,6 @@
       return q.status === filter;
     });
 
-    var box = document.getElementById("admOwnerQueue");
     if (!list.length) {
       box.innerHTML = '<div class="ov-adm-empty">No applications in this filter.</div>';
       return;
@@ -226,23 +309,43 @@
   }
 
   async function updateItem(id, status, note) {
-    var queue = readJSON(QUEUE_KEY, []);
+    var queue = cloudQueue.slice();
     var item = queue.find(function (q) {
       return String(q.id) === String(id);
     });
     if (!item) return;
+
+    if (String(id).indexOf("ov-") === 0) {
+      alert("This legacy local request is not stored in Supabase and cannot be reviewed here.");
+      return;
+    }
+    var cloudResult = await cloudReview(id, status, note);
+    if (!cloudResult || !cloudResult.ok) {
+      alert("Could not save the verification decision to Supabase: " + ((cloudResult && cloudResult.error) || "Please try again."));
+      return;
+    }
+    var cloudProfile = status === "verified"
+      ? (cloudResult.profile || await loadCloudOwnerProfile(item.userId))
+      : null;
     item.status = status;
     item.reviewedAt = new Date().toISOString();
     item.reviewNote = note || "";
-    writeJSON(QUEUE_KEY, queue);
-    setUserStatus(item.email, item.userId, status, note);
-    try {
-      var cr = await cloudReview(id, status, note);
-      if (cr && cr.ok) {
-        console.info("Cloud verification review saved");
+    cloudQueue = queue;
+    writeJSON(QUEUE_KEY, queue.slice(0, 100));
+    var updatedUser = setUserStatus(item.email, item.userId, status, note, cloudProfile);
+    if (status === "verified" && updatedUser && updatedUser.promoType && updatedUser.promoEndsAt) {
+      var client = window.leaseaccomSupabase || window.leasehubSupabase;
+      try {
+        var promoResult = await client.from("profiles").update({
+          promo_type: updatedUser.promoType,
+          promo_ends_at: updatedUser.promoEndsAt
+        }).eq("id", item.userId);
+        if (promoResult.error) throw new Error(promoResult.error.message);
+      } catch (error) {
+        await render();
+        alert("Owner verified, but the launch promo could not be saved: " + (error.message || "Please try again."));
+        return;
       }
-    } catch (e) {
-      console.warn(e);
     }
     render();
     alert(
@@ -261,14 +364,15 @@
       if (!user) return false;
       var profileResult = await client
         .from("profiles")
-        .select("account_type")
+        .select("account_type,account_status")
         .eq("id", user.id)
         .maybeSingle();
       return !!(
         profileResult &&
         !profileResult.error &&
         profileResult.data &&
-        String(profileResult.data.account_type || "").toLowerCase() === "admin"
+        String(profileResult.data.account_type || "").toLowerCase() === "admin" &&
+        String(profileResult.data.account_status || "active").toLowerCase() === "active"
       );
     } catch (e) {
       console.warn("Admin verification access check failed:", e);

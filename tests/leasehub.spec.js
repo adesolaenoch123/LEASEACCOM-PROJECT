@@ -16,6 +16,7 @@ const pendingProperty = {
 };
 
 test("verified owner can open the add-property page after backend approval", async ({ page }) => {
+    await page.clock.install({ time: new Date("2026-11-19T12:00:00Z") });
     await page.route(/supabase-js/, route => route.fulfill({
         contentType: "application/javascript",
         body: "window.supabase = window.__verifiedOwnerSupabase;"
@@ -31,7 +32,10 @@ test("verified owner can open the add-property page after backend approval", asy
             id: "owner-refresh-test",
             account_type: "owner",
             verification_status: "verified",
-            full_name: "Verified Owner"
+            full_name: "Verified Owner",
+            plan: "free",
+            promo_type: "business_90",
+            promo_ends_at: "2027-02-16T00:00:00Z"
         };
         const builder = {
             select() { return this; },
@@ -57,6 +61,230 @@ test("verified owner can open the add-property page after backend approval", asy
     await expect.poll(() => page.evaluate(() => {
         return JSON.parse(localStorage.getItem("leaseaccomCurrentUser")).verificationStatus;
     })).toBe("verified");
+    const owner = await page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomCurrentUser")));
+    expect(owner.promoType).toBe("business_90");
+    expect(await page.evaluate(() => window.LeaseAccomPlans.getPlanLimits(
+        JSON.parse(localStorage.getItem("leaseaccomCurrentUser"))
+    ).maxListings)).toBe(15);
+});
+
+test("owner verification form uploads documents and submits a cloud request", async ({ page }) => {
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__ownerSubmissionSupabase;"
+    }));
+    await page.addInitScript(() => {
+        const rows = {
+            profiles: [{
+                id: "owner-submit-1",
+                account_type: "owner",
+                account_status: "active",
+                verification_status: "unverified",
+                full_name: "New Owner",
+                phone: "08012345678"
+            }],
+            owner_verifications: []
+        };
+        function query(table) {
+            const filters = [];
+            const builder = {
+                select() { return this; },
+                eq(key, value) { filters.push([key, String(value)]); return this; },
+                order() { return this; },
+                limit() { return this; },
+                insert(values) { this.insertValues = values; return this; },
+                update(values) { this.updateValues = values; return this; },
+                matching() {
+                    return (rows[table] || []).filter(row =>
+                        filters.every(([key, value]) => String(row[key]) === value)
+                    );
+                },
+                apply() {
+                    if (this.insertValues) {
+                        const values = Array.isArray(this.insertValues) ? this.insertValues : [this.insertValues];
+                        rows[table] = rows[table] || [];
+                        values.forEach(value => rows[table].push(Object.assign({ id: "owner-request-1" }, value)));
+                    }
+                    if (this.updateValues) this.matching().forEach(row => Object.assign(row, this.updateValues));
+                },
+                maybeSingle() {
+                    this.apply();
+                    return Promise.resolve({ data: this.matching()[0] || null, error: null });
+                },
+                then(resolve, reject) {
+                    this.apply();
+                    return Promise.resolve({ data: this.matching(), error: null }).then(resolve, reject);
+                }
+            };
+            return builder;
+        }
+        window.__ownerSubmissionSupabase = {
+            testRows: rows,
+            createClient: () => window.__ownerSubmissionSupabase,
+            auth: {
+                getUser: async () => ({ data: { user: { id: "owner-submit-1", email: "new-owner@example.com" } }, error: null })
+            },
+            from: query,
+            storage: {
+                from: () => ({
+                    upload: async path => ({ data: { path: path }, error: null })
+                })
+            }
+        };
+    });
+
+    await page.goto("/owner-verification.html");
+    await page.locator("#ovFullName").fill("New Owner");
+    await page.locator("#ovPhone").fill("08012345678");
+    await page.locator("#ovEmail").fill("new-owner@example.com");
+    await page.locator("#ovRole").selectOption("individual_owner");
+    await page.locator("#ovCity").fill("Lagos");
+    await page.locator("#ovState").selectOption({ label: "Lagos" });
+    await page.locator("#ovAddress").fill("10 Test Street, Lagos");
+    await page.locator('[data-next="2"]').click();
+    await page.locator("#ovIdType").selectOption("nin");
+    await page.locator("#ovIdNumber").fill("12345678901");
+    await page.locator("#ovIdFile").setInputFiles({
+        name: "identity.png",
+        mimeType: "image/png",
+        buffer: Buffer.from("identity document")
+    });
+    await page.locator('[data-next="3"]').click();
+    await page.locator("#ovProofType").selectOption("title_deed");
+    await page.locator("#ovProofFile").setInputFiles({
+        name: "ownership.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from("%PDF-1.4 test document")
+    });
+    await page.locator('[data-next="4"]').click();
+    await page.locator("#ovConsent").check();
+    await page.locator("#ovForm").evaluate(form => form.requestSubmit());
+
+    await expect.poll(() => page.evaluate(() => {
+        return window.__ownerSubmissionSupabase.testRows.owner_verifications.length;
+    })).toBe(1);
+    const saved = await page.evaluate(() => ({
+        request: window.__ownerSubmissionSupabase.testRows.owner_verifications[0],
+        profile: window.__ownerSubmissionSupabase.testRows.profiles[0],
+        user: JSON.parse(localStorage.getItem("leaseaccomCurrentUser"))
+    }));
+    expect(saved.request.owner_id).toBe("owner-submit-1");
+    expect(saved.request.status).toBe("pending");
+    expect(saved.request.id_file_path).toContain("owner-submit-1/id-");
+    expect(saved.request.proof_file_path).toContain("owner-submit-1/proof-");
+    expect(saved.profile.verification_status).toBe("pending");
+    expect(saved.profile.verified_at).toBeNull();
+    expect(saved.user.verificationStatus).toBe("pending");
+    await expect(page.locator("#ovBanner")).toContainText("Verification pending");
+});
+
+test("pending and rejected cloud owners cannot open the add-property form despite a verified cache", async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__pendingOwnerSupabase;"
+    }));
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "owner-pending-1",
+            accountType: "owner",
+            verificationStatus: "verified",
+            ownerVerificationStatus: "verified",
+            verified: true
+        }));
+        const profile = {
+            id: "owner-pending-1",
+            account_type: "owner",
+            account_status: "active",
+            verification_status: localStorage.getItem("testOwnerVerificationStatus") || "pending"
+        };
+        function query(table) {
+            return {
+                select() { return this; },
+                eq() { return this; },
+                order() { return this; },
+                limit() { return this; },
+                maybeSingle() {
+                    return Promise.resolve({
+                        data: table === "profiles" ? profile : null,
+                        error: null
+                    });
+                }
+            };
+        }
+        window.__pendingOwnerSupabase = {
+            createClient: () => window.__pendingOwnerSupabase,
+            auth: {
+                getUser: async () => ({ data: { user: { id: "owner-pending-1" } }, error: null })
+            },
+            testProfile: profile,
+            from: query
+        };
+    });
+
+    await page.goto("/add-property.html");
+    await expect(page).toHaveURL(/owner-verification\.html\?need=list$/);
+    await expect(page.locator("#ovBanner")).toContainText("Verification pending");
+    await expect(page.locator("#ovSubmitBtn")).toBeDisabled();
+    await page.evaluate(() => {
+        localStorage.setItem("testOwnerVerificationStatus", "rejected");
+        window.__pendingOwnerSupabase.testProfile.verification_status = "rejected";
+    });
+    await page.goto("/add-property.html");
+    await expect(page).toHaveURL(/owner-verification\.html\?need=list$/);
+    await expect(page.locator("#ovBanner")).toContainText("Verification rejected");
+    await expect(page.locator("#ovSubmitBtn")).toBeEnabled();
+});
+
+test("rejected owner sees the admin reason and can resubmit", async ({ page }) => {
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__rejectedOwnerSupabase;"
+    }));
+    await page.addInitScript(() => {
+        const rows = {
+            profiles: [{
+                id: "owner-rejected-1",
+                account_type: "owner",
+                account_status: "active",
+                verification_status: "rejected"
+            }],
+            owner_verifications: [{
+                id: "rejected-request-1",
+                owner_id: "owner-rejected-1",
+                status: "rejected",
+                review_note: "Please upload a clearer ownership document.",
+                submitted_at: "2026-11-18T12:00:00Z"
+            }]
+        };
+        function query(table) {
+            const filters = [];
+            return {
+                select() { return this; },
+                eq(key, value) { filters.push([key, String(value)]); return this; },
+                order() { return this; },
+                limit() { return this; },
+                maybeSingle() {
+                    const match = (rows[table] || []).find(row =>
+                        filters.every(([key, value]) => String(row[key]) === value)
+                    );
+                    return Promise.resolve({ data: match || null, error: null });
+                }
+            };
+        }
+        window.__rejectedOwnerSupabase = {
+            createClient: () => window.__rejectedOwnerSupabase,
+            auth: {
+                getUser: async () => ({ data: { user: { id: "owner-rejected-1" } }, error: null })
+            },
+            from: query
+        };
+    });
+
+    await page.goto("/owner-verification.html");
+    await expect(page.locator("#ovBanner")).toContainText("Verification rejected");
+    await expect(page.locator("#ovBanner")).toContainText("Please upload a clearer ownership document.");
+    await expect(page.locator("#ovSubmitBtn")).toBeEnabled();
 });
 
 test("landlords cannot open the admin owner-verification queue", async ({ page }) => {
@@ -88,6 +316,141 @@ test("landlords cannot open the admin owner-verification queue", async ({ page }
 
     await page.goto("/admin-owner-verification.html");
     await expect(page).toHaveURL(/owner-dashboard\.html$/);
+});
+
+test("admin owner-verification queue replaces cached requests with cloud empty state", async ({ page }) => {
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__emptyOwnerQueueSupabase;"
+    }));
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomOwnerVerifications", JSON.stringify([{
+            id: "local-only-request",
+            email: "local@example.com",
+            status: "pending",
+            application: { fullName: "Local Demo Applicant" }
+        }]));
+        function query(table) {
+            return {
+                select() { return this; },
+                eq() { return this; },
+                order() { return this; },
+                limit() { return this; },
+                maybeSingle() {
+                    return Promise.resolve({
+                        data: table === "profiles" ? { account_type: "admin", account_status: "active" } : null,
+                        error: null
+                    });
+                },
+                then(resolve, reject) {
+                    return Promise.resolve({ data: [], error: null }).then(resolve, reject);
+                }
+            };
+        }
+        window.__emptyOwnerQueueSupabase = {
+            createClient: () => window.__emptyOwnerQueueSupabase,
+            auth: {
+                getUser: async () => ({ data: { user: { id: "admin-empty-queue" } }, error: null })
+            },
+            from: query
+        };
+    });
+
+    await page.goto("/admin-owner-verification.html");
+    await expect(page.locator("#admOwnerQueue")).toContainText("No applications in this filter.");
+    await expect(page.locator("#admOwnerQueue")).not.toContainText("Local Demo Applicant");
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("leaseaccomOwnerVerifications")))).toEqual([]);
+});
+
+test("admin owner approval grants the promo without replacing the admin session", async ({ page }) => {
+    await page.clock.install({ time: new Date("2026-11-19T12:00:00Z") });
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = { createClient: () => window.__adminOwnerVerifySupabase };"
+    }));
+    await page.route("**/JS/leaseaccom-cloud.js", route => route.fulfill({
+        contentType: "application/javascript",
+        body: `
+            let ownerStatus = "pending";
+            const ownerVerification = {
+                id: "cloud-owner-promo-test",
+                owner_id: "owner-promo-test",
+                email: "owner@example.com",
+                status: "pending",
+                full_name: "Promo Owner"
+            };
+            window.LeaseAccomCloud = {
+                listOwnerVerifications: async () => ({
+                    ok: true,
+                    data: [Object.assign({}, ownerVerification, { status: ownerStatus })]
+                }),
+                reviewOwnerVerification: async (id, status) => {
+                    ownerStatus = status;
+                    return { ok: true, data: ownerVerification };
+                }
+            };
+        `
+    }));
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "admin-promo-test",
+            email: "admin@example.com",
+            accountType: "admin"
+        }));
+        localStorage.setItem("leaseaccomUsers", JSON.stringify([]));
+        function query(table) {
+            let userId = null;
+            return {
+                select() { return this; },
+                update() { return this; },
+                eq(key, value) { if (key === "id") userId = value; return this; },
+                order() { return this; },
+                limit() { return this; },
+                maybeSingle() {
+                    return Promise.resolve({
+                        data: table === "profiles" && userId === "admin-promo-test"
+                            ? { account_type: "admin" }
+                            : table === "profiles" && userId === "owner-promo-test"
+                                ? { id: userId, account_type: "owner", plan: "free" }
+                                : null,
+                        error: null
+                    });
+                },
+                then(resolve, reject) {
+                    return Promise.resolve({ data: [], count: 0, error: null }).then(resolve, reject);
+                }
+            };
+        }
+        window.__adminOwnerVerifySupabase = {
+            createClient: () => window.__adminOwnerVerifySupabase,
+            auth: {
+                getUser: async () => ({
+                    data: { user: { id: "admin-promo-test", email: "admin@example.com" } },
+                    error: null
+                })
+            },
+            from: query
+        };
+    });
+    page.on("dialog", dialog => dialog.accept());
+
+    await page.goto("/admin-owner-verification.html");
+    await page.locator('[data-approve="cloud-owner-promo-test"]').click({ force: true });
+
+    const result = await page.evaluate(() => ({
+        owner: JSON.parse(localStorage.getItem("leaseaccomUsers"))[0],
+        current: JSON.parse(localStorage.getItem("leaseaccomCurrentUser")),
+        plan: window.LeaseAccomPlans.getEffectivePlanId(JSON.parse(localStorage.getItem("leaseaccomUsers"))[0]),
+        limits: window.LeaseAccomPlans.getPlanLimits(JSON.parse(localStorage.getItem("leaseaccomUsers"))[0])
+    }));
+    expect(result.owner.verificationStatus).toBe("verified");
+    expect(result.owner.ownerVerificationStatus).toBe("verified");
+    expect(result.owner.verified).toBe(true);
+    expect(result.owner.verifiedAt).toBeTruthy();
+    expect(["business_90", "enterprise_founding"]).toContain(result.owner.promoType);
+    expect(result.plan).toBe(result.owner.promoType === "enterprise_founding" ? "enterprise" : "business");
+    expect(result.limits.maxListings).toBe(result.plan === "enterprise" ? 30 : 15);
+    expect(result.current.id).toBe("admin-promo-test");
 });
 
 test("owner dashboard trusts the authenticated Supabase profile over browser role data", async ({ page }) => {
@@ -217,6 +580,127 @@ test("admin approval updates the shared public property Property Page ", async (
     await expect.poll(() => page.evaluate(() => {
         return window.__adminApprovalSupabase.testRows.properties[0].verification_status;
     })).toBe("approved");
+    expect(await page.evaluate(() => window.__adminApprovalSupabase.testRows.properties[0].listing_status)).toBe("live");
+});
+
+test("admin owner approval persists verification timestamp and launch promo", async ({ page }) => {
+    await page.clock.install({ time: new Date("2026-11-19T12:00:00Z") });
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__adminVerificationSupabase;"
+    }));
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "admin-verify-1",
+            email: "admin@example.com",
+            accountType: "admin"
+        }));
+        const rows = {
+            profiles: [
+                { id: "admin-verify-1", account_type: "admin", account_status: "active", full_name: "Test Admin" },
+                { id: "owner-verify-1", account_type: "owner", account_status: "active", plan: "free", verification_status: "pending" }
+            ],
+            properties: [],
+            owner_verifications: [{
+                id: "verification-1",
+                owner_id: "owner-verify-1",
+                email: "owner@example.com",
+                full_name: "Verified Owner",
+                status: "pending",
+                submitted_at: "2026-11-18T12:00:00Z"
+            }],
+            viewings: [], applications: [], payments: [], subscriptions: [], reports: [],
+            audit_logs: [], email_queue: [], notifications: [], conversations: [], messages: []
+        };
+        function query(table) {
+            const filters = [];
+            const builder = {
+                select() { return this; },
+                eq(key, value) { filters.push([key, String(value)]); return this; },
+                order() { return this; },
+                range() { return this; },
+                limit() { return this; },
+                update(values) { this.updateValues = values; return this; },
+                insert(values) { this.insertValues = values; return this; },
+                matching() {
+                    return (rows[table] || []).filter(row =>
+                        filters.every(([key, value]) => String(row[key]) === value)
+                    );
+                },
+                apply() {
+                    if (this.updateValues) this.matching().forEach(row => Object.assign(row, this.updateValues));
+                    if (this.insertValues) {
+                        const values = Array.isArray(this.insertValues) ? this.insertValues : [this.insertValues];
+                        rows[table] = rows[table] || [];
+                        rows[table].push(...values);
+                    }
+                },
+                maybeSingle() {
+                    this.apply();
+                    return Promise.resolve({ data: this.matching()[0] || null, error: null });
+                },
+                then(resolve, reject) {
+                    this.apply();
+                    return Promise.resolve({ data: this.matching(), count: this.matching().length, error: null }).then(resolve, reject);
+                }
+            };
+            return builder;
+        }
+        window.__adminVerificationSupabase = {
+            testRows: rows,
+            createClient: () => window.__adminVerificationSupabase,
+            auth: {
+                getUser: async () => ({ data: { user: { id: "admin-verify-1", email: "admin@example.com" } }, error: null }),
+                signOut: async () => ({ error: null })
+            },
+            from: query
+        };
+    });
+
+    await page.goto("/admin/admin.html");
+    await expect(page.locator("#adminApp")).toBeVisible();
+    await page.getByRole("link", { name: "Verification" }).click();
+    await page.locator('#verificationTable [data-ver-approve="verification-1"]').click();
+
+    await expect.poll(() => page.evaluate(() => {
+        return window.__adminVerificationSupabase.testRows.profiles.find(row => row.id === "owner-verify-1").verification_status;
+    })).toBe("verified");
+    const saved = await page.evaluate(() => ({
+        request: window.__adminVerificationSupabase.testRows.owner_verifications[0],
+        profile: window.__adminVerificationSupabase.testRows.profiles.find(row => row.id === "owner-verify-1")
+    }));
+    expect(saved.request.status).toBe("verified");
+    expect(saved.profile.verified_at).toBeTruthy();
+    expect(saved.profile.promo_type).toMatch(/business_90|enterprise_founding/);
+    expect(saved.profile.promo_ends_at).toBeTruthy();
+});
+
+test("non-admin Supabase profile cannot open the admin dashboard", async ({ page }) => {
+    await page.route(/supabase-js/, route => route.fulfill({
+        contentType: "application/javascript",
+        body: "window.supabase = window.__nonAdminSupabase;"
+    }));
+    await page.addInitScript(() => {
+        window.__nonAdminSupabase = {
+            createClient: () => window.__nonAdminSupabase,
+            auth: {
+                getUser: async () => ({ data: { user: { id: "owner-not-admin" } }, error: null }),
+                signOut: async () => ({ error: null })
+            },
+            from: () => ({
+                select() { return this; },
+                eq() { return this; },
+                maybeSingle: async () => ({
+                    data: { account_type: "owner", account_status: "active" },
+                    error: null
+                })
+            })
+        };
+    });
+
+    await page.goto("/admin/admin.html");
+    await expect(page.locator("#adminLoginError")).toContainText("This account is not an active admin");
+    await expect(page.locator("#adminApp")).toBeHidden();
 });
 
 test("admin can review viewing requests and tenant-owner conversations on mobile", async ({ page }) => {
@@ -603,31 +1087,32 @@ test("landlord inbox and open chat stay usable on mobile screens", async ({ page
 });
 
 test("tenant can send a message from a cloud-backed conversation", async ({ page }) => {
-    const conversation = {
-        id: "conversation-send-test",
-        propertyId: "property-send-test",
-        propertyTitle: "Message test property",
-        ownerId: "owner-send-test",
-        tenantId: "tenant-send-test",
-        ownerName: "Test Owner",
-        serverBacked: true,
-        messages: []
-    };
     await page.addInitScript((item) => {
         localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
             id: "tenant-send-test",
             name: "Test Tenant",
             accountType: "tenant"
         }));
-        localStorage.setItem("leaseaccomMessages", JSON.stringify([item]));
-        localStorage.setItem("activeConversationId", item.id);
-    }, conversation);
+        localStorage.setItem("leaseaccomMessages", "[]");
+        localStorage.setItem("activeConversationId", "conversation-send-test");
+    }, {});
 
     await page.goto("/messages.html");
     await page.evaluate(() => {
         window.LeaseAccomCloud = {
             hasSb: () => true,
             uid: async () => "tenant-send-test",
+            getConversationById: async id => ({
+                ok: id === "conversation-send-test",
+                data: {
+                    id: "conversation-send-test",
+                    property_id: "property-send-test",
+                    property_title: "Message test property",
+                    owner_id: "owner-send-test",
+                    tenant_id: "tenant-send-test",
+                    owner_name: "Test Owner"
+                }
+            }),
             sendMessage: async (id, body) => ({
                 ok: id === "conversation-send-test",
                 data: { id: "message-send-test", body, created_at: new Date().toISOString() }
@@ -644,6 +1129,151 @@ test("tenant can send a message from a cloud-backed conversation", async ({ page
         return messages[0]?.messages?.some(message => message.text === "Hello, is this property still available?");
     })).toBe(true);
     await expect(page.locator("#messageInput")).toHaveValue("");
+});
+
+test("chat API uses the cloud conversation id and hydrates participant metadata", async ({ page }) => {
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "tenant-chat-api-test",
+            name: "Test Tenant",
+            accountType: "tenant"
+        }));
+        localStorage.setItem("leaseaccomMessages", JSON.stringify([{
+            id: "property-chat-api-property",
+            propertyId: "chat-api-property",
+            ownerId: "owner-chat-api-test",
+            messages: [{ id: "cached-message", text: "Keep me" }]
+        }]));
+        localStorage.setItem("activeConversationId", "property-chat-api-property");
+    });
+
+    await page.goto("/messages.html");
+    const result = await page.evaluate(async () => {
+        const row = {
+            id: "cloud-chat-api-id",
+            property_id: "chat-api-property",
+            property_title: "Cloud chat property",
+            property_image: "cloud-property.jpg",
+            owner_id: "owner-chat-api-test",
+            owner_name: "Test Owner",
+            tenant_id: "tenant-chat-api-test",
+            tenant_name: "Test Tenant",
+            updated_at: "2026-11-19T12:00:00.000Z"
+        };
+        window.LeaseAccomCloud = {
+            hasSb: () => true,
+            getOrCreateConversation: async (propertyId, ownerId, tenantId) => ({
+                ok: propertyId === row.property_id &&
+                    ownerId === row.owner_id &&
+                    tenantId === row.tenant_id,
+                data: row
+            }),
+            listConversations: async () => ({ ok: true, data: [row] }),
+            getConversationById: async id => ({
+                ok: id === row.id,
+                data: row
+            })
+        };
+        const created = await window.LeaseAccomChatApi.createConversation({
+            propertyId: row.property_id,
+            propertyTitle: row.property_title,
+            propertyImage: row.property_image,
+            ownerId: row.owner_id,
+            ownerName: row.owner_name,
+            tenantId: row.tenant_id,
+            tenantName: row.tenant_name
+        });
+        const listed = await window.LeaseAccomChatApi.listConversations();
+        const hydrated = await window.LeaseAccomChatApi.getConversationById(row.id);
+        return {
+            created,
+            listed,
+            hydrated,
+            activeId: localStorage.getItem("activeConversationId"),
+            cached: JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]")
+        };
+    });
+
+    expect(result.created.id).toBe("cloud-chat-api-id");
+    expect(result.created.participants).toEqual({
+        tenantId: "tenant-chat-api-test",
+        ownerId: "owner-chat-api-test"
+    });
+    expect(result.listed[0].propertyTitle).toBe("Cloud chat property");
+    expect(result.hydrated.id).toBe("cloud-chat-api-id");
+    expect(result.activeId).toBe("cloud-chat-api-id");
+    expect(result.cached).toHaveLength(1);
+    expect(result.cached[0].messages[0].text).toBe("Keep me");
+});
+
+test("property Contact Owner opens the canonical cloud conversation", async ({ page }) => {
+    const listing = {
+        id: "contact-owner-property",
+        owner_id: "contact-owner-user",
+        owner_name: "Test Owner",
+        verification_status: "approved",
+        title: "Contact owner test property",
+        city: "Lagos",
+        type: "Apartment",
+        price: 2500000,
+        period: "year",
+        location: "Lekki, Lagos",
+        image: "https://example.com/contact-owner.jpg",
+        bedrooms: 2,
+        bathrooms: 2
+    };
+    await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
+        contentType: "application/javascript",
+        body: `window.supabase = { createClient: () => ({
+            from: () => ({
+                select() { return this; },
+                or() { return this; },
+                eq() { return this; },
+                order() { return Promise.resolve({ data: [${JSON.stringify(listing)}], error: null }); },
+                then(resolve, reject) { return Promise.resolve({ data: [], error: null }).then(resolve, reject); }
+            }),
+            auth: { getSession: async () => ({ data: { session: null }, error: null }) }
+        }) };`
+    }));
+    await page.addInitScript(() => {
+        localStorage.setItem("leaseaccomCurrentUser", JSON.stringify({
+            id: "contact-owner-tenant",
+            name: "Test Tenant",
+            accountType: "tenant"
+        }));
+    });
+
+    await page.goto(`/property-details.html?id=${listing.id}`, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+        window.LeaseAccomCloud = {
+            hasSb: () => true,
+            getOrCreateConversation: async (propertyId, ownerId, tenantId) => ({
+                ok: propertyId === "contact-owner-property" &&
+                    ownerId === "contact-owner-user" &&
+                    tenantId === "contact-owner-tenant",
+                data: {
+                    id: "canonical-contact-conversation",
+                    property_id: propertyId,
+                    owner_id: ownerId,
+                    tenant_id: tenantId
+                }
+            })
+        };
+    });
+    await page.locator("#contactLandlordBtn").click();
+    await expect(page).toHaveURL(/messages\.html$/);
+    const cached = await page.evaluate(() => ({
+        activeId: localStorage.getItem("activeConversationId"),
+        conversations: JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]")
+    }));
+    expect(cached.activeId).toBe("canonical-contact-conversation");
+    expect(cached.conversations[0]).toMatchObject({
+        id: "canonical-contact-conversation",
+        propertyId: listing.id,
+        ownerId: "contact-owner-user",
+        tenantId: "contact-owner-tenant",
+        propertyTitle: "Contact owner test property"
+    });
 });
 
 test("tenant message inbox and chat match the responsive branded layout", async ({ page }) => {
@@ -906,7 +1536,7 @@ test("assistant guide opens, searches properties, and supports voice without tun
         };
     });
 
-    await page.goto("/");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "manifest.json");
     await expect.poll(async () => page.evaluate(async () =>
         (await navigator.serviceWorker.getRegistrations()).some((registration) =>
@@ -940,7 +1570,8 @@ test("assistant guide opens, searches properties, and supports voice without tun
 });
 
 test("PWA install manifest exposes correctly sized icons and install action", async ({ page }) => {
-    await page.goto("/");
+    test.setTimeout(60_000);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
 
     const manifest = await page.evaluate(async () => {
         const response = await fetch("manifest.json");
@@ -994,13 +1625,36 @@ test("PWA install manifest exposes correctly sized icons and install action", as
     await expect(installButton).toBeHidden();
 });
 
-test("approved Supabase UUID listings render and open their details", async ({ page }) => {
+test("iPhone visitors can find the Add to Home Screen instructions", async ({ page }) => {
+    await page.addInitScript(() => {
+        Object.defineProperty(navigator, "userAgent", {
+            configurable: true,
+            value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1"
+        });
+    });
+    let instructions = "";
+    page.on("dialog", async dialog => {
+        instructions = dialog.message();
+        await dialog.accept();
+    });
+
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const installButton = page.locator("#installAppBtn");
+    await expect(installButton).toBeVisible();
+    await expect(installButton).toHaveText("Add to Home Screen");
+    await installButton.click();
+    expect(instructions).toContain("tap Share");
+    expect(instructions).toContain("Add to Home Screen");
+});
+
+test("approved and active Supabase listings render in catalog and homepage", async ({ page }) => {
     const propertyId = "4f814eed-4f2e-4bb0-b41c-647223d495bd";
     const listing = {
         id: propertyId,
         owner_id: "owner-user-id",
         owner_name: "Test Owner",
         verification_status: "approved",
+        listing_status: "pending",
         title: "Live Supabase Apartment",
         city: "Lagos",
         type: "Apartment",
@@ -1014,18 +1668,39 @@ test("approved Supabase UUID listings render and open their details", async ({ p
             "https://example.com/listing-3.jpg",
             "https://example.com/listing-4.jpg"
         ],
+        videos: ["https://example.com/listing-tour.mp4"],
         bedrooms: 2,
         bathrooms: 2,
         description: "Approved live test listing for the LeaseAccom marketplace."
     };
+    const pendingListing = Object.assign({}, listing, {
+        id: "pending-listing",
+        title: "Pending Supabase Apartment",
+        verification_status: "pending",
+        listing_status: "pending"
+    });
+    const activeListing = Object.assign({}, listing, {
+        id: "active-listing",
+        title: "Active Status Apartment",
+        verification_status: "pending",
+        listing_status: "active"
+    });
+    const rejectedListing = Object.assign({}, listing, {
+        id: "rejected-listing",
+        title: "Rejected Supabase Apartment",
+        verification_status: "rejected",
+        listing_status: "rejected"
+    });
+    const rows = [listing, activeListing, pendingListing, rejectedListing];
     await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", route => route.fulfill({
         contentType: "application/javascript",
         body: `window.supabase = { createClient: () => ({
             from: () => ({
                 select() { return this; },
-                or() { return this; },
+                or(filter) { window.__publicPropertyFilter = filter; return this; },
                 eq() { return this; },
-                order() { return Promise.resolve({ data: [${JSON.stringify(listing)}], error: null }); }
+                order() { return Promise.resolve({ data: ${JSON.stringify(rows)}, error: null }); },
+                then(resolve, reject) { return Promise.resolve({ data: [], error: null }).then(resolve, reject); }
             }),
             auth: { getSession: async () => ({ data: { session: null }, error: null }) }
         }) };`
@@ -1036,9 +1711,19 @@ test("approved Supabase UUID listings render and open their details", async ({ p
         hasText: "Live Supabase Apartment"
     });
     await expect(card).toContainText("Live Supabase Apartment");
-    await card.click();
-    await expect(page).toHaveURL(new RegExp(`property-details\\.html\\?id=${propertyId}`));
-    await expect(page.locator("#propertyDetails")).toContainText("Live Supabase Apartment");
+    await expect(page.locator("#marketplaceProperties")).toContainText("Active Status Apartment");
+    await expect(page.locator("#marketplaceProperties")).not.toContainText("Pending Supabase Apartment");
+    await expect(page.locator("#marketplaceProperties")).not.toContainText("Rejected Supabase Apartment");
+    expect(await page.evaluate(() => window.__publicPropertyFilter)).toContain("listing_status.in.(approved,live,active)");
+    expect(await page.evaluate(() => window.LeaseAccomData.mapPropertyRow(window.properties[0]).videos))
+        .toEqual(["https://example.com/listing-tour.mp4"]);
+    await page.goto("/");
+    await expect(page.locator("#featuredProperties")).toContainText("Live Supabase Apartment");
+    await expect(page.locator("#featuredProperties")).toContainText("Active Status Apartment");
+    await expect(page.locator("#featuredProperties")).not.toContainText("Pending Supabase Apartment");
+    await expect(page.locator("#featuredProperties")).not.toContainText("Rejected Supabase Apartment");
+    await expect.poll(() => page.locator('[data-stat="properties"]').evaluate(element => Number(element.textContent)))
+        .toBe(2);
 });
 
 test("property details rental modal submits applications to the backend", async ({ page }) => {

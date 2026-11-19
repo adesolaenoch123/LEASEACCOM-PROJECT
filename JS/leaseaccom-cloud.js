@@ -44,10 +44,18 @@
     const { data, error } = await sb()
       .from("properties")
       .select("*")
-      .or("listing_status.eq.live,verification_status.eq.approved")
+      .or("verification_status.eq.approved,listing_status.in.(approved,live,active)")
       .order("updated_at", { ascending: false });
     if (error) return { ok: false, error: error.message, data: [] };
-    return { ok: true, data: data || [] };
+    return {
+      ok: true,
+      data: (data || []).filter(function (row) {
+        var verification = String(row.verification_status || "").toLowerCase();
+        var listing = String(row.listing_status || "").toLowerCase();
+        return verification !== "rejected" && listing !== "rejected" &&
+          (verification === "approved" || ["approved", "live", "active"].indexOf(listing) !== -1);
+      })
+    };
   }
 
   async function listOwnerProperties(ownerId) {
@@ -398,14 +406,7 @@
 
   // ---- Owner verification ----
   async function submitOwnerVerification(payload) {
-    if (!hasSb()) return { ok: false, offline: true };
-    const userId = await uid();
-    if (!userId) return { ok: false, error: "Not signed in" };
-    const row = Object.assign({}, payload, { user_id: userId, status: "pending" });
-    const { data, error } = await sb().from("owner_verifications").insert(row).select().maybeSingle();
-    if (error) return { ok: false, error: error.message };
-    await sb().from("profiles").update({ verification_status: "pending" }).eq("id", userId);
-    return { ok: true, data: data };
+    return submitOwnerVerificationFull(payload || {});
   }
 
   // ---- Views ----
@@ -420,24 +421,124 @@
   }
 
   // ---- Messages ----
+  async function getConversationById(conversationId) {
+    if (!hasSb()) return { ok: false, offline: true };
+    const id = String(conversationId || "");
+    if (!id) return { ok: false, error: "Conversation ID is required" };
+    const { data, error } = await sb()
+      .from("conversations")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: "Conversation not found" };
+    if (data.property_id) {
+      const { data: property, error: propertyError } = await sb()
+        .from("properties")
+        .select("*")
+        .eq("id", String(data.property_id))
+        .maybeSingle();
+      if (propertyError) {
+        console.warn("Conversation property details could not be loaded:", propertyError.message);
+      } else if (property) {
+        return {
+          ok: true,
+          data: {
+            ...data,
+            property_title: property.title,
+            property_image: property.image || property.cover_image || "",
+            property_location: property.location || property.city || "Nigeria",
+            owner_name: property.owner_name || data.owner_name
+          }
+        };
+      }
+    }
+    return { ok: true, data: data };
+  }
+
+  async function listConversations() {
+    if (!hasSb()) return { ok: false, offline: true, data: [] };
+    const { data, error } = await sb()
+      .from("conversations")
+      .select("*")
+      .order("updated_at", { ascending: false });
+    if (error) return { ok: false, error: error.message, data: [] };
+
+    const rows = data || [];
+    const propertyIds = Array.from(new Set(rows.map(function (row) {
+      return String(row.property_id || "");
+    }).filter(Boolean)));
+    if (!propertyIds.length) return { ok: true, data: rows };
+
+    try {
+      const { data: properties, error: propertyError } = await sb()
+        .from("properties")
+        .select("*")
+        .in("id", propertyIds);
+      if (propertyError) {
+        console.warn("Conversation property details could not be loaded:", propertyError.message);
+        return { ok: true, data: rows };
+      }
+      const propertiesById = new Map((properties || []).map(function (property) {
+        return [String(property.id), property];
+      }));
+      return {
+        ok: true,
+        data: rows.map(function (row) {
+          const property = propertiesById.get(String(row.property_id));
+          return property ? {
+            ...row,
+            property_title: property.title,
+            property_image: property.image || property.cover_image || "",
+            property_location: property.location || property.city || "Nigeria",
+            owner_name: property.owner_name || row.owner_name
+          } : row;
+        })
+      };
+    } catch (propertyError) {
+      console.warn("Conversation property details could not be loaded:", propertyError.message);
+      return { ok: true, data: rows };
+    }
+  }
+
   async function getOrCreateConversation(propertyId, ownerId, tenantId) {
     if (!hasSb()) return { ok: false, offline: true };
     const userId = await uid();
-    const tId = tenantId || userId;
-    const { data: existing } = await sb()
+    if (!userId) return { ok: false, error: "Not signed in" };
+    if (!propertyId || !ownerId) return { ok: false, error: "Property and owner are required" };
+    const tId = String(userId);
+    if (tenantId && String(tenantId) !== tId) {
+      return { ok: false, error: "The signed-in user does not match the conversation tenant" };
+    }
+    const pId = String(propertyId);
+    const oId = String(ownerId);
+    const { data: existing, error: lookupError } = await sb()
       .from("conversations")
       .select("*")
-      .eq("property_id", String(propertyId))
+      .eq("property_id", pId)
       .eq("tenant_id", tId)
-      .eq("owner_id", ownerId)
+      .eq("owner_id", oId)
+      .limit(1)
       .maybeSingle();
+    if (lookupError) return { ok: false, error: lookupError.message };
     if (existing) return { ok: true, data: existing };
     const { data, error } = await sb()
       .from("conversations")
-      .insert({ property_id: String(propertyId), tenant_id: tId, owner_id: ownerId })
+      .insert({ property_id: pId, tenant_id: tId, owner_id: oId })
       .select()
       .maybeSingle();
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      const retry = await sb()
+        .from("conversations")
+        .select("*")
+        .eq("property_id", pId)
+        .eq("tenant_id", tId)
+        .eq("owner_id", oId)
+        .limit(1)
+        .maybeSingle();
+      if (retry.data) return { ok: true, data: retry.data };
+      return { ok: false, error: error.message };
+    }
     return { ok: true, data: data };
   }
 
@@ -451,7 +552,12 @@
       .select()
       .maybeSingle();
     if (error) return { ok: false, error: error.message };
-    await sb().from("conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
+    const updatedAt = new Date().toISOString();
+    const { error: conversationError } = await sb()
+      .from("conversations")
+      .update({ last_message: body, updated_at: updatedAt })
+      .eq("id", String(conversationId));
+    if (conversationError) console.warn("Message sent, but conversation preview could not be updated:", conversationError.message);
     return { ok: true, data: data };
   }
 
@@ -483,10 +589,17 @@
     else if (blob.type && blob.type.indexOf("jpeg") >= 0) ext = "jpg";
     else if (blob.type && blob.type.indexOf("png") >= 0) ext = "png";
     else if (blob.type && blob.type.indexOf("pdf") >= 0) ext = "pdf";
-    var path = userId + "/" + kind + "-" + Date.now() + "." + ext;
-    var up = await uploadMedia("verification-docs", path, blob, blob.type || "application/octet-stream");
-    if (!up.ok) return up;
-    return { ok: true, path: up.path, publicUrl: up.publicUrl };
+    var path = userId + "/" + kind + "-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "." + ext;
+    try {
+      var up = await sb().storage.from("verification-docs").upload(path, blob, {
+        contentType: blob.type || "application/octet-stream",
+        upsert: false
+      });
+      if (up.error) return { ok: false, error: up.error.message };
+      return { ok: true, path: up.data && up.data.path ? up.data.path : path };
+    } catch (error) {
+      return { ok: false, error: error.message || "Verification document upload failed" };
+    }
   }
 
   async function submitOwnerVerificationFull(payload) {
@@ -494,20 +607,30 @@
     const userId = await uid();
     if (!userId) return { ok: false, error: "Not signed in" };
 
+    var pendingCheck = await sb().from("owner_verifications")
+      .select("id")
+      .eq("owner_id", userId)
+      .eq("status", "pending")
+      .limit(1)
+      .maybeSingle();
+    if (pendingCheck.error) return { ok: false, error: pendingCheck.error.message };
+    if (pendingCheck.data) return { ok: false, error: "Your verification request is already pending review" };
+
     var idPath = payload.idFilePath || null;
-    var idUrl = payload.idFileUrl || null;
     var proofPath = payload.proofFilePath || null;
-    var proofUrl = payload.proofFileUrl || null;
 
     if (payload.idFileBlob || payload.idDataUrl) {
       var idUp = await uploadVerificationFile(payload.idFileBlob || payload.idDataUrl, "id", payload.idFileName);
-      if (!idUp.ok && !idUp.offline) return { ok: false, error: "ID upload failed: " + (idUp.error || "") };
-      if (idUp.ok) { idPath = idUp.path; idUrl = idUp.publicUrl; }
+      if (!idUp.ok) return { ok: false, error: "ID upload failed: " + (idUp.error || "Verification storage is unavailable") };
+      idPath = idUp.path;
     }
     if (payload.proofFileBlob || payload.proofDataUrl) {
       var pUp = await uploadVerificationFile(payload.proofFileBlob || payload.proofDataUrl, "proof", payload.proofFileName);
-      if (!pUp.ok && !pUp.offline) return { ok: false, error: "Proof upload failed: " + (pUp.error || "") };
-      if (pUp.ok) { proofPath = pUp.path; proofUrl = pUp.publicUrl; }
+      if (!pUp.ok) return { ok: false, error: "Proof upload failed: " + (pUp.error || "Verification storage is unavailable") };
+      proofPath = pUp.path;
+    }
+    if (!idPath || !proofPath || idPath.indexOf(userId + "/") !== 0 || proofPath.indexOf(userId + "/") !== 0) {
+      return { ok: false, error: "Both verification documents must be uploaded to your secure storage folder" };
     }
 
     var row = {
@@ -527,39 +650,27 @@
       proof_note: payload.proofNote || payload.proof_note || "",
       id_file_path: idPath,
       proof_file_path: proofPath,
-      id_file_url: idUrl,
-      proof_file_url: proofUrl,
       notes: payload.notes || ("NIN/ID: " + (payload.idType || "") + " " + (payload.idNumber || "")),
       submitted_at: new Date().toISOString()
     };
 
-    // Mark previous pending as superseded is optional; insert new
     var { data, error } = await sb().from("owner_verifications").insert(row).select().maybeSingle();
-    if (error) {
-      // minimal columns fallback
-      var minimal = {
-        owner_id: userId,
-        status: "pending",
-        full_name: row.full_name,
-        phone: row.phone,
-        id_type: row.id_type,
-        id_number: row.id_number,
-        notes: row.notes
-      };
-      var res2 = await sb().from("owner_verifications").insert(minimal).select().maybeSingle();
-      if (res2.error) return { ok: false, error: error.message || res2.error.message };
-      data = res2.data;
+    if (error) return { ok: false, error: error.message };
+
+    var profileResult = await sb().from("profiles").update({
+      verification_status: "pending",
+      verified_at: null,
+      full_name: row.full_name || undefined,
+      phone: row.phone || undefined
+    }).eq("id", userId).select("*").maybeSingle();
+    if (profileResult.error) {
+      return { ok: false, submitted: true, data: data, error: "Request was stored, but the owner profile could not be updated: " + profileResult.error.message };
+    }
+    if (!profileResult.data) {
+      return { ok: false, submitted: true, data: data, error: "Request was stored, but the owner profile could not be found" };
     }
 
-    try {
-      await sb().from("profiles").update({
-        verification_status: "pending",
-        full_name: row.full_name || undefined,
-        phone: row.phone || undefined
-      }).eq("id", userId);
-    } catch (e) {}
-
-    return { ok: true, data: data, idPath: idPath, proofPath: proofPath };
+    return { ok: true, data: data, profile: profileResult.data, idPath: idPath, proofPath: proofPath };
   }
 
   async function listOwnerVerifications(statusFilter) {
@@ -568,24 +679,77 @@
     if (statusFilter && statusFilter !== "all") q = q.eq("status", statusFilter);
     var { data, error } = await q.limit(100);
     if (error) return { ok: false, error: error.message, data: [] };
-    return { ok: true, data: data || [] };
+    var rows = data || [];
+    for (var i = 0; i < rows.length; i++) {
+      var files = [
+        ["id_file_path", "id_file_url"],
+        ["proof_file_path", "proof_file_url"]
+      ];
+      for (var j = 0; j < files.length; j++) {
+        var path = rows[i][files[j][0]];
+        if (!path) continue;
+        try {
+          var signed = await sb().storage.from("verification-docs").createSignedUrl(path, 300);
+          if (signed.error) return { ok: false, error: "Could not access a verification document: " + signed.error.message, data: [] };
+          rows[i][files[j][1]] = signed.data && signed.data.signedUrl || null;
+        } catch (storageError) {
+          return { ok: false, error: "Could not access a verification document: " + (storageError.message || "Storage request failed"), data: [] };
+        }
+      }
+    }
+    return { ok: true, data: rows };
+  }
+
+  async function getMyOwnerVerification() {
+    if (!hasSb()) return { ok: false, offline: true };
+    var userId = await uid();
+    if (!userId) return { ok: false, error: "Not signed in" };
+    var profileResult = await sb().from("profiles").select("*").eq("id", userId).maybeSingle();
+    if (profileResult.error) return { ok: false, error: profileResult.error.message };
+    if (!profileResult.data) return { ok: false, error: "Owner profile was not found" };
+    var requestResult = await sb().from("owner_verifications").select("*")
+      .eq("owner_id", userId)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (requestResult.error) return { ok: false, error: requestResult.error.message };
+    var profileStatus = String(profileResult.data.verification_status || "unverified").toLowerCase();
+    var requestStatus = String(requestResult.data && requestResult.data.status || "").toLowerCase();
+    var status = profileStatus === "verified"
+      ? "verified"
+      : requestStatus === "pending" || profileStatus === "pending"
+        ? "pending"
+        : requestStatus === "rejected" || profileStatus === "rejected"
+          ? "rejected"
+          : "unverified";
+    return { ok: true, profile: profileResult.data, request: requestResult.data || null, status: status };
   }
 
   async function reviewOwnerVerification(id, status, reviewNote) {
     if (!hasSb()) return { ok: false, offline: true };
     var userId = await uid();
+    var reviewStatus = status === "approved" ? "verified" : status;
+    if (reviewStatus !== "verified" && reviewStatus !== "rejected") {
+      return { ok: false, error: "Verification status must be verified or rejected" };
+    }
+    var reviewedAt = new Date().toISOString();
     var { data, error } = await sb().from("owner_verifications").update({
-      status: status,
+      status: reviewStatus,
       review_note: reviewNote || null,
-      reviewed_at: new Date().toISOString(),
+      reviewed_at: reviewedAt,
       reviewed_by: userId
     }).eq("id", id).select().maybeSingle();
     if (error) return { ok: false, error: error.message };
-    if (data && data.owner_id) {
-      var profileStatus = status === "verified" ? "verified" : status === "rejected" ? "rejected" : "pending";
-      await sb().from("profiles").update({ verification_status: profileStatus }).eq("id", data.owner_id);
-    }
-    return { ok: true, data: data };
+    if (!data || !data.owner_id) return { ok: false, error: "Verification request was not found" };
+
+    var verifiedAt = reviewStatus === "verified" ? reviewedAt : null;
+    var profileResult = await sb().from("profiles").update({
+      verification_status: reviewStatus,
+      verified_at: verifiedAt
+    }).eq("id", data.owner_id).select("*").maybeSingle();
+    if (profileResult.error) return { ok: false, error: profileResult.error.message };
+    if (!profileResult.data) return { ok: false, error: "Owner profile was not found" };
+    return { ok: true, data: data, profile: profileResult.data };
   }
 
 
@@ -620,8 +784,11 @@
     submitOwnerVerificationFull: submitOwnerVerificationFull,
     uploadVerificationFile: uploadVerificationFile,
     listOwnerVerifications: listOwnerVerifications,
+    getMyOwnerVerification: getMyOwnerVerification,
     reviewOwnerVerification: reviewOwnerVerification,
     recordView: recordView,
+    getConversationById: getConversationById,
+    listConversations: listConversations,
     getOrCreateConversation: getOrCreateConversation,
     sendMessage: sendMessage,
     listMessages: listMessages,

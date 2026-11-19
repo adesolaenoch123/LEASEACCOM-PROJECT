@@ -110,6 +110,18 @@ select {
     font-weight: 700;
 }
 
+.navbar #installAppBtn {
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 16px;
+    color: #fff;
+    background: var(--green);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
 .menu-btn {
     display: none;
     border: none;

@@ -207,7 +207,7 @@
       var query = leaseaccomSupabase
         .from("properties")
         .select("*")
-        .or("listing_status.eq.live,verification_status.eq.approved")
+        .or("verification_status.eq.approved,listing_status.in.(approved,live,active)")
         .order("created_at", { ascending: false });
 
       if (filters.city) {
@@ -226,24 +226,26 @@
         return [];
       }
 
-      return (result.data || []).map(function (property) {
-        var verificationStatus = String(
-          property.verification_status || "pending"
-        ).toLowerCase();
+      return (result.data || []).filter(function (property) {
+        var verification = String(property.verification_status || "").toLowerCase();
+        var listing = String(property.listing_status || "").toLowerCase();
+        return verification !== "rejected" && listing !== "rejected" &&
+          (verification === "approved" || ["approved", "live", "active"].indexOf(listing) !== -1);
+      }).map(function (property) {
         var image = property.image || property.cover_image || "";
         return Object.assign({}, property, {
           id: String(property.id),
           ownerId: property.owner_id,
           ownerName: property.owner_name || "Property Owner",
-          verificationStatus: verificationStatus,
-          listingStatus:
-            verificationStatus === "approved" ? "live" : verificationStatus,
-          verified: verificationStatus === "approved",
+          verificationStatus: "approved",
+          listingStatus: "live",
+          verified: true,
           image: image,
           images:
             Array.isArray(property.images) && property.images.length
               ? property.images
-              : [image].filter(Boolean)
+              : [image].filter(Boolean),
+          videos: Array.isArray(property.videos) ? property.videos : []
         });
       });
     } catch (e) {

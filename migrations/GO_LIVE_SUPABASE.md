@@ -28,15 +28,19 @@ Confirm tables exist under **Table Editor**.
 
 After the applicable migrations through `012_owner_request_updates.sql` have been applied, run `013_role_access_hardening.sql`. It tightens profile privilege changes and participant-scoped RLS policies; the browser role gates are not a substitute for this database migration. Do not rerun earlier migrations blindly on an existing project.
 
+Then apply `014_owner_launch_promos.sql`, `015_unique_property_conversations.sql`, `016_owner_verified_at.sql`, and `017_owner_verification_access.sql` in order. Migration 017 creates the private `verification-docs` bucket and owner/admin-only storage policies, and requires verified owner profiles before property inserts.
+
 ## Step 2 — Storage buckets
 
-Supabase → **Storage** → New bucket:
+Create these buckets in Supabase → **Storage** if they do not already exist. Migration 017 creates `verification-docs` as private:
 
 | Bucket | Public | Use |
 |--------|--------|-----|
 | `property-media` | Public read | Listing photos & videos |
 | `verification-docs` | **Private** | ID / ownership documents |
 | `avatars` | Public read | Profile photos |
+
+`verification-docs` allows active owners to upload only under their own `{user_id}/*` folder so they can apply for verification. Owners can read their own files; admins can read files to review applications. No public access is granted.
 
 Policies (example for `property-media`):
 

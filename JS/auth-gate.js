@@ -90,7 +90,7 @@
     try {
       var profileResult = await client
         .from("profiles")
-        .select("id, full_name, account_type, account_status")
+        .select("*")
         .eq("id", authUser.id)
         .maybeSingle();
       if (profileResult.error) throw profileResult.error;
@@ -100,11 +100,22 @@
         return null;
       }
 
+      var verificationStatus = profile.verification_status || "unverified";
       return {
         id: authUser.id,
         email: authUser.email,
         name: profile.full_name || authUser.email,
         accountType: normalizeRole(profile.account_type),
+        verificationStatus: verificationStatus,
+        ownerVerificationStatus: verificationStatus,
+        verification_status: verificationStatus,
+        verified: verificationStatus === "verified",
+        verifiedAt: profile.verified_at || null,
+        verified_at: profile.verified_at || null,
+        plan: profile.plan || profile.subscription_plan,
+        subscriptionPlan: profile.subscription_plan || profile.plan,
+        promoType: profile.promo_type || null,
+        promoEndsAt: profile.promo_ends_at || null,
         _source: "supabase-profile"
       };
     } catch (error) {

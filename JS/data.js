@@ -286,29 +286,32 @@ images: [
 /* ================= VERIFICATION STATE ================= */
 
 function normalizeVerificationStatus(property) {
-    const rawStatus = String(property?.verificationStatus || "")
-        .trim()
-        .toLowerCase();
+    const statuses = [
+        property?.verificationStatus,
+        property?.verification_status,
+        property?.listingStatus,
+        property?.listing_status
+    ].map(function (value) {
+        return String(value || "").trim().toLowerCase();
+    });
 
-    // Rejection always wins over a stale verified flag.
-    if (rawStatus === "rejected") {
+    if (statuses.includes("rejected")) {
         return "rejected";
     }
 
     if (
-        rawStatus === "pending" ||
-        rawStatus === "pending verification"
-    ) {
-        return "pending";
-    }
-
-    if (
-        rawStatus === "approved" ||
-        rawStatus === "verified" ||
-        property?.verified === true
+        statuses.some(function (status) {
+            return ["approved", "verified", "live", "active"].includes(status);
+        }) ||
+        property?.verified === true ||
+        property?.verified === "true"
     ) {
         return "approved";
     }
+
+    if (statuses.some(function (status) {
+        return ["pending", "pending verification", "review"].includes(status);
+    })) return "pending";
 
     return "pending";
 }

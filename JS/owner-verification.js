@@ -1,18 +1,17 @@
 /**
  * LeaseAccom — landlord verification & documentation
- * Stores queue in localStorage (leaseaccomOwnerVerifications).
- * Ready to swap uploads to Supabase Storage later.
  */
 (function () {
   "use strict";
 
   var QUEUE_KEY = "leaseaccomOwnerVerifications";
-  var CURRENT_KEYS = ["leaseaccomCurrentUser", "leaseaccomCurrentUser", "currentUser"];
+  var CURRENT_KEYS = ["leaseaccomCurrentUser", "leasehubCurrentUser", "currentUser"];
   var MAX_BYTES = 5 * 1024 * 1024;
 
   var step = 1;
   var idFileMeta = null;
   var proofFileMeta = null;
+  var statusReady = false;
 
   function readJSON(key, fallback) {
     try {
@@ -224,37 +223,90 @@
       .join("");
   }
 
-  function renderBanner(user) {
+  function mapApplication(row) {
+    if (!row) return null;
+    return {
+      fullName: row.full_name || "",
+      phone: row.phone || "",
+      email: row.email || "",
+      city: row.city || "",
+      state: row.state || "",
+      address: row.address || "",
+      idType: row.id_type || "",
+      idNumber: row.id_number || "",
+      listingRole: row.listing_role || "",
+      businessName: row.business_name || "",
+      proofType: row.proof_type || "",
+      proofNote: row.proof_note || "",
+      idFileName: row.id_file_path ? row.id_file_path.split("/").pop() : "",
+      proofFileName: row.proof_file_path ? row.proof_file_path.split("/").pop() : "",
+      idFilePath: row.id_file_path || "",
+      proofFilePath: row.proof_file_path || "",
+      submittedAt: row.submitted_at || ""
+    };
+  }
+
+  function applyCloudState(user, result) {
+    var profile = result.profile || {};
+    var request = result.request || null;
+    var status = String(result.status || profile.verification_status || "unverified").toLowerCase();
+    return Object.assign({}, user || {}, {
+      id: profile.id || (user && user.id),
+      name: profile.full_name || (user && user.name) || "",
+      phone: profile.phone || (user && user.phone) || "",
+      verificationStatus: status,
+      ownerVerificationStatus: status,
+      verification_status: status,
+      verified: status === "verified",
+      verifiedAt: profile.verified_at || null,
+      verified_at: profile.verified_at || null,
+      verificationNote: (request && request.review_note) || "",
+      ownerVerification: mapApplication(request) || (user && user.ownerVerification) || null
+    });
+  }
+
+  function renderBanner(user, loadError) {
     var banner = document.getElementById("ovBanner");
     if (!banner || !user) return;
-    var status = String(user.ownerVerificationStatus || user.verificationStatus || "unverified").toLowerCase();
-    if (status === "unverified" || !status) {
-      banner.hidden = true;
+    if (loadError) {
+      banner.hidden = false;
+      banner.className = "ov-banner pending";
+      banner.innerHTML = "<i class=\"bx bx-error-circle\"></i><div><strong>Verification status unavailable</strong><p>" +
+        escapeHtml(loadError) + "</p></div>";
+      var unavailableSubmit = document.getElementById("ovSubmitBtn");
+      if (unavailableSubmit) unavailableSubmit.disabled = true;
       return;
     }
+    var status = String(user.ownerVerificationStatus || user.verificationStatus || "unverified").toLowerCase();
     banner.hidden = false;
-    banner.className = "ov-banner " + (status === "pending" ? "pending" : status === "rejected" ? "rejected" : "verified");
-    var icon = status === "verified" ? "bx-check-shield" : status === "rejected" ? "bx-error-circle" : "bx-time-five";
+    banner.className = "ov-banner " + (status === "pending" ? "pending" : status === "rejected" ? "rejected" : status === "verified" ? "verified" : "");
+    var icon = status === "verified" ? "bx-check-shield" : status === "rejected" ? "bx-error-circle" : status === "pending" ? "bx-time-five" : "bx-shield-quarter";
     var title =
       status === "verified"
         ? "You are verified"
         : status === "rejected"
           ? "Verification rejected"
-          : "Verification pending";
+          : status === "pending"
+            ? "Verification pending"
+            : "Not verified";
     var body =
       status === "verified"
         ? "You can publish listings (each property still needs listing approval)."
         : status === "rejected"
           ? user.verificationNote || "Please correct your documents and resubmit."
-          : "Our team is reviewing your documents. You will be notified when a decision is made.";
+          : status === "pending"
+            ? "Our team is reviewing your documents. You will be notified when a decision is made."
+            : "Submit your identity and ownership documents to request verification.";
     banner.innerHTML = "<i class=\"bx " + icon + "\"></i><div><strong>" + title + "</strong><p>" + escapeHtml(body) + "</p></div>";
 
-    if (status === "pending" || status === "verified") {
-      document.getElementById("ovSubmitBtn").disabled = status === "pending";
-      if (status === "verified") {
-        document.getElementById("ovSubmitBtn").textContent = "Already verified";
-        document.getElementById("ovSubmitBtn").disabled = true;
-      }
+    var submitBtn = document.getElementById("ovSubmitBtn");
+    if (submitBtn) {
+      submitBtn.disabled = status === "pending" || status === "verified";
+      submitBtn.textContent = status === "verified"
+        ? "Already verified"
+        : status === "pending"
+          ? "Submitted — pending"
+          : "Submit for verification";
     }
   }
 
@@ -279,15 +331,28 @@
     if (app.proofNote) document.getElementById("ovProofNote").value = app.proofNote;
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    var user = getCurrentUser();
-    if (!user) {
-      // allow demo fill but encourage login
-    }
+  document.addEventListener("DOMContentLoaded", async function () {
+    var user = getCurrentUser() || {};
+    var submitBtn = document.getElementById("ovSubmitBtn");
+    if (submitBtn) submitBtn.disabled = true;
     prefill(user);
-    renderBanner(user);
     setupUpload("ovIdDrop", "ovIdFile", "id");
     setupUpload("ovProofDrop", "ovProofFile", "proof");
+
+    var statusResult = window.LeaseAccomCloud &&
+      typeof window.LeaseAccomCloud.getMyOwnerVerification === "function"
+      ? await window.LeaseAccomCloud.getMyOwnerVerification()
+      : { ok: false, error: "Cloud verification is unavailable. Please reload and try again." };
+    if (!statusResult || !statusResult.ok) {
+      renderBanner(user, (statusResult && statusResult.error) || "Could not load your current verification status.");
+      setMsg("Could not load your current verification status. Please reload before submitting.", "error");
+      return;
+    }
+    user = applyCloudState(user, statusResult);
+    saveCurrentUser(user);
+    prefill(user);
+    renderBanner(user);
+    statusReady = true;
 
     document.querySelectorAll("[data-next]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -309,6 +374,15 @@
 
     document.getElementById("ovForm").addEventListener("submit", async function (e) {
       e.preventDefault();
+      if (!statusReady) {
+        setMsg("Verification status is not available. Reload the page before submitting.", "error");
+        return;
+      }
+      var currentStatus = String(user.verificationStatus || "unverified").toLowerCase();
+      if (currentStatus === "pending" || currentStatus === "verified") {
+        setMsg(currentStatus === "pending" ? "Your application is already pending review." : "Your owner account is already verified.", "error");
+        return;
+      }
       var err = validateStep(1) || validateStep(2) || validateStep(3);
       if (err) {
         setMsg(err, "error");
@@ -346,73 +420,81 @@
         submitBtn.disabled = true;
         submitBtn.textContent = "Uploading documents…";
       }
-      setMsg("Uploading ID & proof to secure storage…", "success");
+      setMsg("Uploading documents and submitting your request…", "success");
 
-      // Cloud-first: Storage + owner_verifications table
-      var cloudOk = false;
       try {
-        if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.submitOwnerVerificationFull === "function") {
-          var cloudPayload = Object.assign({}, application, {
-            idDataUrl: idFileMeta && idFileMeta.dataUrl ? idFileMeta.dataUrl : null,
-            proofDataUrl: proofFileMeta && proofFileMeta.dataUrl ? proofFileMeta.dataUrl : null
-          });
-          var cloud = await window.LeaseAccomCloud.submitOwnerVerificationFull(cloudPayload);
-          if (cloud && cloud.ok) {
-            cloudOk = true;
-            application.cloudId = cloud.data && cloud.data.id;
-            application.idFilePath = cloud.idPath;
-            application.proofFilePath = cloud.proofPath;
-            setMsg("Submitted to LeaseAccom cloud. Status: Pending review.", "success");
-          } else if (cloud && cloud.offline) {
-            setMsg("Offline — saved on this device only. Connect to sync verification.", "error");
-          } else {
-            setMsg("Cloud error: " + ((cloud && cloud.error) || "failed") + ". Saved locally as backup.", "error");
-          }
+        if (!window.LeaseAccomCloud || typeof window.LeaseAccomCloud.submitOwnerVerificationFull !== "function") {
+          throw new Error("Cloud verification is unavailable. No request was submitted.");
         }
+        var cloudPayload = Object.assign({}, application, {
+          idDataUrl: idFileMeta && idFileMeta.dataUrl ? idFileMeta.dataUrl : null,
+          proofDataUrl: proofFileMeta && proofFileMeta.dataUrl ? proofFileMeta.dataUrl : null
+        });
+        var cloud = await window.LeaseAccomCloud.submitOwnerVerificationFull(cloudPayload);
+        if (!cloud || !cloud.ok) {
+          if (cloud && cloud.submitted) {
+            var refreshed = await window.LeaseAccomCloud.getMyOwnerVerification();
+            if (refreshed && refreshed.ok) {
+              user = applyCloudState(user, refreshed);
+              saveCurrentUser(user);
+              renderBanner(user);
+            }
+          }
+          throw new Error((cloud && cloud.error) || "Could not submit your verification request.");
+        }
+
+        application.cloudId = cloud.data && cloud.data.id;
+        application.idFilePath = cloud.idPath;
+        application.proofFilePath = cloud.proofPath;
+        application.idPreview = "";
+        application.proofPreview = "";
+        user = Object.assign({}, user, {
+          name: application.fullName,
+          phone: application.phone,
+          email: application.email || user.email,
+          verificationStatus: "pending",
+          ownerVerificationStatus: "pending",
+          verification_status: "pending",
+          verified: false,
+          verifiedAt: null,
+          verified_at: null,
+          ownerVerification: application,
+          verificationSubmittedAt: application.submittedAt,
+          verificationNote: ""
+        });
+        if (cloud.profile) user = Object.assign(user, applyCloudState(user, { profile: cloud.profile, request: cloud.data }));
+        saveCurrentUser(user);
+
+        var queue = readJSON(QUEUE_KEY, []);
+        var entry = {
+          id: application.cloudId,
+          userId: user.id,
+          email: user.email,
+          status: "pending",
+          application: application,
+          createdAt: application.submittedAt,
+          cloudSynced: true
+        };
+        queue = (Array.isArray(queue) ? queue : []).filter(function (q) {
+          return String(q.userId) !== String(user.id);
+        });
+        queue.unshift(entry);
+        writeJSON(QUEUE_KEY, queue.slice(0, 100));
+
+        renderBanner(user);
+        setMsg("Submitted successfully. Documents are stored securely and your status is pending review.", "success");
       } catch (ex) {
-        console.warn(ex);
-        setMsg("Cloud error: " + (ex.message || "failed") + ". Saved locally as backup.", "error");
-      }
-
-      var current = getCurrentUser() || {
-        id: "owner-" + Date.now(),
-        accountType: "owner"
-      };
-      current.name = application.fullName;
-      current.phone = application.phone;
-      current.email = application.email || current.email;
-      current.accountType = current.accountType || "owner";
-      current.verificationStatus = "pending";
-      current.ownerVerificationStatus = "pending";
-      current.ownerVerification = application;
-      current.verificationSubmittedAt = application.submittedAt;
-      current.verificationNote = "";
-      saveCurrentUser(current);
-
-      // Local queue backup for admin offline
-      var queue = readJSON(QUEUE_KEY, []);
-      var entry = {
-        id: application.cloudId || ("ov-" + Date.now()),
-        userId: current.id,
-        email: current.email,
-        status: "pending",
-        application: application,
-        createdAt: application.submittedAt,
-        cloudSynced: cloudOk
-      };
-      queue = (Array.isArray(queue) ? queue : []).filter(function (q) {
-        return String(q.userId) !== String(current.id) && String(q.email) !== String(current.email);
-      });
-      queue.unshift(entry);
-      writeJSON(QUEUE_KEY, queue.slice(0, 100));
-
-      if (cloudOk) {
-        setMsg("Submitted successfully. Documents stored securely. Status: Pending review.", "success");
-      }
-      renderBanner(current);
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Submitted — pending";
+        console.error("Owner verification submission failed:", ex);
+        setMsg(ex.message || "Could not submit your verification request.", "error");
+        if (submitBtn) {
+          var latestStatus = String(user.verificationStatus || "unverified").toLowerCase();
+          submitBtn.disabled = latestStatus === "pending" || latestStatus === "verified";
+          submitBtn.textContent = latestStatus === "pending"
+            ? "Submitted — pending"
+            : latestStatus === "verified"
+              ? "Already verified"
+              : "Submit for verification";
+        }
       }
     });
   });

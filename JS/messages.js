@@ -421,10 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function syncRemoteConversations() {
         const remote = await window.LeaseAccomChatApi?.listConversations?.();
-        if (!Array.isArray(remote)) {
-            if (!canUseLocalFallback()) saveConversations([]);
-            return;
-        }
+        if (!Array.isArray(remote)) return;
 
         const local = getConversations();
         const used = new Set();
@@ -432,10 +429,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const previous = local.find((item) =>
                 !used.has(String(item.id)) &&
                 (String(item.id) === String(conversation.id) ||
-                    String(item.propertyId) === String(conversation.propertyId))
+                    (String(item.propertyId || "") === String(conversation.propertyId || "") &&
+                        String(item.tenantId || "") === String(conversation.tenantId || "") &&
+                        String(item.ownerId || "") === String(conversation.ownerId || "")))
             );
             if (previous) used.add(String(previous.id));
-            if (previous && String(previous.id) === localStorage.getItem("activeConversationId")) {
+            if (previous && String(previous.id) === String(localStorage.getItem("activeConversationId"))) {
                 localStorage.setItem("activeConversationId", conversation.id);
             }
             return {
@@ -446,7 +445,23 @@ document.addEventListener("DOMContentLoaded", () => {
             };
         });
 
-        saveConversations(merged);
+        saveConversations(merged.concat(local.filter((item) => !used.has(String(item.id)))));
+    }
+
+
+    async function hydrateConversation(conversationId) {
+        const remote = await window.LeaseAccomChatApi?.getConversationById?.(conversationId);
+        if (!remote) return null;
+        const conversations = getConversations();
+        const index = conversations.findIndex((item) => String(item.id) === String(remote.id));
+        if (index >= 0) {
+            remote.messages = conversations[index].messages || [];
+            conversations[index] = { ...conversations[index], ...remote };
+        } else {
+            conversations.unshift(remote);
+        }
+        saveConversations(conversations);
+        return remote;
     }
 
 
@@ -717,58 +732,25 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!conversation) {
-            // Try one remote refresh then re-open
-            console.warn("Conversation not in local list, syncing...", conversationId);
+            console.warn("Conversation not in local list, loading from cloud...", conversationId);
             (async function () {
                 try {
-                    if (typeof syncRemoteConversations === "function") {
-                        await syncRemoteConversations();
-                    }
-                    if (window.LeaseAccomCloud && typeof window.LeaseAccomCloud.hasSb === "function" && window.LeaseAccomCloud.hasSb()) {
-                        var client = window.leaseaccomSupabase || window.leasehubSupabase;
-                        if (client) {
-                            var row = null;
-                            var byId = await client.from("conversations").select("*").eq("id", conversationId).maybeSingle();
-                            if (byId && byId.data) row = byId.data;
-                            if (!row && String(conversationId).indexOf("property-") === 0) {
-                                var pid = String(conversationId).replace(/^property-/, "");
-                                var byProp = await client.from("conversations").select("*").eq("property_id", pid).limit(1).maybeSingle();
-                                if (byProp && byProp.data) row = byProp.data;
-                            }
-                            if (row) {
-                                var list = getConversations();
-                                var mapped = {
-                                    id: row.id,
-                                    propertyId: row.property_id,
-                                    tenantId: row.tenant_id,
-                                    ownerId: row.owner_id,
-                                    ownerName: "Property Owner",
-                                    propertyTitle: "Listing",
-                                    messages: [],
-                                    serverBacked: true,
-                                    updatedAt: row.last_message_at
-                                };
-                                var exists = list.some(function (c) { return String(c.id) === String(row.id); });
-                                if (!exists) {
-                                    list.unshift(mapped);
-                                    saveConversations(list);
-                                }
-                                localStorage.setItem("activeConversationId", row.id);
-                                renderConversations();
-                                openConversation(row.id);
-                                return;
-                            }
-                        }
+                    const hydrated = await hydrateConversation(conversationId);
+                    if (hydrated) {
+                        localStorage.setItem("activeConversationId", hydrated.id);
+                        renderConversations();
+                        openConversation(hydrated.id);
+                        return;
                     }
                 } catch (err) {
-                    console.error(err);
+                    console.error("Unable to load the conversation from cloud.", err);
                 }
                 if (chatEmpty) chatEmpty.style.display = "flex";
                 if (chatContent) chatContent.style.display = "none";
                 var tip = document.getElementById("chatEmpty");
                 if (tip) {
                     var p = tip.querySelector("p");
-                    if (p) p.textContent = "Conversation not found. Open the property page and tap Message again.";
+                    if (p) p.textContent = "This conversation couldn't be loaded. Check your connection and try again.";
                 }
             })();
             return;
@@ -1159,11 +1141,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
 
-                const conversations =
+                let conversations =
                     getConversations();
 
 
-                const conversation =
+                let conversation =
                     conversations.find(
                         (item) =>
                             String(item.id) ===
@@ -1172,11 +1154,23 @@ document.addEventListener("DOMContentLoaded", () => {
                             )
                     );
 
+                if (!conversation) {
+                    conversation = await hydrateConversation(activeConversationId);
+                    if (conversation) {
+                        conversations = getConversations();
+                        const hydratedIndex = conversations.findIndex(
+                            (item) => String(item.id) === String(conversation.id)
+                        );
+                        if (hydratedIndex >= 0) conversations[hydratedIndex] = conversation;
+                        else conversations.unshift(conversation);
+                        openConversation(conversation.id);
+                    }
+                }
 
                 if (!conversation) {
 
                     alert(
-                        "This conversation could not be found."
+                        "This conversation could not be loaded. Please check your connection and try again."
                     );
 
                     return;

@@ -827,7 +827,18 @@ function loadFeatured() {
 
     /* ================= INITIALIZE ================= */
 
+    window.refreshLeaseAccomFeatured = loadFeatured;
     loadFeatured();
+    if (window.loadLeaseAccomPropertyCatalog) {
+        window.loadLeaseAccomPropertyCatalog().then(function () {
+            loadFeatured();
+            if (typeof window.refreshLeaseAccomLandingStats === "function") {
+                window.refreshLeaseAccomLandingStats();
+            }
+        }).catch(function (error) {
+            console.warn("Homepage property catalog refresh failed.", error);
+        });
+    }
 
 });
 
@@ -1795,35 +1806,82 @@ localStorage.setItem(
 
         contactOwner.addEventListener(
             "click",
-            () => {
-                const conversationId = `property-${property.id}`;
-                let conversations = [];
+            async () => {
                 try {
-                    conversations = JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]");
-                } catch (error) {
-                    console.warn("Unable to load LeaseAccom messages.", error);
-                }
-                if (!Array.isArray(conversations)) conversations = [];
-                if (!conversations.some(item => String(item.id) === conversationId)) {
-                    conversations.unshift({
-                        id: conversationId,
-                        propertyId: property.id,
-                        propertyTitle: property.title || "LeaseAccom listing",
-                        propertyImage: property.image || "",
-                        propertyLocation: property.location || property.city || "Nigeria",
-                        ownerName: property.ownerName || "Property Owner",
-                        ownerId: property.ownerId || property.owner_id || null,
-                        ownerPhone: property.ownerPhone || "",
-                        unread: 0,
-                        messages: [],
-                        createdAt: new Date().toISOString()
-                    });
-                    localStorage.setItem("leaseaccomMessages", JSON.stringify(conversations));
-                }
-                localStorage.setItem("activeConversationId", conversationId);
-                window.location.href = "messages.html";
-                return;
+                    const currentUser = JSON.parse(localStorage.getItem("leaseaccomCurrentUser") || "null");
+                    if (!currentUser) {
+                        window.location.href = "login.html";
+                        return;
+                    }
+                    const ownerId = property.ownerId || property.owner_id || property.user_id;
+                    if (!ownerId) throw new Error("The property owner could not be identified.");
 
+                    let conversation;
+                    const cloud = window.LeaseAccomCloud;
+                    if (cloud?.hasSb?.()) {
+                        const result = await cloud.getOrCreateConversation(property.id, ownerId, currentUser.id);
+                        if (!result?.ok || !result.data?.id) {
+                            throw new Error(result?.error || "The messaging service could not create or load this conversation.");
+                        }
+                        conversation = {
+                            id: String(result.data.id),
+                            propertyId: String(property.id),
+                            propertyTitle: property.title || "LeaseAccom listing",
+                            propertyImage: property.image || property.cover_image || "",
+                            propertyLocation: property.location || property.city || "Nigeria",
+                            ownerName: property.ownerName || property.owner_name || "Property Owner",
+                            ownerId: String(result.data.owner_id || ownerId),
+                            tenantId: String(result.data.tenant_id || currentUser.id || ""),
+                            tenantName: currentUser.name || currentUser.full_name || "Tenant",
+                            participants: {
+                                tenantId: String(result.data.tenant_id || currentUser.id || ""),
+                                ownerId: String(result.data.owner_id || ownerId)
+                            },
+                            ownerPhone: property.ownerPhone || property.owner_phone || "",
+                            messages: [],
+                            serverBacked: true,
+                            createdAt: result.data.created_at || new Date().toISOString()
+                        };
+                    } else {
+                        const localId = "local-" + [property.id, currentUser.id || "", ownerId]
+                            .map(encodeURIComponent).join(":");
+                        conversation = {
+                            id: localId,
+                            propertyId: String(property.id),
+                            propertyTitle: property.title || "LeaseAccom listing",
+                            propertyImage: property.image || property.cover_image || "",
+                            propertyLocation: property.location || property.city || "Nigeria",
+                            ownerName: property.ownerName || property.owner_name || "Property Owner",
+                            ownerId: String(ownerId),
+                            tenantId: String(currentUser.id || ""),
+                            tenantName: currentUser.name || currentUser.full_name || "Tenant",
+                            participants: {
+                                tenantId: String(currentUser.id || ""),
+                                ownerId: String(ownerId)
+                            },
+                            ownerPhone: property.ownerPhone || property.owner_phone || "",
+                            messages: [],
+                            serverBacked: false,
+                            createdAt: new Date().toISOString()
+                        };
+                    }
+
+                    const saved = JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]");
+                    const conversations = Array.isArray(saved) ? saved : [];
+                    const previous = conversations.find(item => String(item.id) === String(conversation.id));
+                    if (previous) conversation = { ...previous, ...conversation, messages: previous.messages || [] };
+                    localStorage.setItem("leaseaccomMessages", JSON.stringify([
+                        conversation,
+                        ...conversations.filter(item => String(item.id) !== String(conversation.id))
+                    ]));
+                    localStorage.setItem("activeConversationId", conversation.id);
+                    window.location.href = "messages.html";
+                } catch (error) {
+                    console.error("Unable to start property conversation.", error);
+                    const message = "Couldn't start conversation: " + (error.message || "Please try again.");
+                    if (typeof window.leaseaccomToast === "function") window.leaseaccomToast(message, "error");
+                    else window.alert(message);
+                }
             }
         );
 
@@ -4285,22 +4343,20 @@ function getLeaseAccomVerificationStatus(property) {
         } catch (e) {}
     }
 
-    const status = String(
-        property?.verificationStatus ||
-        property?.verification_status ||
-        property?.listing_status ||
-        property?.listingStatus ||
-        ""
-    )
-        .trim()
-        .toLowerCase();
+    const statuses = [
+        property?.verificationStatus,
+        property?.verification_status,
+        property?.listingStatus,
+        property?.listing_status
+    ].map(function (value) {
+        return String(value || "").trim().toLowerCase();
+    });
 
-    if (status === "rejected") return "rejected";
-    if (status === "pending" || status === "pending verification" || status === "review") return "pending";
+    if (statuses.includes("rejected")) return "rejected";
     if (
-        status === "approved" ||
-        status === "verified" ||
-        status === "live" ||
+        statuses.some(function (status) {
+            return ["approved", "verified", "live", "active"].includes(status);
+        }) ||
         property?.verified === true ||
         property?.verified === "true"
     ) {
@@ -4311,7 +4367,7 @@ function getLeaseAccomVerificationStatus(property) {
 }
 
 function isLeaseAccomPropertyPublic(property) {
-    return getLeaseAccomVerificationStatus(property) !== "rejected";
+    return getLeaseAccomVerificationStatus(property) === "approved";
 }
 
 function isLeaseAccomPropertyVerified(property) {
@@ -5102,7 +5158,9 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMarketplace();
 
     if (window.loadLeaseAccomPropertyCatalog) {
-        window.loadLeaseAccomPropertyCatalog().then(renderMarketplace).catch(() => {});
+        window.loadLeaseAccomPropertyCatalog().then(renderMarketplace).catch(function (error) {
+            console.warn("Marketplace property catalog refresh failed.", error);
+        });
     }
 
     renderRecentlyViewed();
@@ -5817,24 +5875,26 @@ document.addEventListener("DOMContentLoaded", function () {
         ? isLeaseAccomPropertyVerified
         : function (p) { return p && p.verified; };
 
-    const publicProperties = properties.filter(publicFn);
+    let values = {};
+    function refreshStats() {
+        const publicProperties = properties.filter(publicFn);
+        values = {
+            properties: publicProperties.length,
+            verified: publicProperties.filter(verifiedFn).length,
+            cities: new Set(
+                publicProperties.map(function (property) { return property.city; }).filter(Boolean)
+            ).size
+        };
+        statNumbers.forEach(function (el) {
+            const key = el.dataset.stat;
+            if (key !== "direct" && values[key] !== undefined) {
+                el.textContent = String(values[key]);
+            }
+        });
+    }
 
-    const values = {
-        properties: publicProperties.length,
-        verified: publicProperties.filter(verifiedFn).length,
-        cities: new Set(
-            publicProperties.map(function (property) { return property.city; }).filter(Boolean)
-        ).size
-    };
-
-    // Set correct numbers immediately (never leave stuck at 0)
-    statNumbers.forEach(function (el) {
-        const key = el.dataset.stat;
-        if (key === "direct") return;
-        if (values[key] !== undefined) {
-            el.textContent = String(values[key]);
-        }
-    });
+    window.refreshLeaseAccomLandingStats = refreshStats;
+    refreshStats();
 
     function animateStat(element, target) {
         if (element.dataset.stat === "direct") return;

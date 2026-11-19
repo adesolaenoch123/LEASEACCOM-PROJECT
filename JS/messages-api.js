@@ -19,18 +19,21 @@
   }
 
   function mapConversation(row) {
+    const tenantId = row.tenant_id || row.tenantId || "";
+    const ownerId = row.owner_id || row.ownerId || "";
     return {
       id: String(row.id),
-      propertyId: row.property_id || "",
+      propertyId: row.property_id || row.propertyId || "",
       propertyTitle: row.property_title || "Property",
       propertyImage: row.property_image || "",
       propertyLocation: row.property_location || "Nigeria",
       ownerName: row.owner_name || "Property Owner",
-      ownerId: row.owner_id || "",
+      ownerId: ownerId,
       ownerAvatar: row.owner_avatar || "",
       tenantName: row.tenant_name || "Tenant",
-      tenantId: row.tenant_id || "",
+      tenantId: tenantId,
       tenantAvatar: row.tenant_avatar || "",
+      participants: { tenantId: String(tenantId), ownerId: String(ownerId) },
       lastMessage: row.last_message || "",
       createdAt: row.created_at || "",
       updatedAt: row.updated_at || row.created_at || "",
@@ -38,6 +41,40 @@
       messages: [],
       serverBacked: true
     };
+  }
+
+  function cacheConversation(conversation) {
+    let conversations = [];
+    try {
+      conversations = JSON.parse(localStorage.getItem("leaseaccomMessages") || "[]");
+    } catch (error) {
+      console.warn("Unable to read cached conversations:", error);
+    }
+    if (!Array.isArray(conversations)) conversations = [];
+
+    const sameThread = (item) => String(item.id) === String(conversation.id) ||
+      (String(item.propertyId || "") === String(conversation.propertyId || "") &&
+        String(item.ownerId || "") === String(conversation.ownerId || "") &&
+        (!item.tenantId || String(item.tenantId) === String(conversation.tenantId)));
+    const previous = conversations.find(sameThread);
+    const merged = {
+      ...previous,
+      ...conversation,
+      messages: previous?.messages || conversation.messages || [],
+      serverBacked: true
+    };
+    conversations = conversations.filter((item) => !sameThread(item));
+    conversations.unshift(merged);
+    localStorage.setItem("leaseaccomMessages", JSON.stringify(conversations));
+
+    const oldActiveId = localStorage.getItem("activeConversationId");
+    if (previous && String(oldActiveId) === String(previous.id)) {
+      localStorage.setItem("activeConversationId", merged.id);
+    }
+    if (previous && String(localStorage.getItem("ownerActiveConversationId")) === String(previous.id)) {
+      localStorage.setItem("ownerActiveConversationId", merged.id);
+    }
+    return merged;
   }
 
   function mapMessage(row, conversation) {
@@ -54,36 +91,71 @@
 
   window.LeaseAccomChatApi = {
     async listConversations() {
+      const cloud = window.LeaseAccomCloud;
+      if (cloud?.listConversations) {
+        try {
+          const result = await cloud.listConversations();
+          if (result?.ok) return (result.data || []).map(mapConversation);
+          if (result?.error) console.warn("Supabase conversations could not be loaded:", result.error);
+        } catch (error) {
+          console.warn("Supabase conversations could not be loaded:", error);
+        }
+      }
       const response = await request("/conversations");
-      return response ? response.conversations.map(mapConversation) : null;
+      return Array.isArray(response?.conversations)
+        ? response.conversations.map(mapConversation)
+        : null;
+    },
+
+    async getConversationById(id) {
+      const cloud = window.LeaseAccomCloud;
+      if (!cloud?.getConversationById) return null;
+      try {
+        const result = await cloud.getConversationById(id);
+        if (!result?.ok || !result.data) {
+          if (result?.error && result.error !== "Conversation not found") {
+            console.warn("Supabase conversation could not be loaded:", result.error);
+          }
+          return null;
+        }
+        return mapConversation(result.data);
+      } catch (error) {
+        console.warn("Supabase conversation could not be loaded:", error);
+        return null;
+      }
     },
 
     async createConversation(property) {
       const propertyId = typeof property === "object" ? property?.propertyId || property?.property_id : property;
       const cloud = window.LeaseAccomCloud;
-      if (cloud?.getOrCreateConversation && typeof property === "object" && property?.ownerId) {
+      const ownerId = property?.ownerId || property?.owner_id;
+      if (cloud?.getOrCreateConversation && typeof property === "object" && ownerId) {
         try {
           const result = await cloud.getOrCreateConversation(
             propertyId,
-            property.ownerId,
+            ownerId,
             property.tenantId
           );
           if (result?.ok && result.data) {
             const row = result.data;
-            return mapConversation({
+            return cacheConversation(mapConversation({
               ...row,
-              property_title: property.propertyTitle,
-              property_image: property.propertyImage,
-              property_location: property.propertyLocation,
-              owner_name: property.ownerName,
-              owner_avatar: property.ownerAvatar,
-              tenant_name: property.tenantName,
-              tenant_avatar: property.tenantAvatar
-            });
+              property_title: property.propertyTitle || property.property_title,
+              property_image: property.propertyImage || property.property_image,
+              property_location: property.propertyLocation || property.property_location,
+              owner_name: property.ownerName || property.owner_name,
+              owner_avatar: property.ownerAvatar || property.owner_avatar,
+              tenant_name: property.tenantName || property.tenant_name,
+              tenant_avatar: property.tenantAvatar || property.tenant_avatar
+            }));
           }
-          if (result?.error) console.warn("Could not create conversation in Supabase:", result.error);
+          if (result?.error) {
+            console.warn("Could not create conversation in Supabase:", result.error);
+            return null;
+          }
         } catch (error) {
           console.warn("Supabase conversation creation failed:", error);
+          return null;
         }
       }
       const response = await request("/conversations", {

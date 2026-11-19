@@ -189,13 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function syncRemoteConversations() {
         const remote = await window.LeaseAccomChatApi?.listConversations?.();
-        if (!Array.isArray(remote)) {
-            if (!canUseLocalFallback()) {
-                conversations = [];
-                saveConversations(conversations);
-            }
-            return;
-        }
+        if (!Array.isArray(remote)) return;
 
         const local = getConversations();
         const used = new Set();
@@ -203,10 +197,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const previous = local.find((item) =>
                 !used.has(String(item.id)) &&
                 (String(item.id) === String(conversation.id) ||
-                    String(item.propertyId) === String(conversation.propertyId))
+                    (String(item.propertyId || "") === String(conversation.propertyId || "") &&
+                        String(item.tenantId || "") === String(conversation.tenantId || "") &&
+                        String(item.ownerId || "") === String(conversation.ownerId || "")))
             );
             if (previous) used.add(String(previous.id));
-            if (previous && String(previous.id) === String(activeConversationId)) {
+            if (previous && (
+                String(previous.id) === String(activeConversationId) ||
+                String(previous.id) === String(localStorage.getItem("ownerActiveConversationId"))
+            )) {
                 activeConversationId = conversation.id;
                 localStorage.setItem("activeConversationId", conversation.id);
                 localStorage.setItem("ownerActiveConversationId", conversation.id);
@@ -219,8 +218,24 @@ document.addEventListener("DOMContentLoaded", () => {
             };
         });
 
-        conversations = merged;
+        conversations = merged.concat(local.filter((item) => !used.has(String(item.id))));
         saveConversations(conversations);
+    }
+
+    async function hydrateConversation(id) {
+        const remote = await window.LeaseAccomChatApi?.getConversationById?.(id);
+        if (!remote) return null;
+        const current = getConversations();
+        const index = current.findIndex((item) => String(item.id) === String(remote.id));
+        if (index >= 0) {
+            remote.messages = current[index].messages || [];
+            current[index] = { ...current[index], ...remote };
+        } else {
+            current.unshift(remote);
+        }
+        conversations = current;
+        saveConversations(current);
+        return remote;
     }
 
 
@@ -250,9 +265,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let conversations = getConversations();
 
     let activeConversationId =
-        localStorage.getItem(
-            "activeConversationId"
-        );
+        localStorage.getItem("ownerActiveConversationId") ||
+        localStorage.getItem("activeConversationId");
 
 
     /* ==========================================
@@ -393,8 +407,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             if (
-                conversation.id ===
-                activeConversationId
+                String(conversation.id) ===
+                String(activeConversationId)
             ) {
 
                 item.classList.add("active");
@@ -506,10 +520,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!conversation) {
-            console.warn("Owner conversation not found, reloading list", id);
-            try {
-                if (typeof renderConversations === "function") renderConversations();
-            } catch (e) {}
+            hydrateConversation(id).then(function (hydrated) {
+                if (hydrated) {
+                    renderConversations();
+                    openConversation(hydrated.id);
+                    return;
+                }
+                console.warn("Owner conversation could not be loaded from cloud:", id);
+                if (typeof window.leaseaccomToast === "function") {
+                    window.leaseaccomToast("This conversation couldn't be loaded. Check your connection and try again.", "error");
+                }
+            }).catch(function (error) {
+                console.error("Unable to load owner conversation from cloud.", error);
+            });
             return;
         }
 
@@ -522,6 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "activeConversationId",
             activeConversationId
         );
+        localStorage.setItem("ownerActiveConversationId", activeConversationId);
 
 
         conversation.unread = 0;
@@ -758,15 +782,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 getConversations();
 
 
-            const conversation =
+            let conversation =
                 conversations.find(
-                    item =>
-                        item.id ===
-                        activeConversationId
+                    item => String(item.id) === String(activeConversationId)
                 );
 
+            if (!conversation) {
+                conversation = await hydrateConversation(activeConversationId);
+            }
 
             if (!conversation) {
+                if (typeof window.leaseaccomToast === "function") {
+                    window.leaseaccomToast("This conversation couldn't be loaded. Check your connection and try again.", "error");
+                }
                 return;
             }
 
@@ -1022,9 +1050,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const conversation =
                     getConversations().find(
-                        item =>
-                            item.id ===
-                            activeConversationId
+                        item => String(item.id) === String(activeConversationId)
                     );
 
 
@@ -1117,9 +1143,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const conversation =
                     conversations.find(
-                        c =>
-                            c.id ===
-                            activeConversationId
+                        c => String(c.id) === String(activeConversationId)
                     );
 
 

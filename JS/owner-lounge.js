@@ -234,35 +234,56 @@
   }
 
 
-  function getOwnerVerificationStatus() {
+  function getCurrentOwner() {
     try {
-      const raw = localStorage.getItem("leaseaccomCurrentUser") || localStorage.getItem("leaseaccomCurrentUser") || localStorage.getItem("currentUser");
-      const user = raw ? JSON.parse(raw) : null;
-      if (!user) return "unverified";
-      return String(user.verificationStatus || user.ownerVerificationStatus || "unverified").toLowerCase();
+      const raw = localStorage.getItem("leaseaccomCurrentUser") || localStorage.getItem("leasehubCurrentUser") || localStorage.getItem("currentUser");
+      return raw ? JSON.parse(raw) : null;
     } catch (e) {
-      return "unverified";
+      return null;
     }
   }
 
-  function setupVerificationPrompt() {
-    const status = getOwnerVerificationStatus();
+  function escapeVerificationText(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function setupVerificationPrompt(user, loadError) {
+    const status = loadError
+      ? "unavailable"
+      : String((user && (user.verificationStatus || user.ownerVerificationStatus)) || "unverified").toLowerCase();
     const existing = document.getElementById("ownerVerifyBanner");
     if (status === "verified") {
-      if (existing) existing.remove();
       document.body.classList.remove("owner-needs-verify");
-      return;
+    } else {
+      document.body.classList.add("owner-needs-verify");
     }
 
-    document.body.classList.add("owner-needs-verify");
-
-    let title = "Verify your owner account";
+    let title = "Not verified";
     let text = "You must be verified by LeaseAccom before your listings can go Live on the marketplace. Complete verification to build trust with tenants.";
     let cta = "Get verified";
+    if (status === "verified") {
+      title = "Owner verified";
+      text = "Your owner account is verified. Individual properties still need listing approval before they appear publicly.";
+      cta = "Add a property";
+    }
+    if (status === "unavailable") {
+      title = "Verification status unavailable";
+      text = loadError || "Your current verification status could not be confirmed. Property listing remains blocked until it can be refreshed.";
+      cta = "Check verification status";
+    }
     if (status === "pending") {
       title = "Verification under review";
       text = "We received your details. Your listings stay Pending until LeaseAccom approves your account. You will be able to go Live after approval.";
       cta = "View verification status";
+    } else if (status === "rejected") {
+      title = "Verification rejected";
+      text = (user && user.verificationNote) || "Please correct your documents and resubmit.";
+      cta = "Review and resubmit";
     }
 
     const html = `
@@ -270,10 +291,10 @@
         <div class="owner-verify-banner-inner">
           <div class="owner-verify-banner-icon"><i class="bx bx-badge-check"></i></div>
           <div class="owner-verify-banner-copy">
-            <strong>${title}</strong>
-            <p>${text}</p>
+            <strong>${escapeVerificationText(title)}</strong>
+            <p>${escapeVerificationText(text)}</p>
           </div>
-          <a href="owner-verification.html" class="primary-btn owner-verify-cta">${cta}</a>
+          <a href="${status === "verified" ? "add-property.html" : "owner-verification.html"}" class="primary-btn owner-verify-cta">${escapeVerificationText(cta)}</a>
           <button type="button" class="owner-verify-dismiss" id="ownerVerifyDismiss" aria-label="Dismiss for now">×</button>
         </div>
       </div>`;
@@ -297,13 +318,56 @@
     } catch (e) {}
   }
 
+  async function refreshOwnerVerificationStatus() {
+    const cloud = window.LeaseAccomCloud;
+    if (!cloud || typeof cloud.getMyOwnerVerification !== "function") {
+      setupVerificationPrompt(getCurrentOwner(), "Cloud verification status is unavailable.");
+      return;
+    }
+    try {
+      const result = await cloud.getMyOwnerVerification();
+      if (!result || !result.ok) {
+        setupVerificationPrompt(getCurrentOwner(), (result && result.error) || "Could not load your verification status.");
+        return;
+      }
+      const profile = result.profile || {};
+      const current = Object.assign({}, getCurrentOwner() || {}, {
+        id: profile.id,
+        accountType: profile.account_type || "owner",
+        verificationStatus: result.status,
+        ownerVerificationStatus: result.status,
+        verification_status: result.status,
+        verified: result.status === "verified",
+        verifiedAt: profile.verified_at || null,
+        verified_at: profile.verified_at || null,
+        verificationNote: (result.request && result.request.review_note) || ""
+      });
+      ["leaseaccomCurrentUser", "leasehubCurrentUser", "currentUser"].forEach((key) => {
+        try { localStorage.setItem(key, JSON.stringify(current)); } catch (error) {}
+      });
+      try {
+        const users = JSON.parse(localStorage.getItem("leaseaccomUsers") || "[]");
+        if (Array.isArray(users)) {
+          const index = users.findIndex((user) => String(user.id) === String(current.id));
+          if (index >= 0) users[index] = Object.assign({}, users[index], current);
+          localStorage.setItem("leaseaccomUsers", JSON.stringify(users));
+        }
+      } catch (error) {}
+      setupVerificationPrompt(current);
+    } catch (error) {
+      console.error("Could not refresh owner verification status:", error);
+      setupVerificationPrompt(getCurrentOwner(), error.message || "Could not load your verification status.");
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     if (!document.body.classList.contains("owner-lounge-body")) return;
     setupSidebar();
     setupTips();
     ensureFeaturedVideo();
     setupstore();
-    setupVerificationPrompt();
+    setupVerificationPrompt(getCurrentOwner(), "Checking your current verification status…");
+    refreshOwnerVerificationStatus();
     // Wait a tick for app.js owner dashboard render
     window.setTimeout(syncCountsTostorefront, 200);
     window.setTimeout(syncCountsTostorefront, 800);
@@ -486,4 +550,10 @@ function refreshOwnerPlanUI() {
 
 document.addEventListener("DOMContentLoaded", () => {
   try { refreshOwnerPlanUI(); } catch (e) { console.warn(e); }
+});
+
+window.addEventListener("storage", (event) => {
+  if (["leaseaccomCurrentUser", "leasehubCurrentUser", "currentUser"].includes(event.key)) {
+    try { refreshOwnerPlanUI(); } catch (e) { console.warn(e); }
+  }
 });

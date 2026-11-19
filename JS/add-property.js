@@ -27,17 +27,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         ); }
         catch { return null; }
     }
-    // Refresh the cached session from Supabase before applying the listing gate.
-    // Verification can be approved in the admin/Supabase dashboard while an
-    // owner still has an older "unverified" value in localStorage.
+    // Verification is authoritative in the Supabase profile, not browser storage.
     let currentUser = readCurrentUser();
-    if (window.LeaseAccomData && typeof window.LeaseAccomData.syncLegacySession === "function") {
+    const authClient = window.leaseaccomSupabase || window.leasehubSupabase;
+    if (authClient && authClient.auth && typeof authClient.auth.getUser === "function") {
+        if (!window.LeaseAccomData || typeof window.LeaseAccomData.syncLegacySession !== "function") {
+            window.location.replace("owner-verification.html?need=list");
+            return;
+        }
         try {
             const syncedUser = await window.LeaseAccomData.syncLegacySession();
-            if (syncedUser) currentUser = syncedUser;
+            if (!syncedUser || !syncedUser.id) {
+                window.location.replace("login.html");
+                return;
+            }
+            currentUser = syncedUser;
         } catch (error) {
-            console.warn("Could not refresh owner verification status:", error);
+            console.error("Could not refresh owner verification status:", error);
+            window.location.replace("owner-verification.html?need=list");
+            return;
         }
+    } else if (!["localhost", "127.0.0.1", ""].includes(String(window.location.hostname || ""))) {
+        window.location.replace("owner-verification.html?need=list");
+        return;
     }
     if (!currentUser || currentUser.accountType !== "owner") {
         window.location.href = "login.html";
@@ -271,6 +283,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
+        const submitClient = window.leaseaccomSupabase || window.leasehubSupabase;
+        if (submitClient && submitClient.auth && typeof submitClient.auth.getUser === "function") {
+            if (!window.LeaseAccomData || typeof window.LeaseAccomData.syncLegacySession !== "function") {
+                showFormStatus("Your verification status could not be refreshed. Please reload and try again.", "error");
+                return;
+            }
+            try {
+                const syncedUser = await window.LeaseAccomData.syncLegacySession();
+                if (!syncedUser || !syncedUser.id) {
+                    showFormStatus("Your session could not be verified. Sign in again before listing.", "error");
+                    return;
+                }
+                currentUser = syncedUser;
+            } catch (error) {
+                console.error("Could not refresh owner verification before listing:", error);
+                showFormStatus("Your verification status could not be refreshed. Please try again.", "error");
+                return;
+            }
+        }
+        const ownerV = String(currentUser.verificationStatus || currentUser.ownerVerificationStatus || "unverified").toLowerCase();
+        if (ownerV !== "verified") {
+            showFormStatus("Your owner account must be verified before you can submit a listing.");
+            window.setTimeout(() => { window.location.href = "owner-verification.html?need=list"; }, 900);
+            return;
+        }
         if (window.LeaseAccomPlans && typeof window.LeaseAccomPlans.canAddUnitAsync === "function") {
             const gateAsync = await window.LeaseAccomPlans.canAddUnitAsync(currentUser);
             if (!gateAsync.ok) {
@@ -299,13 +336,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         if (selectedImages.length < MIN_IMAGES) {
             showFormStatus(`Please upload at least ${MIN_IMAGES} property photos before submitting.`); return;
-        }
-        // Owner must still be verified (extra safety if page was opened directly)
-        const ownerV = String(currentUser.verificationStatus || currentUser.ownerVerificationStatus || "unverified").toLowerCase();
-        if (ownerV !== "verified") {
-            showFormStatus("Your owner account must be verified before you can submit a listing.");
-            window.setTimeout(() => { window.location.href = "owner-verification.html?need=list"; }, 900);
-            return;
         }
         const amenities = Array.from(document.querySelectorAll('input[name="amenity"]:checked')).map(c => c.value);
         let ownerProfile = {};
